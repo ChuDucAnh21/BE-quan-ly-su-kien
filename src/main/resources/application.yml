@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: EventManagementBackend
+  datasource: # kết nối database
+    url: jdbc:mysql://localhost:3306/quan_ly_su_kien?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 21012004
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa: # cấu hình jpa
+    hibernate:
+      ddl-auto: update # Hibernate tự sinh bảng hoặc update field trong database
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true # Đợi Hibernate tạo xong cấu trúc rồi mới chạy SQL script
+  sql:
+    init:
+      mode: always # Luôn chạy các file data.sql và schema.sql lúc khởi động
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false # Trả về dạng chuỗi ISO thay vì mảng số
+
+  # Cấu hình Gửi Email (Placeholder) để gửi mã khi quên mật khẩu
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: chucongducanh@gmail.com
+    password: onfm ejtt bnpc acxf #mk được lấy từ cài đặt bảo mật của gmail
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8080
+
+# Cấu hình JWT an toàn (HS256)
+app:
+  jwt:
+    # Key này phải cực kỳ bảo mật (Base64 JWT Secret có độ dài tối thiểu 256bit)
+    secret: VmVyeVNlY3JldEtleUZvckV2ZW50TWFuYWdlbWVudEFwcGxpY2F0aW9uSHMyNTZTaWduYXR1cmUyMDI0
+    expiration: 300000 # 5 phút (Access Token)
+    refresh-expiration: 2592000000 # 30 ngày (Refresh Token)
+
+# Cấu hình Cloudinary (Thực tế sẽ nhét giá trị lấy từ nền tảng Cloudinary)
+# để lưu trữ ảnh sự kiện
+cloudinary:
+  cloud-name: dwommxdop
+  api-key: 764161994441723
+  api-secret: HHjM055zkyYNOvS1a3myZkribsw

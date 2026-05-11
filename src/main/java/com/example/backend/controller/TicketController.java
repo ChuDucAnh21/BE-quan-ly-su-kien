@@ -1,0 +1,103 @@
+package com.example.backend.controller;
+
+import com.example.backend.dto.request.BatchCheckInRequest;
+import com.example.backend.dto.request.CheckInRequest;
+import com.example.backend.dto.response.ApiResponse;
+import com.example.backend.dto.response.BatchCheckInResponse;
+import com.example.backend.dto.response.PageResponse;
+import com.example.backend.dto.response.TicketResponse;
+import com.example.backend.service.TicketService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+public class TicketController {
+
+        private final TicketService ticketService;
+
+        // 1. Xem danh sách toàn bộ vé hệ thống (Dành cho Admin/Organizer tra cứu theo
+        // Event)
+        @GetMapping("/events/{eventId}/tickets")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
+        public ResponseEntity<ApiResponse<PageResponse<TicketResponse>>> getTicketsByEvent(
+                        @PathVariable Long eventId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+
+                Pageable pageable = PageRequest.of(page, size);
+                Page<TicketResponse> ticketPage = ticketService.getTicketsByEventId(eventId, pageable);
+
+                PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
+                                .currentPage(ticketPage.getNumber())
+                                .totalPages(ticketPage.getTotalPages())
+                                .pageSize(ticketPage.getSize())
+                                .totalElements(ticketPage.getTotalElements())
+                                .data(ticketPage.getContent())
+                                .build();
+
+                return ResponseEntity.ok(ApiResponse.<PageResponse<TicketResponse>>builder()
+                                .status(ApiResponse.Status.builder().code(200).message("Lấy danh sách vé thành công")
+                                                .build())
+                                .data(pageResponse)
+                                .build());
+        }
+
+        // 2. Khách hàng tự lấy danh sách vé của mình
+        @GetMapping("/tickets/my-tickets")
+        @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+        public ResponseEntity<ApiResponse<PageResponse<TicketResponse>>> getMyTickets(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+
+                Pageable pageable = PageRequest.of(page, size);
+                Page<TicketResponse> ticketPage = ticketService.getMyTickets(pageable);
+
+                PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
+                                .currentPage(ticketPage.getNumber())
+                                .totalPages(ticketPage.getTotalPages())
+                                .pageSize(ticketPage.getSize())
+                                .totalElements(ticketPage.getTotalElements())
+                                .data(ticketPage.getContent())
+                                .build();
+
+                return ResponseEntity.ok(ApiResponse.<PageResponse<TicketResponse>>builder()
+                                .status(ApiResponse.Status.builder().code(200)
+                                                .message("Lấy danh sách vé cá nhân thành công").build())
+                                .data(pageResponse)
+                                .build());
+        }
+
+        // 3. Check-in thông qua Camera Scanner tại cổng
+        @PostMapping("/checkin")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
+        public ResponseEntity<ApiResponse<TicketResponse>> processCheckIn(
+                        @Valid @RequestBody CheckInRequest request) {
+                TicketResponse response = ticketService.processCheckIn(request);
+                return ResponseEntity.ok(ApiResponse.<TicketResponse>builder()
+                                .status(ApiResponse.Status.builder().code(200).message("Check-in thành công! Cổng mở.")
+                                                .build())
+                                .data(response)
+                                .build());
+        }
+
+        // 4. Đồng bộ danh sách Check-in Offline (Batch Sync)
+        @PostMapping("/checkin/batch")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
+        public ResponseEntity<ApiResponse<BatchCheckInResponse>> processBatchCheckIn(
+                        @Valid @RequestBody BatchCheckInRequest request) {
+                BatchCheckInResponse response = ticketService.processBatchCheckIn(request);
+                return ResponseEntity.ok(ApiResponse.<BatchCheckInResponse>builder()
+                                .status(ApiResponse.Status.builder().code(200)
+                                                .message("Đồng bộ danh sách Check-in hoàn tất!").build())
+                                .data(response)
+                                .build());
+        }
+}

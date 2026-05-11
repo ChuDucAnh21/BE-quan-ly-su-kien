@@ -1,0 +1,116 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.example:backend >-------------------------
+[INFO] Building Event Management Backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ backend ---
+[INFO] Deleting E:\Do_An_Tot_Nghiep_v2\BackEnd\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 7 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[4,25] package lombok.extern.slf does not exist
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/AppException.java:[12,24] cannot find symbol
+  symbol:   method getMessage()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[14,39] cannot find symbol
+  symbol:   variable LoggerFactory
+  location: class com.example.backend.exception.GlobalExceptionHandler
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[19,49] cannot find symbol
+  symbol:   method builder()
+  location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[20,56] cannot find symbol
+  symbol:   method getCode()
+  location: variable UNCATEGORIZED_EXCEPTION of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[21,59] cannot find symbol
+  symbol:   method getMessage()
+  location: variable UNCATEGORIZED_EXCEPTION of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[28,40] cannot find symbol
+  symbol:   method getErrorCode()
+  location: variable exception of type com.example.backend.exception.AppException
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[29,49] cannot find symbol
+  symbol:   method builder()
+  location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[30,32] cannot find symbol
+  symbol:   method getCode()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[31,35] cannot find symbol
+  symbol:   method getMessage()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[33,47] cannot find symbol
+  symbol:   method getStatusCode()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[47,49] cannot find symbol
+  symbol:   method builder()
+  location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[48,32] cannot find symbol
+  symbol:   method getCode()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[49,35] cannot find symbol
+  symbol:   method getMessage()
+  location: variable errorCode of type com.example.backend.exception.ErrorCode
+[INFO] 14 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.757 s
+[INFO] Finished at: 2026-03-29T09:49:38+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project backend: Compilation failure: Compilation failure: 
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[4,25] package lombok.extern.slf does not exist
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/AppException.java:[12,24] cannot find symbol
+[ERROR]   symbol:   method getMessage()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[14,39] cannot find symbol
+[ERROR]   symbol:   variable LoggerFactory
+[ERROR]   location: class com.example.backend.exception.GlobalExceptionHandler
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[19,49] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[20,56] cannot find symbol
+[ERROR]   symbol:   method getCode()
+[ERROR]   location: variable UNCATEGORIZED_EXCEPTION of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[21,59] cannot find symbol
+[ERROR]   symbol:   method getMessage()
+[ERROR]   location: variable UNCATEGORIZED_EXCEPTION of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[28,40] cannot find symbol
+[ERROR]   symbol:   method getErrorCode()
+[ERROR]   location: variable exception of type com.example.backend.exception.AppException
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[29,49] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[30,32] cannot find symbol
+[ERROR]   symbol:   method getCode()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[31,35] cannot find symbol
+[ERROR]   symbol:   method getMessage()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[33,47] cannot find symbol
+[ERROR]   symbol:   method getStatusCode()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[47,49] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.example.backend.dto.response.ApiResponse
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[48,32] cannot find symbol
+[ERROR]   symbol:   method getCode()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] /E:/Do_An_Tot_Nghiep_v2/BackEnd/src/main/java/com/example/backend/exception/GlobalExceptionHandler.java:[49,35] cannot find symbol
+[ERROR]   symbol:   method getMessage()
+[ERROR]   location: variable errorCode of type com.example.backend.exception.ErrorCode
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
