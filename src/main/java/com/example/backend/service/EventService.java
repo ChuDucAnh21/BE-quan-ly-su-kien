@@ -8,7 +8,9 @@ import com.example.backend.enums.EventStatus;
 public interface EventService {
     
     // Tìm kiếm sự kiện đa năng (dành cho mọi người hoặc list của Organizer)
-    PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category, EventStatus status, Long organizerId);
+    PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category, EventStatus status,
+            Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
+            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree);
     
     // Lấy chi tiết 1 sự kiện
     EventResponse getEventById(Long id);
@@ -24,4 +26,7 @@ public interface EventService {
     
     // Xóa cứng sự kiện ra khỏi hệ thống (Chỉ áp dụng khi chưa bán được vé nào)
     void deleteEvent(Long eventId);
+
+    // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID (Dành cho Admin/Organizer/Staff xem chính mình)
+    PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size);
 }

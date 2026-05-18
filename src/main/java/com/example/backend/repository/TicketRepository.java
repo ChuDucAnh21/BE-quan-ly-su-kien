@@ -36,6 +36,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Tìm danh sách vé của toàn bộ sự kiện này phục vụ Admin/Organizer
     Page<Ticket> findByRegistration_Event_Id(Long eventId, Pageable pageable);
 
+    // Tìm kiếm vé theo keyword (Tên, Email, SĐT, Mã đăng ký)
+    @Query("SELECT t FROM Ticket t WHERE t.registration.event.id = :eventId AND (" +
+           "LOWER(t.registration.user.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(t.registration.user.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(t.registration.user.phone) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(t.registration.registrationCode) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Ticket> findByEventIdAndSearch(@Param("eventId") Long eventId, @Param("search") String search, Pageable pageable);
+
     // Tìm danh sách vé mà khách hàng sở hữu
     // SQL: SELECT * FROM tickets t
     // JOIN registrations r ON t.registration_id = r.id

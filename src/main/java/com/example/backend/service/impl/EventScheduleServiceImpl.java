@@ -108,29 +108,51 @@ public class EventScheduleServiceImpl implements EventScheduleService {
     public List<EventScheduleResponse> updateSchedules(Long eventId, List<EventScheduleRequest> requests) {
         Event event = getEventAndVerifyOwner(eventId); // Khép góc bảo mật
 
+        // Lấy tất cả lịch trình hiện tại của event từ DB
+        List<EventSchedule> currentSchedules = eventScheduleRepository.findByEventIdOrderByStartTimeAsc(eventId);
+
+        // Tạo tập hợp các ID được truyền lên từ Frontend
+        java.util.Set<Long> requestIds = requests.stream()
+                .map(EventScheduleRequest::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        // 1. XÓA: Lịch trình nào có trong DB nhưng không có trong requestIds (không được truyền lên) thì tiến hành xóa
+        List<EventSchedule> schedulesToDelete = currentSchedules.stream()
+                .filter(schedule -> !requestIds.contains(schedule.getId()))
+                .collect(Collectors.toList());
+        eventScheduleRepository.deleteAll(schedulesToDelete);
+
         List<EventScheduleResponse> results = new ArrayList<>();
 
+        // 2. THÊM MỚI hoặc CẬP NHẬT
         for (EventScheduleRequest request : requests) {
-            // Nghiệp vụ cốt lõi: Phải truyền ID mới biết sửa cái nào
-            if (request.getId() == null) {
-                throw new AppException(ErrorCode.SCHEDULE_NOT_FOUND);
-            }
-
-            // Tìm chính xác lịch trình đó trong Event này (Chặn giả mạo ID từ Event khác)
-            EventSchedule schedule = eventScheduleRepository.findByIdAndEventId(request.getId(), eventId)
-                    .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
-
-            // Kiểm tra giới hạn thời gian trước khi ghi vào DB
             validateScheduleTimeBounds(event, request);
 
-            // Chỉ cập nhật đúng các trường dữ liệu, không đụng vào ID hay Event
-            schedule.setTitle(request.getTitle());
-            schedule.setStartTime(request.getStartTime());
-            schedule.setEndTime(request.getEndTime());
-            schedule.setDescription(request.getDescription());
+            if (request.getId() == null) {
+                // THÊM MỚI bổ sung
+                EventSchedule newSchedule = EventSchedule.builder()
+                        .event(event)
+                        .title(request.getTitle())
+                        .startTime(request.getStartTime())
+                        .endTime(request.getEndTime())
+                        .description(request.getDescription())
+                        .build();
+                results.add(mapToResponse(eventScheduleRepository.save(newSchedule)));
+            } else {
+                // CẬP NHẬT lịch trình đã có
+                EventSchedule existingSchedule = currentSchedules.stream()
+                        .filter(s -> s.getId().equals(request.getId()))
+                        .findFirst()
+                        .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
 
-            EventSchedule saved = eventScheduleRepository.save(schedule);
-            results.add(mapToResponse(saved));
+                existingSchedule.setTitle(request.getTitle());
+                existingSchedule.setStartTime(request.getStartTime());
+                existingSchedule.setEndTime(request.getEndTime());
+                existingSchedule.setDescription(request.getDescription());
+
+                results.add(mapToResponse(eventScheduleRepository.save(existingSchedule)));
+            }
         }
 
         return results;

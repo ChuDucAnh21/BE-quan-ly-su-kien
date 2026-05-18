@@ -47,6 +47,7 @@ public class EventServiceImpl implements EventService {
 
     // Dùng để lấy danh sách lịch trình con khi trả về chi tiết sự kiện
     private final EventScheduleRepository eventScheduleRepository;
+    private final com.example.backend.repository.EventStaffAssignmentRepository eventStaffAssignmentRepository;
 
     // Helper: Lấy User đang đăng nhập dựa trên email trong Token
     private User getCurrentUser() {
@@ -87,7 +88,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category,
-            EventStatus status, Long organizerId) {
+            EventStatus status, Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
+            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree) {
         // Tự động sắp xếp mới nhất lên đầu
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -120,7 +122,7 @@ public class EventServiceImpl implements EventService {
         }
 
         Page<Event> eventPage = eventRepository.searchEvents(finalKeyword, finalCategory, finalStatus, organizerId,
-                pageable);
+                startTime, endTime, minPrice, maxPrice, isFree, pageable);
 
         List<EventResponse> responses = eventPage.getContent().stream()
                 .map(this::mapToEventResponse)
@@ -351,5 +353,35 @@ public class EventServiceImpl implements EventService {
             eventRepository.delete(event);
             log.info("Đã xóa vĩnh viễn EVENT_ID {} ra khỏi hệ thống", eventId);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size) {
+        User currentUser = getCurrentUser();
+        
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isOrganizer = currentUser.getRole() == Role.ORGANIZER;
+        boolean isSelf = currentUser.getId().equals(staffId);
+        
+        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất kỳ ai
+        if (!isAdmin && !isOrganizer && !isSelf) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffId(staffId, pageable);
+        
+        List<EventResponse> data = eventPage.getContent().stream()
+                .map(this::mapToEventResponse)
+                .collect(Collectors.toList());
+                
+        return PageResponse.<EventResponse>builder()
+                .currentPage(eventPage.getNumber())
+                .totalPages(eventPage.getTotalPages())
+                .pageSize(eventPage.getSize())
+                .totalElements(eventPage.getTotalElements())
+                .data(data)
+                .build();
     }
 }

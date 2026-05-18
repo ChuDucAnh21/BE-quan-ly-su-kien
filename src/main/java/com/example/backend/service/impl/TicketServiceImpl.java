@@ -49,7 +49,7 @@ public class TicketServiceImpl implements TicketService {
 
         @Override
         @Transactional(readOnly = true)
-        public Page<TicketResponse> getTicketsByEventId(Long eventId, Pageable pageable) {
+        public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword, Pageable pageable) {
                 // 1. Kiểm tra quyền sở hữu sự kiện
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
@@ -66,7 +66,13 @@ public class TicketServiceImpl implements TicketService {
                 }
 
                 // 2. Fetch data và Mapping
-                Page<Ticket> tickets = ticketRepository.findByRegistration_Event_Id(eventId, pageable);
+                Page<Ticket> tickets;
+                if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+                        tickets = ticketRepository.findByEventIdAndSearch(eventId, searchKeyword.trim(), pageable);
+                } else {
+                        tickets = ticketRepository.findByRegistration_Event_Id(eventId, pageable);
+                }
+
                 return tickets.map(t -> {
                         User buyer = t.getRegistration().getUser();
                         return TicketResponse.builder()
@@ -74,9 +80,15 @@ public class TicketServiceImpl implements TicketService {
                                         .qrCode(null) // Ẩn mã gốc để chống nội gián đánh cắp vé
                                         .hashedQrCode(t.getHashedQrCode()) // Chỉ trả mã băm cho App Staff đồng bộ
                                         .eventId(eventId)
+                                        .registrationCode(t.getRegistration().getRegistrationCode())
+                                        .phoneNumber(t.getRegistration().getUser().getPhone())
+                                        .ticketPrice(t.getRegistration().getEvent().getTicketPrice())
                                         .userId(buyer.getId())
                                         .userEmail(buyer.getEmail())
                                         .userFullName(buyer.getFullName())
+                                        .genderUser(buyer.getGender())
+                                        .avatarUrlUser(buyer.getAvatarUrl())
+                                        .addressUser(buyer.getAddress())
                                         .status(t.getStatus())
                                         .checkedInAt(t.getCheckedInAt() != null ? t.getCheckedInAt() : null)
                                         .issuedAt(t.getIssuedAt())
@@ -106,6 +118,13 @@ public class TicketServiceImpl implements TicketService {
                         log.warn("Hành khách quét vé bị hủy (Do khách đổi ý hủy đơn miễn phí): {}",
                                         request.getQrCode());
                         throw new AppException(ErrorCode.TICKET_INVALID);
+                }
+
+                // Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
+                if (!ticket.getRegistration().getEvent().getId().equals(request.getEventId())) {
+                        log.warn("CẢNH BÁO QUÉT SAI SỰ KIỆN: Nhân viên quét mã {} nhưng vé này thuộc về Sự kiện ID: {}",
+                                        request.getQrCode(), ticket.getRegistration().getEvent().getId());
+                        throw new AppException(ErrorCode.WRONG_EVENT_TICKET);
                 }
 
                 // 3. Kỹ thuật kiểm tra quyền của người soát vé.
@@ -153,6 +172,8 @@ public class TicketServiceImpl implements TicketService {
                                 .userId(buyer.getId())
                                 .userEmail(buyer.getEmail())
                                 .userFullName(buyer.getFullName())
+                                .genderUser(buyer.getGender())
+                                .addressUser(buyer.getAddress())
                                 .status(ticket.getStatus())
                                 .issuedAt(ticket.getIssuedAt())
                                 .checkedInAt(ticket.getCheckedInAt())
@@ -174,7 +195,8 @@ public class TicketServiceImpl implements TicketService {
                 // Gọi proxy (self) để đảm bảo Transaction độc lập
                 for (String hashedQrCode : request.getHashedQrCodes()) {
                         try {
-                                TicketResponse res = self.processSingleBatchCheckIn(hashedQrCode, email);
+                                TicketResponse res = self.processSingleBatchCheckIn(hashedQrCode, request.getEventId(),
+                                                email);
                                 successfulTickets.add(res);
                                 successfulCount++;
                         } catch (Exception e) {
@@ -198,7 +220,7 @@ public class TicketServiceImpl implements TicketService {
 
         // hàm này dùng để check in từng vé một khi không có mạng
         @Transactional(propagation = Propagation.REQUIRES_NEW)
-        public TicketResponse processSingleBatchCheckIn(String hashedQrCode, String staffEmail) {
+        public TicketResponse processSingleBatchCheckIn(String hashedQrCode, Long eventId, String staffEmail) {
                 // 1. Tìm vé theo mã băm với Khóa bi quan
                 Ticket ticket = ticketRepository.findByHashedQrCodeWithLock(hashedQrCode)
                                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
@@ -211,12 +233,17 @@ public class TicketServiceImpl implements TicketService {
                         throw new AppException(ErrorCode.TICKET_INVALID);
                 }
 
+                if (!ticket.getRegistration().getEvent().getId().equals(eventId)) {
+                        throw new AppException(ErrorCode.WRONG_EVENT_TICKET);
+                }
+
                 // 3. Phân quyền
-                Long eventId = ticket.getRegistration().getEvent().getId();
+                Long ticketEventId = ticket.getRegistration().getEvent().getId();
                 boolean isAdmin = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
                 boolean isOrganizer = ticket.getRegistration().getEvent().getOrganizer().getEmail().equals(staffEmail);
-                boolean isAssignedStaff = staffAssignmentRepository.existsByEventIdAndStaff_Email(eventId, staffEmail);
+                boolean isAssignedStaff = staffAssignmentRepository.existsByEventIdAndStaff_Email(ticketEventId,
+                                staffEmail);
 
                 if (!isAdmin && !isOrganizer && !isAssignedStaff) {
                         throw new AppException(ErrorCode.ACCESS_DENIED);
@@ -248,6 +275,8 @@ public class TicketServiceImpl implements TicketService {
                                 .userId(buyer.getId())
                                 .userEmail(buyer.getEmail())
                                 .userFullName(buyer.getFullName())
+                                .genderUser(buyer.getGender())
+                                .addressUser(buyer.getAddress())
                                 .status(ticket.getStatus())
                                 .issuedAt(ticket.getIssuedAt())
                                 .checkedInAt(ticket.getCheckedInAt())
@@ -269,13 +298,50 @@ public class TicketServiceImpl implements TicketService {
                                 .eventId(t.getRegistration().getEvent().getId())
                                 .eventTitle(t.getRegistration().getEvent().getTitle())
                                 .ticketPrice(t.getRegistration().getEvent().getTicketPrice())
+                                .registrationCode(t.getRegistration().getRegistrationCode())
                                 .userId(t.getRegistration().getUser().getId())
                                 .registrationId(t.getRegistration().getId())
                                 .userEmail(t.getRegistration().getUser().getEmail())
                                 .userFullName(t.getRegistration().getUser().getFullName())
+                                .genderUser(t.getRegistration().getUser().getGender())
+                                .avatarUrlUser(t.getRegistration().getUser().getAvatarUrl())
+                                .addressUser(t.getRegistration().getUser().getAddress())
+                                .phoneNumber(t.getRegistration().getUser().getPhone())
                                 .status(t.getStatus())
                                 .issuedAt(t.getIssuedAt())
                                 .checkedInAt(t.getCheckedInAt() != null ? t.getCheckedInAt() : null)
+                                .build());
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public Page<com.example.backend.dto.response.CheckInLogResponse> getCheckInHistoryByEventId(Long eventId,
+                        Pageable pageable) {
+                String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
+
+                // Kiểm tra quyền: Admin hoặc Organizer của Event hoặc Staff được phân công
+                boolean isAdmin = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isOrganizer = event.getOrganizer().getEmail().equals(email);
+                boolean isAssignedStaff = staffAssignmentRepository.existsByEventIdAndStaff_Email(eventId, email);
+
+                if (!isAdmin && !isOrganizer && !isAssignedStaff) {
+                        throw new AppException(ErrorCode.ACCESS_DENIED);
+                }
+
+                Page<CheckInLog> logs = checkInLogRepository
+                                .findByTicket_Registration_Event_IdOrderByCreatedAtDesc(eventId, pageable);
+
+                return logs.map(log -> com.example.backend.dto.response.CheckInLogResponse.builder()
+                                .id(log.getId())
+                                .hashedQrCode(log.getTicket().getHashedQrCode())
+                                .customerEmail(log.getTicket().getRegistration().getUser().getEmail())
+                                .customerFullName(log.getTicket().getRegistration().getUser().getFullName())
+                                .checkedInAt(log.getCreatedAt())
+                                .staffEmail(log.getCheckedInBy().getEmail())
+                                .checkInMethod(log.getMethod().name())
                                 .build());
         }
 }

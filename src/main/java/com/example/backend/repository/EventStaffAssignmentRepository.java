@@ -18,4 +18,8 @@ public interface EventStaffAssignmentRepository extends JpaRepository<EventStaff
     Optional<EventStaffAssignment> findByEventIdAndStaffId(Long eventId, Long staffId);
 
     boolean existsByEventIdAndStaff_Email(Long eventId, String email);
+
+    // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID (Dành cho Admin/Organizer/Staff xem của chính mình)
+    @org.springframework.data.jpa.repository.Query("SELECT e.event FROM EventStaffAssignment e WHERE e.staff.id = :staffId")
+    org.springframework.data.domain.Page<com.example.backend.entity.Event> findEventsByStaffId(@org.springframework.data.repository.query.Param("staffId") Long staffId, org.springframework.data.domain.Pageable pageable);
 }

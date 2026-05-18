@@ -1,5 +1,6 @@
 package com.example.backend.dto.response;
 
+import com.example.backend.enums.Gender;
 import com.example.backend.enums.TicketStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +23,13 @@ public class TicketResponse {
     private BigDecimal ticketPrice;
     private Long userId;
     private Long registrationId;
+    private String registrationCode;
     private String userEmail;
     private String userFullName;
+    private Gender genderUser;
+    private String avatarUrlUser;
+    private String addressUser;
+    private String phoneNumber;
     private TicketStatus status;
     private LocalDateTime checkedInAt;
     private LocalDateTime issuedAt;

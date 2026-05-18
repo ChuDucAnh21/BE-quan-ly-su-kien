@@ -160,13 +160,13 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ---
 
-## 2. MODULE PROFILE CÁ NHÂN (`/users/me`)
+## 2. MODULE PROFILE CÁ NHÂN (`/users/profile`)
 
 > **Yêu cầu:** Gửi kèm Token trong Header `Authorization: Bearer <token>` hoặc Cookie.
 
 ### 2.1. Lấy thông tin tài khoản hiện tại (Get My Profile)
 
-- **Method:** `GET /users/me`
+- **Method:** `GET /users/profile`
 - **Response (200 OK):**
   ```json
   {
@@ -189,7 +189,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.2. Cập nhật thông tin cơ bản (Update Profile)
 
-- **Method:** `PUT /users/me`
+- **Method:** `PUT /users/profile`
 - **Request Body:**
   ```json
   {
@@ -218,7 +218,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.3. Cập nhật Ảnh đại diện (Update Avatar)
 
-- **Method:** `PUT /users/me/avatar`
+- **Method:** `PUT /users/profile/avatar`
 - **Content-Type:** `multipart/form-data`
 - **Param:** `file` (Multipart image file — JPG/PNG)
 - **Response (200 OK):**
@@ -231,7 +231,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.4. Đổi mật khẩu (Change Password)
 
-- **Method:** `PUT /users/me/password`
+- **Method:** `PUT /users/profile/password`
 - **Request Body:**
   ```json
   {
@@ -251,7 +251,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.5. Tự khóa / Xóa tài khoản của chính mình (Soft Delete)
 
-- **Method:** `DELETE /users/me`
+- **Method:** `DELETE /users/profile-block`
 - **Mô tả:** Chuyển trạng thái User thành `LOCKED` (không xóa khỏi DB). Tài khoản bị khóa sẽ không thể đăng nhập.
 - **Response (200 OK):**
   ```json
@@ -375,6 +375,11 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   - `category`: Lọc theo danh mục.
   - `status`: Lọc theo Trạng thái (DRAFT, PUBLISHED...).
   - `organizerId`: Bỏ vào ID của một Organizer cụ thể để lấy luồng sự kiện của họ. Nếu là Admin thì không cần truyền tham số này để lấy tất cả sự kiện.
+  - `startTime`: Lọc sự kiện bắt đầu từ thời điểm này (Format chuẩn ISO: `2024-12-31T20:00:00`).
+  - `endTime`: Lọc sự kiện kết thúc trước thời điểm này (Format chuẩn ISO).
+  - `minPrice`: Giá vé tối thiểu.
+  - `maxPrice`: Giá vé tối đa.
+  - `isFree`: (Boolean) `true` để lọc vé miễn phí (giá = 0), `false` để lọc vé có phí (giá > 0).
 - **Bảo mật ngầm:** Nếu 1 tài khoản ẩn danh gọi API này nhưng truyền `status=DRAFT`, hệ thống tự động khóa lại và sẽ chèn ép chọc lệnh thành `status=PUBLISHED` nhằm ngăn chặn tính trạng Hacker rình rập xem lén sự kiện mật.
 - **Response (200 OK):**
   ```json
@@ -597,7 +602,10 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 ### 4.9. Cập nhật Lịch trình con theo ID (Organizer)
 
 - **Method:** `PUT /events/{eventId}/schedules`
-- **Mô tả:** Nhận vào một _Mảng_ (`Array`) các lịch trình cần cập nhật. Mỗi phần tử trong mảng **bắt buộc phải có trường `id`** để Backend xác định đúng lịch trình cần sửa. Backend sẽ tìm đúng lịch trình theo `id` đó và chỉ set lại các trường dữ liệu (`title`, `startTime`, `endTime`, `description`). **ID gốc không thay đổi.**
+- **Mô tả:** Cơ chế đồng bộ Lịch trình con (Sync). Nhận vào một _Mảng_ (`Array`) chứa tất cả lịch trình bạn muốn có trong sự kiện này.
+  - Nếu phần tử **chưa có `id` (id = null)**: Hệ thống sẽ **Thêm mới**.
+  - Nếu phần tử **đã có `id`**: Hệ thống sẽ **Cập nhật** thông tin.
+  - Các lịch trình đang nằm trong Database nhưng **không xuất hiện trong mảng gửi lên** sẽ bị hệ thống **Xoá**.
 - **Quyền:** `ORGANIZER` hiện đang làm chủ Sự kiện này.
 - **Request Body:**
   ```json
@@ -619,7 +627,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   ]
   ```
 - **Lỗi:**
-  - `400` - `SCHEDULE_NOT_FOUND`: Thiếu `id` trong một phần tử hoặc ID không thuộc về sự kiện này.
+  - `400` - `SCHEDULE_NOT_FOUND`: ID truyền lên không thuộc về sự kiện này.
   - `400` - `TIME_OUT_OF_EVENT_BOUNDS`: Thời gian vượt ra ngoài khuôn khổ sự kiện.
 
 ### 4.10. Xóa sạch Lịch trình con (Organizer)
@@ -655,7 +663,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 ### 5.1. Lấy toàn bộ danh sách Staff hệ thống (Admin & Organizer)
 
-- **Method:** `GET /users/staffs`
+- **Method:** `GET /users/staff-list`
 - **Mô tả:** Lấy rổ nhân viên có quyền `STAFF` đang `ACTIVE` trên toàn hệ thống để Organizer chọn lựa lúc phân công.
 - **Quyền:** `ADMIN` hoặc `ORGANIZER`.
 - **Response (200 OK):**
@@ -698,6 +706,18 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Method:** `DELETE /events/{eventId}/staffs/{staffId}`
 - **Mô tả:** Xoá thẻ phụ trách (Staff Assignment) của nhân viên này ra khỏi Event (hỗ trợ cho chức năng xoá nhanh nếu Organizer ấn nhầm trên UI thay vì gửi mảng để đồng bộ).
 - **Quyền:** `ORGANIZER` hiện đang làm chủ Sự kiện này.
+
+### 5.5. Xem danh sách Sự kiện phân công của 1 Staff (Dành cho Admin/Organizer/Staff)
+
+- **Method:** `GET /events/assigned-to-staff/{staffId}`
+- **Mô tả:** 
+  - Nhân viên (Staff) tự truyền ID của mình để xem danh sách các sự kiện được phân công.
+  - Ban quản trị (Admin) hoặc Người tổ chức (Organizer) có thể truyền ID của bất kỳ Staff nào để quản lý lịch trình.
+- **Quyền:** `ADMIN`, `ORGANIZER` hoặc `STAFF` (chỉ được xem của chính mình).
+- **Query Params:**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Kích thước (Mặc định `10`).
+- **Response (200 OK):** Trả về danh sách Sự kiện (EventResponse) có phân trang `PageResponse`.
 
 ---
 
@@ -754,11 +774,14 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
       "message": "Đăng ký thành công. Vui lòng thanh toán nếu cần."
     },
     "data": {
-      "id": 100,
+      "registrationId": 100,
       "eventId": 1,
+      "eventStartTime": "2024-12-31T20:00:00",
+      "userId": 5,
       "registrationCode": "ABC123XY",
       "status": "PENDING_PAYMENT",
-      "checkoutUrl": "https://payos.vn/checkout/ORDER-XXXXX", // đây là link thank toán PAYOS
+      "createdAt": "2024-05-30T10:00:00",
+      "checkoutUrl": "https://payos.vn/checkout/ORDER-XXXXX", // đây là link thanh toán PAYOS
       "orderCode": "ORDER-XXXXX",
       "amount": 500000.0
     }
@@ -855,14 +878,16 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
     },
     "data": [
       {
-        "id": 105,
+        "registrationId": 105,
         "eventId": 1,
+        "eventStartTime": "2024-12-31T20:00:00",
+        "userId": 5,
         "registrationCode": "REG-ABCXYZ",
         "status": "PENDING_PAYMENT",
+        "createdAt": "2024-05-30T10:00:00",
         "checkoutUrl": "https://payos.vn/checkout/...",
         "orderCode": "ORDER-...",
-        "amount": 500000.0,
-        "createdAt": "2024-05-30T10:00:00"
+        "amount": 500000.0
       }
     ]
   }
@@ -882,21 +907,62 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
   {
     "status": {
       "code": 200,
-      "message": "Lấy danh sách vé cá nhân thành công",
-      "label": "API_STATUS_SUCCESS"
+      "message": "Lấy danh sách vé thành công"
     },
-    "data": [
-      {
-        "id": 1,
-        "qrCode": "c4d32a8-12ab-...",
-        "eventId": 1,
-        "userId": 5,
-        "userEmail": "khachhang@gmail.com",
-        "userFullName": "Nguyen Van A",
-        "status": "ACTIVE",
-        "issuedAt": "2024-05-20T10:00:00"
-      }
-    ]
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "pageSize": 10,
+      "totalElements": 2,
+      "data": [
+        {
+          "id": 1,
+          "qrCode": "c4d32a8-12ab-...",
+          "hashedQrCode": null,
+          "eventId": 1,
+          "eventTitle": "Lễ hội Âm nhạc mùa hè",
+          "ticketPrice": 500000.0,
+          "userId": 5,
+          "registrationId": 100,
+          "userEmail": "khachhang@gmail.com",
+          "userFullName": "Nguyen Van A",
+          "status": "ACTIVE",
+          "checkedInAt": null,
+          "issuedAt": "2024-05-20T10:00:00"
+        }
+      ]
+    }
+  }
+  ```
+
+### 7.1.5. Lấy lịch sử Check-in (Check-in History)
+
+- **Method:** `GET /api/v1/events/{eventId}/checkin-history`
+- **Mô tả:** Lấy danh sách lịch sử các mã QR đã được quét qua cổng.
+- **Quyền:** `ADMIN`, hoặc `ORGANIZER` tạo ra sự kiện, hoặc `STAFF` được phân công.
+- **Query Params:**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Kích thước (Mặc định `10`).
+- **Response (200 OK):**
+  ```json
+  {
+    "status": { "code": 200, "message": "Lấy lịch sử Check-in thành công" },
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "totalElements": 5,
+      "data": [
+        {
+          "id": 1,
+          "hashedQrCode": "e3b0c4429...",
+          "customerEmail": "khachhang@gmail.com",
+          "customerFullName": "Nguyen Van A",
+          "checkedInAt": "2024-05-20T10:05:00",
+          "staffEmail": "staff@gmail.com",
+          "checkInMethod": "QR"
+        }
+      ]
+    }
   }
   ```
 
@@ -908,6 +974,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Query Params:**
   - `page`: Trang hiện tại (Mặc định `0`).
   - `size`: Kích thước (Mặc định `10`).
+  - `search`: Từ khóa tìm kiếm (Tùy chọn - Lọc theo tên, email, số điện thoại, hoặc mã đăng ký).
 - **Response (200 OK):**
   ```json
   {
@@ -915,6 +982,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
     "data": {
       "currentPage": 0,
       "totalPages": 2,
+      "pageSize": 10,
       "totalElements": 20,
       "data": [
         {
@@ -922,10 +990,16 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
           "qrCode": null,
           "hashedQrCode": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "eventId": 1,
+          "eventTitle": "Lễ hội Âm nhạc mùa hè",
+          "ticketPrice": 500000.0,
           "userId": 5,
+          "registrationId": 100,
+          "registrationCode": "REG-ABCXYZ",
           "userEmail": "khachhang@gmail.com",
           "userFullName": "Nguyen Van A",
+          "phoneNumber": "0912345678",
           "status": "ACTIVE",
+          "checkedInAt": null,
           "issuedAt": "2024-05-20T10:00:00"
         }
       ]
@@ -949,13 +1023,22 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
   {
     "status": {
       "code": 200,
-      "message": "Check-in thành công! Khách hàng có thể qua cửa."
+      "message": "Check-in thành công! Cổng mở."
     },
     "data": {
       "id": 1,
-      "qrCode": "c4d32a8-12ab-...",
+      "qrCode": null,
+      "hashedQrCode": "e3b0c44298fc1c14...",
+      "eventId": 1,
+      "eventTitle": "Lễ hội Âm nhạc mùa hè",
+      "ticketPrice": 500000.0,
+      "userId": 5,
+      "registrationId": 100,
+      "userEmail": "khachhang@gmail.com",
+      "userFullName": "Nguyen Van A",
       "status": "USED",
-      "userFullName": "Nguyen Van A"
+      "checkedInAt": "2024-05-20T19:30:00",
+      "issuedAt": "2024-05-20T10:00:00"
     }
   }
   ```

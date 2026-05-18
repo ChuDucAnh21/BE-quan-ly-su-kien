@@ -30,10 +30,11 @@ public class TicketController {
         public ResponseEntity<ApiResponse<PageResponse<TicketResponse>>> getTicketsByEvent(
                         @PathVariable Long eventId,
                         @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(required = false) String search) {
 
                 Pageable pageable = PageRequest.of(page, size);
-                Page<TicketResponse> ticketPage = ticketService.getTicketsByEventId(eventId, pageable);
+                Page<TicketResponse> ticketPage = ticketService.getTicketsCustomerByEventId(eventId, search, pageable);
 
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
                                 .currentPage(ticketPage.getNumber())
@@ -52,27 +53,51 @@ public class TicketController {
 
         // 2. Khách hàng tự lấy danh sách vé của mình
         @GetMapping("/tickets/my-tickets")
-        @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-        public ResponseEntity<ApiResponse<PageResponse<TicketResponse>>> getMyTickets(
+        @PreAuthorize("isAuthenticated()") // User nào cũng lấy được vé của chính mình
+        public ApiResponse<PageResponse<TicketResponse>> getMyTickets(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size) {
-
                 Pageable pageable = PageRequest.of(page, size);
-                Page<TicketResponse> ticketPage = ticketService.getMyTickets(pageable);
-
+                Page<TicketResponse> dataPage = ticketService.getMyTickets(pageable);
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
-                                .currentPage(ticketPage.getNumber())
-                                .totalPages(ticketPage.getTotalPages())
-                                .pageSize(ticketPage.getSize())
-                                .totalElements(ticketPage.getTotalElements())
-                                .data(ticketPage.getContent())
+                                .currentPage(dataPage.getNumber())
+                                .totalPages(dataPage.getTotalPages())
+                                .pageSize(dataPage.getSize())
+                                .totalElements(dataPage.getTotalElements())
+                                .data(dataPage.getContent())
                                 .build();
 
-                return ResponseEntity.ok(ApiResponse.<PageResponse<TicketResponse>>builder()
-                                .status(ApiResponse.Status.builder().code(200)
-                                                .message("Lấy danh sách vé cá nhân thành công").build())
+                return ApiResponse.<PageResponse<TicketResponse>>builder()
+                                .status(ApiResponse.Status.builder().code(200).message("Lấy danh sách vé thành công")
+                                                .build())
                                 .data(pageResponse)
-                                .build());
+                                .build();
+        }
+
+        // Lấy lịch sử Check-in của Sự kiện
+        @GetMapping("/events/{eventId}/checkin-history")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
+        public ApiResponse<PageResponse<com.example.backend.dto.response.CheckInLogResponse>> getCheckInHistory(
+                        @PathVariable("eventId") Long eventId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+                Pageable pageable = PageRequest.of(page, size);
+                Page<com.example.backend.dto.response.CheckInLogResponse> dataPage = ticketService
+                                .getCheckInHistoryByEventId(eventId, pageable);
+                PageResponse<com.example.backend.dto.response.CheckInLogResponse> pageResponse = PageResponse.<com.example.backend.dto.response.CheckInLogResponse>builder()
+                                .currentPage(dataPage.getNumber())
+                                .totalPages(dataPage.getTotalPages())
+                                .pageSize(dataPage.getSize())
+                                .totalElements(dataPage.getTotalElements())
+                                .data(dataPage.getContent())
+                                .build();
+
+                return ApiResponse.<PageResponse<com.example.backend.dto.response.CheckInLogResponse>>builder()
+                                .status(ApiResponse.Status.builder().code(200)
+                                                .message("Lấy lịch sử Check-in thành công")
+                                                .build())
+                                .data(pageResponse)
+                                .build();
         }
 
         // 3. Check-in thông qua Camera Scanner tại cổng

@@ -29,10 +29,15 @@ public class EventController {
                         @RequestParam(required = false) String keyword,
                         @RequestParam(required = false) String category,
                         @RequestParam(required = false) EventStatus status,
-                        @RequestParam(required = false) Long organizerId) {
+                        @RequestParam(required = false) Long organizerId,
+                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startTime,
+                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endTime,
+                        @RequestParam(required = false) java.math.BigDecimal minPrice,
+                        @RequestParam(required = false) java.math.BigDecimal maxPrice,
+                        @RequestParam(required = false) Boolean isFree) {
 
                 PageResponse<EventResponse> data = eventService.getAllEvents(page, size, keyword, category, status,
-                                organizerId);
+                                organizerId, startTime, endTime, minPrice, maxPrice, isFree);
                 return ApiResponse.<PageResponse<EventResponse>>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .message("Lấy danh sách sự kiện thành công")
@@ -119,6 +124,25 @@ public class EventController {
                                 .status(ApiResponse.Status.builder()
                                                 .message("Thao tác loại bỏ sự kiện thành công")
                                                 .build())
+                                .build();
+        }
+
+        /**
+         * 7. Staff/Admin API: Xem danh sách sự kiện được phân công của một Staff cụ thể
+         * (Staff chỉ được xem của chính mình, Admin/Organizer được xem của tất cả)
+         */
+        @GetMapping("/events/assigned-to-staff/{staffId}")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
+        public ApiResponse<PageResponse<EventResponse>> getAssignedEventsByStaffId(
+                        @PathVariable Long staffId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+
+                return ApiResponse.<PageResponse<EventResponse>>builder()
+                                .status(ApiResponse.Status.builder()
+                                                .message("Lấy danh sách sự kiện phân công cho nhân viên thành công")
+                                                .build())
+                                .data(eventService.getAssignedEventsByStaffId(staffId, page, size))
                                 .build();
         }
 }

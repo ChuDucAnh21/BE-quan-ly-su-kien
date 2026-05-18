@@ -37,11 +37,21 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                         +
                         "AND (:category IS NULL OR e.category = :category) " +
                         "AND (:status IS NULL OR e.status = :status) " +
-                        "AND (:organizerId IS NULL OR e.organizer.id = :organizerId)")
+                        "AND (:organizerId IS NULL OR e.organizer.id = :organizerId) " +
+                        "AND (CAST(:startTime AS timestamp) IS NULL OR e.startTime >= :startTime) " +
+                        "AND (CAST(:endTime AS timestamp) IS NULL OR e.endTime <= :endTime) " +
+                        "AND (:minPrice IS NULL OR e.ticketPrice >= :minPrice) " +
+                        "AND (:maxPrice IS NULL OR e.ticketPrice <= :maxPrice) " +
+                        "AND (:isFree IS NULL OR (:isFree = true AND e.ticketPrice = 0) OR (:isFree = false AND e.ticketPrice > 0))")
         Page<Event> searchEvents(@Param("keyword") String keyword,
                         @Param("category") String category,
                         @Param("status") EventStatus status,
                         @Param("organizerId") Long organizerId,
+                        @Param("startTime") java.time.LocalDateTime startTime,
+                        @Param("endTime") java.time.LocalDateTime endTime,
+                        @Param("minPrice") java.math.BigDecimal minPrice,
+                        @Param("maxPrice") java.math.BigDecimal maxPrice,
+                        @Param("isFree") Boolean isFree,
                         Pageable pageable);
 
         long countByOrganizer(User organizer);

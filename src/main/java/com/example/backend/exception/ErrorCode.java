@@ -57,7 +57,8 @@ public enum ErrorCode {
         // Lỗi liên quan đến Check-in & Ticketing (Phase 9)
         TICKET_NOT_FOUND(404, "Mã vé không tồn tại", HttpStatus.NOT_FOUND),
         TICKET_ALREADY_USED(400, "Vé ĐÃ ĐƯỢC CHECK-IN (Cảnh báo quét lặp)", HttpStatus.BAD_REQUEST),
-        TICKET_INVALID(400, "Vé KHÔNG HỢP LỆ hoặc đã bị hệ thống hủy", HttpStatus.BAD_REQUEST);
+        TICKET_INVALID(400, "Vé KHÔNG HỢP LỆ hoặc đã bị hệ thống hủy", HttpStatus.BAD_REQUEST),
+        WRONG_EVENT_TICKET(400, "CẢNH BÁO: Vé hợp lệ nhưng KHÔNG THUỘC SỰ KIỆN NÀY!", HttpStatus.BAD_REQUEST);
 
         private final int code; // Mã lỗi nội bộ để Frontend dễ xử lý logic
         private final String message; // Thông báo hiển thị cho người dùng
