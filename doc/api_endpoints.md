@@ -943,6 +943,10 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Query Params:**
   - `page`: Trang hiện tại (Mặc định `0`).
   - `size`: Kích thước (Mặc định `10`).
+  - `search`: Từ khóa tìm kiếm (Lọc theo tên khách, email, mã đăng ký, mã băm QR). (Tùy chọn)
+  - `method`: Phương thức check-in (`QR` hoặc `MANUAL`). (Tùy chọn)
+  - `fromDate`: Thời gian bắt đầu (Ví dụ: `2024-05-01T00:00:00`). (Tùy chọn)
+  - `toDate`: Thời gian kết thúc (Ví dụ: `2024-05-31T23:59:59`). (Tùy chọn)
 - **Response (200 OK):**
   ```json
   {

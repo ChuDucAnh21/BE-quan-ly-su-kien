@@ -80,10 +80,14 @@ public class TicketController {
         public ApiResponse<PageResponse<com.example.backend.dto.response.CheckInLogResponse>> getCheckInHistory(
                         @PathVariable("eventId") Long eventId,
                         @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(required = false) com.example.backend.enums.CheckInMethod method,
+                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fromDate,
+                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime toDate) {
                 Pageable pageable = PageRequest.of(page, size);
                 Page<com.example.backend.dto.response.CheckInLogResponse> dataPage = ticketService
-                                .getCheckInHistoryByEventId(eventId, pageable);
+                                .getCheckInHistoryByEventId(eventId, search, method, fromDate, toDate, pageable);
                 PageResponse<com.example.backend.dto.response.CheckInLogResponse> pageResponse = PageResponse.<com.example.backend.dto.response.CheckInLogResponse>builder()
                                 .currentPage(dataPage.getNumber())
                                 .totalPages(dataPage.getTotalPages())

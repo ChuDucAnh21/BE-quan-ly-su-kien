@@ -24,6 +24,6 @@ public interface TicketService {
     // API Lấy danh sách vé của chính khách hàng đang đăng nhập
     Page<TicketResponse> getMyTickets(Pageable pageable);
 
-    // API Lấy lịch sử Check-in của Sự kiện
-    Page<CheckInLogResponse> getCheckInHistoryByEventId(Long eventId, Pageable pageable);
+    // API Lấy lịch sử Check-in của Sự kiện có hỗ trợ bộ lọc
+    Page<CheckInLogResponse> getCheckInHistoryByEventId(Long eventId, String search, com.example.backend.enums.CheckInMethod method, java.time.LocalDateTime fromDate, java.time.LocalDateTime toDate, Pageable pageable);
 }

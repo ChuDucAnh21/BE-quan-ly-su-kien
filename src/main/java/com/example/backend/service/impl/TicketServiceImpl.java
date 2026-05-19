@@ -316,7 +316,8 @@ public class TicketServiceImpl implements TicketService {
         @Override
         @Transactional(readOnly = true)
         public Page<com.example.backend.dto.response.CheckInLogResponse> getCheckInHistoryByEventId(Long eventId,
-                        Pageable pageable) {
+                        String search, com.example.backend.enums.CheckInMethod method, java.time.LocalDateTime fromDate,
+                        java.time.LocalDateTime toDate, Pageable pageable) {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
                                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
@@ -331,8 +332,16 @@ public class TicketServiceImpl implements TicketService {
                         throw new AppException(ErrorCode.ACCESS_DENIED);
                 }
 
-                Page<CheckInLog> logs = checkInLogRepository
-                                .findByTicket_Registration_Event_IdOrderByCreatedAtDesc(eventId, pageable);
+                String searchTrimmed = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+
+                Page<CheckInLog> logs;
+                if (searchTrimmed != null || method != null || fromDate != null || toDate != null) {
+                        logs = checkInLogRepository.findCheckInHistoryWithFilters(eventId, searchTrimmed, method,
+                                        fromDate, toDate, pageable);
+                } else {
+                        logs = checkInLogRepository.findByTicket_Registration_Event_IdOrderByCreatedAtDesc(eventId,
+                                        pageable);
+                }
 
                 return logs.map(log -> com.example.backend.dto.response.CheckInLogResponse.builder()
                                 .id(log.getId())
@@ -341,6 +350,7 @@ public class TicketServiceImpl implements TicketService {
                                 .customerFullName(log.getTicket().getRegistration().getUser().getFullName())
                                 .checkedInAt(log.getCreatedAt())
                                 .staffEmail(log.getCheckedInBy().getEmail())
+                                .staffFullName(log.getCheckedInBy().getFullName())
                                 .checkInMethod(log.getMethod().name())
                                 .build());
         }
