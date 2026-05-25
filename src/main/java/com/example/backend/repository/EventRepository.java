@@ -67,12 +67,26 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         @Query("SELECT e.status as status, COUNT(e) as count FROM Event e GROUP BY e.status")
         List<Object[]> countGroupByStatus();
 
+        /** Phân loại theo trạng thái, có lọc khoảng thời gian */
+        @Query("SELECT e.status as status, COUNT(e) as count FROM Event e " +
+               "WHERE e.createdAt BETWEEN :startDate AND :endDate " +
+               "GROUP BY e.status")
+        List<Object[]> countGroupByStatusInRange(@Param("startDate") java.time.LocalDateTime startDate,
+                                                  @Param("endDate") java.time.LocalDateTime endDate);
+
         /**
          * Đếm số lượng sự kiện theo từng Danh mục (Bar Chart ngang).
          * Kết quả: [{ category: "Âm nhạc", count: 45 }, ...]
          */
         @Query("SELECT e.category as category, COUNT(e) as count FROM Event e GROUP BY e.category ORDER BY COUNT(e) DESC")
         List<Object[]> countGroupByCategory();
+
+        /** Phân loại theo danh mục, có lọc khoảng thời gian */
+        @Query("SELECT e.category as category, COUNT(e) as count FROM Event e " +
+               "WHERE e.createdAt BETWEEN :startDate AND :endDate " +
+               "GROUP BY e.category ORDER BY COUNT(e) DESC")
+        List<Object[]> countGroupByCategoryInRange(@Param("startDate") java.time.LocalDateTime startDate,
+                                                    @Param("endDate") java.time.LocalDateTime endDate);
 
         /**
          * Đếm số lượng sự kiện mới tạo theo từng Tháng (Column Chart).
@@ -97,4 +111,29 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                 "GROUP BY e.organizer.id, e.organizer.fullName " +
                 "ORDER BY COUNT(e) DESC")
         List<Object[]> findTop5Organizers(org.springframework.data.domain.Pageable pageable);
+
+        /**
+         * Tính tổng Capacity của tất cả sự kiện thuộc về 1 Organizer.
+         * Dùng cho biểu đồ Tỉ lệ lấp đầy. Thay thế findAll() để tránh OOM.
+         */
+        @Query("SELECT COALESCE(SUM(e.capacity), 0) FROM Event e WHERE e.organizer.id = :organizerId")
+        Long sumCapacityByOrganizerId(@Param("organizerId") Long organizerId);
+
+        /** Tổng capacity có lọc khoảng thời gian (theo ngày tạo event) */
+        @Query("SELECT COALESCE(SUM(e.capacity), 0) FROM Event e " +
+               "WHERE e.organizer.id = :organizerId " +
+               "AND e.createdAt BETWEEN :startDate AND :endDate")
+        Long sumCapacityByOrganizerIdInRange(@Param("organizerId") Long organizerId,
+                                              @Param("startDate") java.time.LocalDateTime startDate,
+                                              @Param("endDate") java.time.LocalDateTime endDate);
+
+        /** Top 5 Organizer, có lọc khoảng thời gian */
+        @Query("SELECT e.organizer.fullName as organizerName, COUNT(e) as eventCount " +
+               "FROM Event e " +
+               "WHERE e.createdAt BETWEEN :startDate AND :endDate " +
+               "GROUP BY e.organizer.id, e.organizer.fullName " +
+               "ORDER BY COUNT(e) DESC")
+        List<Object[]> findTop5OrganizersInRange(org.springframework.data.domain.Pageable pageable,
+                                                  @Param("startDate") java.time.LocalDateTime startDate,
+                                                  @Param("endDate") java.time.LocalDateTime endDate);
 }

@@ -14,7 +14,9 @@ import java.math.BigDecimal;
 public class AdminDashboardResponse {
     private long totalUsers;
     private long totalOrganizers;
+    private long totalStaff;
     private long totalEvents;
     private long totalTickets; // Tổng số vé hệ thống đã bán ra (SUCCESS)
-    private BigDecimal totalRevenue; // Tổng luân chuyển dòng tiền qua hệ thống
+    private BigDecimal totalRevenueSuccess; // Tổng luân chuyển dòng tiền thành công qua hệ thống
+    private BigDecimal totalRevenueFail; // Tổng luân chuyển dòng tiền thất bại qua hệ thống
 }

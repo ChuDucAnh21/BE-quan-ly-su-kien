@@ -11,6 +11,8 @@ import com.example.backend.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -54,6 +56,7 @@ public class AdminController {
          *                không điền.
          */
         @GetMapping("/get-all-users")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
         public ApiResponse<PageResponse<UserProfileResponse>> getAllUsers(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
@@ -61,6 +64,13 @@ public class AdminController {
                         @RequestParam(required = false) Role role,
                         @RequestParam(required = false) UserStatus status,
                         @RequestParam(defaultValue = "createdAt,desc") String sort) {
+                
+                // Security check & Role forcing: Organizer chỉ được phép xem list STAFF
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ORGANIZER"))) {
+                        role = Role.STAFF; // Ép buộc Organizer chỉ được xem danh sách STAFF
+                }
+
                 PageResponse<UserProfileResponse> users = adminService.getAllUsers(page, size, search, role, status,
                                 sort);
                 return ApiResponse.<PageResponse<UserProfileResponse>>builder()

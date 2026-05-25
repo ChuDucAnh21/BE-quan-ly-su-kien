@@ -88,4 +88,40 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         List<Object[]> countTicketTypeGroupByMonth(
                         @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
                         @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+
+        // ===========================================================
+        // QUERY THỐNG KÊ THEO SỰ KIỆN CỤ THỂ
+        // ===========================================================
+
+        /** Tổng doanh thu SUCCESS của 1 sự kiện */
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+               "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS'")
+        java.math.BigDecimal sumRevenueByEventId(
+                @org.springframework.data.repository.query.Param("eventId") Long eventId);
+
+        /** Đếm giao dịch theo trạng thái cho 1 sự kiện */
+        @Query("SELECT COUNT(p) FROM Payment p " +
+               "WHERE p.registration.event.id = :eventId AND p.status = :status")
+        long countByEventIdAndStatus(
+                @org.springframework.data.repository.query.Param("eventId") Long eventId,
+                @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+
+        /** Lấy danh sách giao dịch thanh toán của một sự kiện, có phân trang, tìm kiếm và lọc theo khoảng thời gian */
+        @Query("SELECT p FROM Payment p " +
+               "WHERE p.registration.event.id = :eventId " +
+               "AND (:status IS NULL OR p.status = :status) " +
+               "AND (CAST(:startDate AS timestamp) IS NULL OR p.createdAt >= :startDate) " +
+               "AND (CAST(:endDate AS timestamp) IS NULL OR p.createdAt <= :endDate) " +
+               "AND (:keyword IS NULL OR " +
+               "LOWER(p.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+               "LOWER(p.registration.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+               "LOWER(p.registration.user.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+               "LOWER(p.registration.registrationCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+        org.springframework.data.domain.Page<Payment> findPaymentsByEventIdWithFilters(
+                @org.springframework.data.repository.query.Param("eventId") Long eventId,
+                @org.springframework.data.repository.query.Param("keyword") String keyword,
+                @org.springframework.data.repository.query.Param("status") PaymentStatus status,
+                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
+                org.springframework.data.domain.Pageable pageable);
 }

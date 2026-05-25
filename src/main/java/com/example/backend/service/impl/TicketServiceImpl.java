@@ -49,6 +49,7 @@ public class TicketServiceImpl implements TicketService {
 
         @Override
         @Transactional(readOnly = true)
+        // Lấy danh sách vé của khách hàng theo id sự kiện
         public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword, Pageable pageable) {
                 // 1. Kiểm tra quyền sở hữu sự kiện
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -219,6 +220,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         // hàm này dùng để check in từng vé một khi không có mạng
+        @Override
         @Transactional(propagation = Propagation.REQUIRES_NEW)
         public TicketResponse processSingleBatchCheckIn(String hashedQrCode, Long eventId, String staffEmail) {
                 // 1. Tìm vé theo mã băm với Khóa bi quan

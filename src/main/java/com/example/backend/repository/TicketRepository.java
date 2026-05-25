@@ -58,6 +58,50 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Query("SELECT count(t) FROM Ticket t WHERE t.status = :status AND t.registration.event.organizer.id = :organizerId")
     long countByOrganizerAndStatus(@Param("organizerId") Long organizerId, @Param("status") com.example.backend.enums.TicketStatus status);
 
+    /** Đếm vé theo status và organizer, lọc theo khoảng thời gian (issuedAt) */
+    @Query("SELECT COUNT(t) FROM Ticket t " +
+           "WHERE t.registration.event.organizer.id = :organizerId " +
+           "AND t.status = :status " +
+           "AND t.issuedAt BETWEEN :startDate AND :endDate")
+    long countByOrganizerAndStatusInRange(@Param("organizerId") Long organizerId,
+                                           @Param("status") com.example.backend.enums.TicketStatus status,
+                                           @Param("startDate") java.time.LocalDateTime startDate,
+                                           @Param("endDate") java.time.LocalDateTime endDate);
+
+    // Đếm vé của sự kiện Có giá (ticketPrice > 0) dành cho Organizer → Biểu đồ cơ cấu khách
+    @Query("SELECT COUNT(t) FROM Ticket t " +
+           "WHERE t.registration.event.organizer.id = :organizerId " +
+           "AND t.registration.event.ticketPrice > 0 " +
+           "AND t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED)")
+    long countPaidTicketsByOrganizerId(@Param("organizerId") Long organizerId);
+
+    /** Đếm vé trả phí, lọc theo khoảng thời gian */
+    @Query("SELECT COUNT(t) FROM Ticket t " +
+           "WHERE t.registration.event.organizer.id = :organizerId " +
+           "AND t.registration.event.ticketPrice > 0 " +
+           "AND t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED) " +
+           "AND t.issuedAt BETWEEN :startDate AND :endDate")
+    long countPaidTicketsByOrganizerIdInRange(@Param("organizerId") Long organizerId,
+                                               @Param("startDate") java.time.LocalDateTime startDate,
+                                               @Param("endDate") java.time.LocalDateTime endDate);
+
+    // Đếm vé của sự kiện Miễn phí (ticketPrice = 0) dành cho Organizer → Biểu đồ cơ cấu khách
+    @Query("SELECT COUNT(t) FROM Ticket t " +
+           "WHERE t.registration.event.organizer.id = :organizerId " +
+           "AND t.registration.event.ticketPrice = 0 " +
+           "AND t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED)")
+    long countFreeTicketsByOrganizerId(@Param("organizerId") Long organizerId);
+
+    /** Đếm vé miễn phí, lọc theo khoảng thời gian */
+    @Query("SELECT COUNT(t) FROM Ticket t " +
+           "WHERE t.registration.event.organizer.id = :organizerId " +
+           "AND t.registration.event.ticketPrice = 0 " +
+           "AND t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED) " +
+           "AND t.issuedAt BETWEEN :startDate AND :endDate")
+    long countFreeTicketsByOrganizerIdInRange(@Param("organizerId") Long organizerId,
+                                               @Param("startDate") java.time.LocalDateTime startDate,
+                                               @Param("endDate") java.time.LocalDateTime endDate);
+
     // ===========================================================
     // CÁC QUERY THỐNG KÊ CHO DASHBOARD BIỂU ĐỒ
     // ===========================================================
@@ -100,4 +144,39 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             @Param("organizerId") Long organizerId,
             @Param("startDate") java.time.LocalDateTime startDate,
             @Param("endDate") java.time.LocalDateTime endDate);
+
+    // ===========================================================
+    // CÁC QUERY THỐNG KÊ THEO SỰ KIỆN CỤ THỂ
+    // ===========================================================
+
+    /** Đếm vé theo trạng thái cho 1 sự kiện */
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.registration.event.id = :eventId AND t.status = :status")
+    long countByEventIdAndStatus(@Param("eventId") Long eventId,
+                                  @Param("status") com.example.backend.enums.TicketStatus status);
+
+    /** Bán vé theo Ngày cho 1 sự kiện cụ thể (Line Chart) — lọc trong khoảng from/to */
+    @Query("SELECT FUNCTION('DATE_FORMAT', t.issuedAt, '%Y-%m-%d') as date, COUNT(t) as value " +
+           "FROM Ticket t " +
+           "WHERE t.registration.event.id = :eventId " +
+           "AND t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED) " +
+           "AND t.issuedAt BETWEEN :fromDate AND :toDate " +
+           "GROUP BY FUNCTION('DATE_FORMAT', t.issuedAt, '%Y-%m-%d') " +
+           "ORDER BY FUNCTION('DATE_FORMAT', t.issuedAt, '%Y-%m-%d')")
+    List<Object[]> countSoldByDayForEvent(
+            @Param("eventId") Long eventId,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
+
+    /** Tần suất check-in theo giờ cho 1 sự kiện cụ thể (Column Chart) — lọc trong khoảng from/to */
+    @Query("SELECT FUNCTION('HOUR', t.checkedInAt) as hour, COUNT(t) as count " +
+           "FROM Ticket t " +
+           "WHERE t.status = com.example.backend.enums.TicketStatus.USED " +
+           "AND t.registration.event.id = :eventId " +
+           "AND t.checkedInAt BETWEEN :fromDate AND :toDate " +
+           "GROUP BY FUNCTION('HOUR', t.checkedInAt) " +
+           "ORDER BY FUNCTION('HOUR', t.checkedInAt)")
+    List<Object[]> countCheckInByHourForEvent(
+            @Param("eventId") Long eventId,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
 }

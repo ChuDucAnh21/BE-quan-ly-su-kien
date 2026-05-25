@@ -17,199 +17,235 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/dashboards")
 @RequiredArgsConstructor
-@Tag(name = "Dashboards", description = "Các API thống kê phục vụ màn hình Báo cáo (Admin/Organizer)")
+@Tag(name = "Dashboards", description = "Các API thống kê phục vụ màn hình Báo cáo (Admin/Organizer). "
+        + "Tham số `from`/`to` là tùy chọn: nếu không truyền → All-time hoặc 30 ngày gần nhất tuỳ từng API.")
 public class DashboardController {
 
-        private final DashboardService dashboardService;
+    private final DashboardService dashboardService;
 
-        // ============================================================
-        // CÁC API TỔNG QUAN (STATISTIC CARDS)
-        // ============================================================
+    // ============================================================
+    // API TỔNG QUAN (STATISTIC CARDS)
+    // ============================================================
 
-        @Operation(summary = "Thống kê tổng quan Admin",
-                description = "Trả về các chỉ số tổng quan toàn hệ thống (Tổng User, Event, Vé, Doanh thu). Yêu cầu quyền ADMIN.")
-        @GetMapping("/admin")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<AdminDashboardResponse> getAdminDashboard() {
-                return ApiResponse.<AdminDashboardResponse>builder()
-                                .status(ApiResponse.Status.builder().message("Lấy thống kê Admin thành công").build())
-                                .data(dashboardService.getAdminDashboard())
-                                .build();
-        }
+    @Operation(summary = "Thống kê tổng quan Admin", description = "Tổng User, Event, Vé, Doanh thu toàn hệ thống.")
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<AdminDashboardResponse> getAdminDashboard() {
+        return ApiResponse.<AdminDashboardResponse>builder()
+                .status(ApiResponse.Status.builder().message("Lấy thống kê Admin thành công").build())
+                .data(dashboardService.getAdminDashboard())
+                .build();
+    }
 
-        @Operation(summary = "Thống kê tổng quan Organizer",
-                description = "Trả về các chỉ số hiệu suất cá nhân của Organizer. Yêu cầu quyền ORGANIZER.")
-        @GetMapping("/organizer")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<OrganizerDashboardResponse> getOrganizerDashboard() {
-                return ApiResponse.<OrganizerDashboardResponse>builder()
-                                .status(ApiResponse.Status.builder().message("Lấy thống kê Organizer thành công").build())
-                                .data(dashboardService.getOrganizerDashboard())
-                                .build();
-        }
+    @Operation(summary = "Thống kê tổng quan Organizer", description = "Hiệu suất cá nhân của Organizer.")
+    @GetMapping("/organizer")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<OrganizerDashboardResponse> getOrganizerDashboard() {
+        return ApiResponse.<OrganizerDashboardResponse>builder()
+                .status(ApiResponse.Status.builder().message("Lấy thống kê Organizer thành công").build())
+                .data(dashboardService.getOrganizerDashboard())
+                .build();
+    }
 
-        // ============================================================
-        // CÁC API BIỂU ĐỒ ADMIN
-        // ============================================================
+    // ============================================================
+    // BIỂU ĐỒ ADMIN
+    // ============================================================
 
-        @Operation(summary = "[Admin] Cơ cấu tài khoản (Donut Chart)",
-                description = "Trả về tỉ lệ các loại tài khoản: ADMIN, ORGANIZER, STAFF, USER. Không lọc thời gian.")
-        @GetMapping("/admin/role-distribution")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<ChartPointDTO>> getRoleDistribution() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getRoleDistribution())
-                                .build();
-        }
+    @Operation(summary = "[Admin] Cơ cấu tài khoản (Donut Chart)",
+            description = "Tỉ lệ các loại tài khoản: ADMIN, ORGANIZER, STAFF, USER. "
+                    + "Không truyền from/to → All-time. Truyền from/to → chỉ tính user đăng ký trong khoảng đó.")
+    @GetMapping("/admin/role-distribution")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChartPointDTO>> getRoleDistribution(
+            @Parameter(description = "Từ ngày (yyyy-MM-dd). Null = All-time")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Đến ngày (yyyy-MM-dd). Null = All-time")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getRoleDistribution(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Tăng trưởng người dùng (Line Chart)",
-                description = "Trả về số lượng user mới đăng ký theo Ngày, phân loại theo Role. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/admin/user-growth")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<UserGrowthPointDTO>> getUserGrowthChart(
-                        @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd), mặc định 30 ngày trước")
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @Parameter(description = "Ngày kết thúc (yyyy-MM-dd), mặc định hôm nay")
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<UserGrowthPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getUserGrowthChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Admin] Tăng trưởng người dùng (Line Chart)",
+            description = "User mới đăng ký theo Ngày, phân loại theo Role. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/admin/user-growth")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<UserGrowthPointDTO>> getUserGrowthChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<UserGrowthPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getUserGrowthChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Top 5 Organizer có nhiều sự kiện (Bar Chart)",
-                description = "Trả về danh sách 5 Organizer có nhiều sự kiện nhất. Không lọc thời gian.")
-        @GetMapping("/admin/top-organizers")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<ChartPointDTO>> getTop5Organizers() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getTop5OrganizersChart())
-                                .build();
-        }
+    @Operation(summary = "[Admin] Top 5 Organizer (Bar Chart)",
+            description = "Top Organizer có nhiều sự kiện nhất. Không truyền from/to → All-time.")
+    @GetMapping("/admin/top-organizers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChartPointDTO>> getTop5Organizers(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getTop5OrganizersChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Sự kiện mới theo Tháng (Column Chart)",
-                description = "Trả về số lượng sự kiện mới tạo theo từng tháng. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/admin/monthly-events")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<ChartPointDTO>> getMonthlyEventsChart(
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getMonthlyEventsChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Admin] Sự kiện mới theo Tháng (Column Chart)",
+            description = "Số lượng sự kiện mới tạo theo từng tháng. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/admin/monthly-events")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChartPointDTO>> getMonthlyEventsChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getMonthlyEventsChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Trạng thái sự kiện (Pie Chart)",
-                description = "Trả về tỉ lệ các trạng thái sự kiện: DRAFT, PUBLISHED, CANCELLED... Không lọc thời gian.")
-        @GetMapping("/admin/event-status")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<ChartPointDTO>> getEventStatusChart() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getEventStatusChart())
-                                .build();
-        }
+    @Operation(summary = "[Admin] Trạng thái sự kiện (Pie Chart)",
+            description = "Tỉ lệ DRAFT, PUBLISHED, CANCELLED... Không truyền from/to → All-time.")
+    @GetMapping("/admin/event-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChartPointDTO>> getEventStatusChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getEventStatusChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Sự kiện theo Danh mục (Horizontal Bar Chart)",
-                description = "Trả về số lượng sự kiện phân theo từng danh mục. Không lọc thời gian.")
-        @GetMapping("/admin/event-category")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<ChartPointDTO>> getEventCategoryChart() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getEventCategoryChart())
-                                .build();
-        }
+    @Operation(summary = "[Admin] Sự kiện theo Danh mục (Horizontal Bar Chart)",
+            description = "Số lượng sự kiện phân theo danh mục. Không truyền from/to → All-time.")
+    @GetMapping("/admin/event-category")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<ChartPointDTO>> getEventCategoryChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getEventCategoryChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Doanh thu theo Ngày (Bar Chart)",
-                description = "Trả về tổng doanh thu PayOS từ các giao dịch thành công theo từng ngày. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/admin/revenue-stats")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<RevenuePointDTO>> getRevenueChart(
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<RevenuePointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getRevenueChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Admin] Doanh thu theo Ngày (Bar Chart)",
+            description = "Tổng doanh thu PayOS theo từng ngày. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/admin/revenue-stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<RevenuePointDTO>> getRevenueChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<RevenuePointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getRevenueChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Admin] Vé Free vs Trả phí theo Tháng (Stacked Column Chart)",
-                description = "Trả về số lượng vé miễn phí và trả phí theo từng tháng. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/admin/ticket-type-stats")
-        @PreAuthorize("hasRole('ADMIN')")
-        public ApiResponse<List<TicketTypePointDTO>> getTicketTypeChart(
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<TicketTypePointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getTicketTypeChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Admin] Vé Free vs Trả phí theo Tháng (Stacked Column Chart)",
+            description = "Số vé miễn phí và trả phí theo từng tháng. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/admin/ticket-type-stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<TicketTypePointDTO>> getTicketTypeChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<TicketTypePointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getTicketTypeChart(from, to))
+                .build();
+    }
 
-        // ============================================================
-        // CÁC API BIỂU ĐỒ ORGANIZER
-        // ============================================================
+    // ============================================================
+    // BIỂU ĐỒ ORGANIZER
+    // ============================================================
 
-        @Operation(summary = "[Organizer] Tỉ lệ lấp đầy (Pie Chart)",
-                description = "Trả về số vé đã bán và còn trống trên tổng capacity các sự kiện của Organizer. Không lọc thời gian.")
-        @GetMapping("/organizer/occupancy")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<List<ChartPointDTO>> getOccupancyChart() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getOccupancyChart())
-                                .build();
-        }
+    @Operation(summary = "[Organizer] Tỉ lệ lấp đầy (Pie Chart)",
+            description = "Vé đã bán và còn trống trên tổng capacity. Không truyền from/to → All-time.")
+    @GetMapping("/organizer/occupancy")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<List<ChartPointDTO>> getOccupancyChart(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getOccupancyChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Organizer] Biến động bán vé (Line Chart)",
-                description = "Trả về số lượng vé được bán ra theo từng ngày. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/organizer/sales-trend")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<List<TicketSalesPointDTO>> getTicketSalesTrend(
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<TicketSalesPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getTicketSalesTrendChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Organizer] Biến động bán vé (Line Chart)",
+            description = "Số lượng vé bán ra theo từng ngày. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/organizer/sales-trend")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<List<TicketSalesPointDTO>> getTicketSalesTrend(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<TicketSalesPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getTicketSalesTrendChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Organizer] Cơ cấu khách tham gia (Pie Chart)",
-                description = "Trả về tỉ lệ khách mua vé trả phí và khách nhận vé miễn phí. Không lọc thời gian.")
-        @GetMapping("/organizer/attendee-structure")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<List<ChartPointDTO>> getAttendeeStructure() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getAttendeeStructureChart())
-                                .build();
-        }
+    @Operation(summary = "[Organizer] Cơ cấu khách tham gia (Pie Chart)",
+            description = "Tỉ lệ khách mua vé trả phí và vé miễn phí. Không truyền from/to → All-time.")
+    @GetMapping("/organizer/attendee-structure")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<List<ChartPointDTO>> getAttendeeStructure(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getAttendeeStructureChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Organizer] Trạng thái Check-in (Pie Chart)",
-                description = "Trả về số khách đã check-in và chưa check-in. Không lọc thời gian.")
-        @GetMapping("/organizer/checkin-status")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<List<ChartPointDTO>> getCheckInStatus() {
-                return ApiResponse.<List<ChartPointDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getCheckInStatusChart())
-                                .build();
-        }
+    @Operation(summary = "[Organizer] Trạng thái Check-in (Pie Chart)",
+            description = "Số khách đã check-in và chưa check-in. Không truyền from/to → All-time.")
+    @GetMapping("/organizer/checkin-status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<List<ChartPointDTO>> getCheckInStatus(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<ChartPointDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getCheckInStatusChart(from, to))
+                .build();
+    }
 
-        @Operation(summary = "[Organizer] Tần suất Check-in theo giờ (Column Chart)",
-                description = "Trả về số lượng khách check-in phân theo khung giờ trong ngày. Hỗ trợ lọc `from`/`to`.")
-        @GetMapping("/organizer/checkin-frequency")
-        @PreAuthorize("hasRole('ORGANIZER')")
-        public ApiResponse<List<CheckInFrequencyDTO>> getCheckInFrequency(
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-                return ApiResponse.<List<CheckInFrequencyDTO>>builder()
-                                .status(ApiResponse.Status.builder().message("OK").build())
-                                .data(dashboardService.getCheckInFrequencyChart(from, to))
-                                .build();
-        }
+    @Operation(summary = "[Organizer] Tần suất Check-in theo giờ (Column Chart)",
+            description = "Số lượng check-in phân theo khung giờ. Mặc định 30 ngày gần nhất.")
+    @GetMapping("/organizer/checkin-frequency")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ApiResponse<List<CheckInFrequencyDTO>> getCheckInFrequency(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<CheckInFrequencyDTO>>builder()
+                .status(ApiResponse.Status.builder().message("OK").build())
+                .data(dashboardService.getCheckInFrequencyChart(from, to))
+                .build();
+    }
+
+    // ============================================================
+    // THỐNG KÊ SỰ KIỆN CỤ THỂ
+    // ============================================================
+
+    @Operation(summary = "Thống kê chi tiết 1 sự kiện",
+            description = "Vé bán/còn/đã check-in, doanh thu, tỉ lệ lấp đầy, biểu đồ bán vé theo ngày và check-in theo giờ. "
+                    + "ADMIN xem mọi sự kiện; ORGANIZER chỉ xem sự kiện của chính mình. "
+                    + "Tham số from/to chỉ ảnh hưởng đến BIỂU ĐỒ — các số tổng hợp luôn tính ALL-TIME.")
+    @GetMapping("/events/{eventId}/statistics")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    public ApiResponse<EventStatisticsResponse> getEventStatistics(
+            @PathVariable Long eventId,
+            @Parameter(description = "Từ ngày lọc biểu đồ (yyyy-MM-dd). Null = từ ngày mở đăng ký sự kiện")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Đến ngày lọc biểu đồ (yyyy-MM-dd). Null = hôm nay")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<EventStatisticsResponse>builder()
+                .status(ApiResponse.Status.builder().message("Lấy thống kê sự kiện thành công").build())
+                .data(dashboardService.getEventStatistics(eventId, from, to))
+                .build();
+    }
 }

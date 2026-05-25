@@ -96,13 +96,4 @@ public class UserController {
                                 .build();
         }
 
-        // 6. API Lấy danh sách toàn bộ Staff trên hệ thống (Dành cho Admin & Organizer)
-        @GetMapping("/staff-list")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
-        public ApiResponse<List<StaffResponse>> getAllAvailableStaffs() {
-                return ApiResponse.<List<StaffResponse>>builder()
-                                .status(ApiResponse.Status.builder().message("Lấy rổ nhân viên thành công").build())
-                                .data(eventStaffService.getAllAvailableStaffs())
-                                .build();
-        }
 }

@@ -76,4 +76,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 "ORDER BY CAST(u.createdAt AS date)")
         List<Object[]> countByDateAndRole(@Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
+
+        /** Đếm số User theo Role trong khoảng thời gian */
+        @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.createdAt BETWEEN :startDate AND :endDate")
+        long countByRoleInRange(@Param("role") Role role,
+                                @Param("startDate") LocalDateTime startDate,
+                                @Param("endDate") LocalDateTime endDate);
 }

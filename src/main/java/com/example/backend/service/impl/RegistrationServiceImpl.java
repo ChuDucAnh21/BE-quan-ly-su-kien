@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,13 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final UserRepository userRepository;
     private final PaymentConfigRepository paymentConfigRepository;
     private final TicketRepository ticketRepository;
+
+    // URL callback của FE sau khi thanh toán PayOS, cấu hình trong application.properties
+    @Value("${app.payment.return-url:http://localhost:3000/payment-success}")
+    private String paymentReturnUrl;
+
+    @Value("${app.payment.cancel-url:http://localhost:3000/payment-cancel}")
+    private String paymentCancelUrl;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -200,9 +208,9 @@ public class RegistrationServiceImpl implements RegistrationService {
                         config.getChecksumKey());
 
                 // 2. Chuẩn bị URL đường dẫn FrontEnd để PayOS trả người dùng về sau khi quét QR
-                // xong
-                String cancelUrl = "http://localhost:3000/payment-cancel";
-                String returnUrl = "https://www.facebook.com/";
+                // xong (cấu hình trong application.properties)
+                String cancelUrl = paymentCancelUrl;
+                String returnUrl = paymentReturnUrl;
 
                 // 3. Đổi sang mô hình dữ liệu v2 của SDK 2.x
                 CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest
@@ -316,6 +324,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             eventRepository.save(event);
         }
 
-        log.info("Xử lý Hủy vé MIỄN PHÍ thành công: User {}, Event {}", currentUser.getEmail(), event.getTitle());
+        log.info("Hủy đăng ký thành công: User {}, Event {}, Trạng thái cũ: {}", currentUser.getEmail(), event.getTitle(), isFreeTicket ? "VÉ FREE" : "VÉ CHƯA THANH TOÁN");
     }
 }

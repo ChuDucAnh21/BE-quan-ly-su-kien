@@ -1,10 +1,12 @@
 package com.example.backend.service.impl;
 
 import com.example.backend.dto.request.EventRequest;
+import com.example.backend.dto.request.EventScheduleRequest;
 import com.example.backend.dto.response.EventResponse;
 import com.example.backend.dto.response.EventScheduleResponse;
 import com.example.backend.dto.response.PageResponse;
 import com.example.backend.entity.Event;
+import com.example.backend.entity.EventSchedule;
 import com.example.backend.entity.User;
 import com.example.backend.enums.EventStatus;
 import com.example.backend.enums.RegistrationStatus;
@@ -31,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,12 +61,88 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
-    // Helper: Chuyển đổi Entity sang DTO
-    private EventResponse mapToEventResponse(Event event) {
-        // Tính số lượng vé đã bán
-        long ticketsSold = registrationRepository.countByEventIdAndStatusIn(
-                event.getId(),
-                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
+    /**
+     * Helper: Đồng bộ toàn bộ lịch trình con của sự kiện.
+     * - Nếu request.schedules = null → Không làm gì (giữ nguyên dữ liệu cũ).
+     * - Nếu request.schedules = [] → Xóa toàn bộ.
+     * - Nếu request.schedules có data → Sync (xóa cũ/thêm mới/cập nhật).
+     */
+    private List<EventScheduleResponse> syncSchedules(Event event, List<EventScheduleRequest> scheduleRequests) {
+        if (scheduleRequests == null) {
+            // Không gửi field → giữ nguyên
+            return eventScheduleRepository.findByEventIdOrderByStartTimeAsc(event.getId())
+                    .stream().map(this::mapScheduleToResponse).collect(Collectors.toList());
+        }
+
+        // Lấy danh sách hiện tại từ DB
+        List<EventSchedule> currentSchedules = eventScheduleRepository.findByEventIdOrderByStartTimeAsc(event.getId());
+
+        // Xác định những ID được giữ lại
+        Set<Long> keptIds = scheduleRequests.stream()
+                .map(EventScheduleRequest::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        // Xóa những lịch trình không có trong danh sách mới gửi lên
+        List<EventSchedule> toDelete = currentSchedules.stream()
+                .filter(s -> !keptIds.contains(s.getId()))
+                .collect(Collectors.toList());
+        if (!toDelete.isEmpty()) {
+            eventScheduleRepository.deleteAll(toDelete);
+        }
+
+        List<EventScheduleResponse> results = new ArrayList<>();
+        for (EventScheduleRequest req : scheduleRequests) {
+            // Validation: không được vượt ngoài khung giờ của sự kiện mẹ
+            if (req.getStartTime().isBefore(event.getStartTime()) || req.getEndTime().isAfter(event.getEndTime())) {
+                throw new AppException(ErrorCode.TIME_OUT_OF_EVENT_BOUNDS);
+            }
+            if (!req.getStartTime().isBefore(req.getEndTime())) {
+                throw new AppException(ErrorCode.INVALID_TIME_RANGE);
+            }
+
+            if (req.getId() == null) {
+                // Thêm mới
+                EventSchedule newSchedule = EventSchedule.builder()
+                        .event(event)
+                        .title(req.getTitle())
+                        .startTime(req.getStartTime())
+                        .endTime(req.getEndTime())
+                        .description(req.getDescription())
+                        .build();
+                results.add(mapScheduleToResponse(eventScheduleRepository.save(newSchedule)));
+            } else {
+                // Cập nhật
+                EventSchedule existing = currentSchedules.stream()
+                        .filter(s -> s.getId().equals(req.getId()))
+                        .findFirst()
+                        .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
+                existing.setTitle(req.getTitle());
+                existing.setStartTime(req.getStartTime());
+                existing.setEndTime(req.getEndTime());
+                existing.setDescription(req.getDescription());
+                results.add(mapScheduleToResponse(eventScheduleRepository.save(existing)));
+            }
+        }
+        return results;
+    }
+
+    // Helper: map EventSchedule entity sang DTO
+    private EventScheduleResponse mapScheduleToResponse(EventSchedule schedule) {
+        return EventScheduleResponse.builder()
+                .id(schedule.getId())
+                .eventId(schedule.getEvent().getId())
+                .title(schedule.getTitle())
+                .startTime(schedule.getStartTime())
+                .endTime(schedule.getEndTime())
+                .description(schedule.getDescription())
+                .build();
+    }
+
+    // Helper: Chuyển đổi Entity sang DTO, nhận thêm Map đếm vé đã tính sẵn để tránh
+    // N+1
+    private EventResponse mapToEventResponse(Event event, Map<Long, Long> ticketsSoldMap) {
+        long ticketsSold = ticketsSoldMap.getOrDefault(event.getId(), 0L);
 
         return EventResponse.builder()
                 .id(event.getId())
@@ -86,12 +167,22 @@ public class EventServiceImpl implements EventService {
                 .build();
     }
 
+    // Overload: Dùng cho getEventById (chỉ 1 event) — gọi DB đếm 1 lần là đủ
+    private EventResponse mapToEventResponse(Event event) {
+        long ticketsSold = registrationRepository.countByEventIdAndStatusIn(
+                event.getId(),
+                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
+        return mapToEventResponse(event, Map.of(event.getId(), ticketsSold));
+    }
+
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category,
             EventStatus status, Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
-            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree) {
-        // Tự động sắp xếp mới nhất lên đầu
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree, String sort) {
+        // Tùy chỉnh sắp xếp mới nhất (desc) hoặc cũ nhất (asc)
+        Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
 
         // Chuyển rỗng thành null để Query JPQL lờ đi
         String finalKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
@@ -124,8 +215,20 @@ public class EventServiceImpl implements EventService {
         Page<Event> eventPage = eventRepository.searchEvents(finalKeyword, finalCategory, finalStatus, organizerId,
                 startTime, endTime, minPrice, maxPrice, isFree, pageable);
 
+        List<Long> eventIds = eventPage.getContent().stream()
+                .map(Event::getId).collect(Collectors.toList());
+
+        // 1 query duy nhất đếm vé cho tất cả event trong trang — giải quyết N+1 Query
+        Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
+                : registrationRepository.countTicketsSoldGroupByEventId(
+                        eventIds,
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN)).stream()
+                        .collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> (Long) row[1]));
+
         List<EventResponse> responses = eventPage.getContent().stream()
-                .map(this::mapToEventResponse)
+                .map(e -> mapToEventResponse(e, ticketsSoldMap))
                 .collect(Collectors.toList());
 
         return PageResponse.<EventResponse>builder()
@@ -138,6 +241,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EventResponse getEventById(Long id) {
         // Bước 1: Lấy dữ liệu Sự kiện chính, văng 404 nếu không tồn tại
         Event event = eventRepository.findById(id)
@@ -224,7 +328,13 @@ public class EventServiceImpl implements EventService {
                 .build();
 
         Event savedEvent = eventRepository.save(event);
-        return mapToEventResponse(savedEvent);
+
+        // Đồng bộ lịch trình nếu Organizer có gửi kèm
+        List<EventScheduleResponse> schedules = syncSchedules(savedEvent, request.getSchedules());
+
+        EventResponse response = mapToEventResponse(savedEvent);
+        response.setSchedules(schedules);
+        return response;
     }
 
     @Override
@@ -293,7 +403,13 @@ public class EventServiceImpl implements EventService {
         }
 
         Event updatedEvent = eventRepository.save(event);
-        return mapToEventResponse(updatedEvent);
+
+        // Đồng bộ lịch trình nếu Organizer có gửi kèm
+        List<EventScheduleResponse> schedules = syncSchedules(updatedEvent, request.getSchedules());
+
+        EventResponse response = mapToEventResponse(updatedEvent);
+        response.setSchedules(schedules);
+        return response;
     }
 
     @Override
@@ -344,12 +460,13 @@ public class EventServiceImpl implements EventService {
                 List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
 
         if (ticketsSold > 0) {
-            // Không xóa vật lý, ép sang trạng thái Hủy Bỏ
+            // KHÔNG xóa vật lý kể cả là Admin để bảo toàn dữ liệu (Tickets, Payments, Registrations...)
+            // Ép sang trạng thái CANCELLED
             event.setStatus(EventStatus.CANCELLED);
             eventRepository.save(event);
-            log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé", eventId);
+            log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé (Người thực hiện: {})", eventId, currentUser.getId());
         } else {
-            // Xóa vật lý
+            // Xóa vật lý khi chưa có ai mua vé
             eventRepository.delete(event);
             log.info("Đã xóa vĩnh viễn EVENT_ID {} ra khỏi hệ thống", eventId);
         }
@@ -357,25 +474,39 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
+    // Lấy danh sách sự kiện được gán cho nhân viên (staff) theo id
     public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size) {
         User currentUser = getCurrentUser();
-        
+
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOrganizer = currentUser.getRole() == Role.ORGANIZER;
         boolean isSelf = currentUser.getId().equals(staffId);
-        
-        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất kỳ ai
+
+        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất
+        // kỳ ai
         if (!isAdmin && !isOrganizer && !isSelf) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffId(staffId, pageable);
-        
+
+        List<Long> eventIds = eventPage.getContent().stream()
+                .map(Event::getId).collect(Collectors.toList());
+
+        // 1 query duy nhất đếm vé cho tất cả event trong trang — giải quyết N+1 Query
+        Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
+                : registrationRepository.countTicketsSoldGroupByEventId(
+                        eventIds,
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN)).stream()
+                        .collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> (Long) row[1]));
+
         List<EventResponse> data = eventPage.getContent().stream()
-                .map(this::mapToEventResponse)
+                .map(e -> mapToEventResponse(e, ticketsSoldMap))
                 .collect(Collectors.toList());
-                
+
         return PageResponse.<EventResponse>builder()
                 .currentPage(eventPage.getNumber())
                 .totalPages(eventPage.getTotalPages())

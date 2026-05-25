@@ -6,6 +6,20 @@
 
 ---
 
+## ⚙️ CẤU HÌNH MÔI TRƯỜNG (application.properties)
+
+Các giá trị sau cần được cấu hình trong `application.properties` khi deploy lên môi trường thực tế:
+
+```properties
+# URL callback sau thanh toán PayOS (FE nhận kết quả)
+app.payment.return-url=https://your-domain.com/payment-success
+app.payment.cancel-url=https://your-domain.com/payment-cancel
+```
+
+> **Lưu ý:** Nếu không cấu hình, hệ thống sẽ dùng giá trị mặc định `http://localhost:3000/...` (chỉ phù hợp môi trường dev).
+
+---
+
 ## 0. QUY CHUẨN ĐỊNH DẠNG TRẢ VỀ CHUNG (RESPONSE FORMAT)
 
 Toàn bộ mọi API đều được Backend bọc trong Format chuẩn:
@@ -366,7 +380,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 4.1. Lấy danh sách Sự Kiện (Public/Admin/Organizer)
 
-- **Method:** `GET /events`
+- **Method:** `GET /public/events-all`
 - **Quyền:** Public (Ai cũng có thể vào xem, tuy nhiên có thể xài cho Admin để xem list sự kiện toàn bộ qua tham số status).
 - **Query Params (Tuỳ chọn):**
   - `page`: Trang hiện tại (Mặc định `0`).
@@ -478,44 +492,69 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 4.3. Tạo Sự Kiện Mới (Organizer)
 
-- **Method:** `POST /events`
-- **Quyền:** Lệnh kẹp thẻ `Authorization: Bearer <Token_Organizer>`. || `hoặc dùng token trong Cookie`
-- **Content-Type:** `multipart/form-data` (Nên dùng `FormData()` từ JS để ném vào API).
+- **Method:** `POST /create-event`
+- **Quyền:** `ORGANIZER`.
+- **Content-Type:** `multipart/form-data`.
 - **Tham số Form-Data:**
-  - `title` (String, Bắt buộc): Ví dụ `Sơn Tùng MTP Tour`.
-  - `category` (String, Bắt buộc): Ví dụ `Ca nhạc`.
+  - `title` (String, Bắt buộc)
+  - `category` (String, Bắt buộc)
   - `shortDescription` (String, Bắt buộc)
   - `description` (String, Bắt buộc)
-  - `capacity` (Integer, Bắt buộc): Sức chứa tối thiểu là `1`.
-  - `ticketPrice` (BigDecimal, Bắt buộc): Có thể là `0` (Đối với sự kiện miễn phí).
-  - `registrationStartTime` (String chuẩn ISO, Tùy chọn): Giờ mở bán vé. VD: `2024-12-01T00:00:00`.
-  - `registrationEndTime` (String chuẩn ISO, Tùy chọn): Giờ đóng bán vé. Nếu để trống sẽ lấy theo `startTime`.
-  - `startTime` (String chuẩn ISO, Bắt buộc): `2024-12-31T20:00:00`
-  - `endTime` (String chuẩn ISO, Bắt buộc): `2025-01-01T00:30:00`
-  - `location` : "HANOI"
-  - **`bannerFile`** (MultipartFile, Tuỳ chọn): Tệp ảnh đính kèm, API tự động up lên Cloudinary.
-- **Logic Ngầm:** Mặc định khi tạo ra, hệ thống áp đặt trạng thái khóa là `DRAFT` (Bản Nháp). Organizer không có quyền sửa được trường này trong lúc tạo.
-- **Response (200 OK):** Trả JSON format tương tự như `GET /events/{id}` đính kèm dữ liệu vừa khởi tạo trong CSDL.
+  - `capacity` (Integer, Bắt buộc, tối thiểu `1`)
+  - `ticketPrice` (BigDecimal, Bắt buộc, `0` nếu miễn phí)
+  - `registrationStartTime` (ISO DateTime, Tùy chọn)
+  - `registrationEndTime` (ISO DateTime, Tùy chọn — mặc định lấy `startTime`)
+  - `startTime` (ISO DateTime, Bắt buộc)
+  - `endTime` (ISO DateTime, Bắt buộc)
+  - `location` (String, Bắt buộc)
+  - `bannerFile` (MultipartFile, Tùy chọn — tự upload lên Cloudinary)
+  - **`schedules`** (JSON Array, **Tùy chọn**): Danh sách lịch trình con tạo kèm theo. Xem định dạng bên dưới.
+- **Định dạng `schedules` (gửi kèm dưới dạng JSON string trong FormData):**
+  ```json
+  [
+    {
+      "title": "Khai mạc & Check-in",
+      "startTime": "2024-12-31T19:00:00",
+      "endTime": "2024-12-31T20:00:00",
+      "description": "Quét mã QR tại cổng chính"
+    },
+    {
+      "title": "Biểu diễn chính",
+      "startTime": "2024-12-31T20:00:00",
+      "endTime": "2024-12-31T23:30:00",
+      "description": "Dàn nhạc biểu diễn"
+    }
+  ]
+  ```
+- **Logic Ngầm:** Trạng thái mặc định là `DRAFT`.
+- **Lỗi:** `400` - `TIME_OUT_OF_EVENT_BOUNDS` nếu lịch trình vượt khung giờ sự kiện.
+- **Response (200 OK):** Trả về EventResponse đầy đủ, bao gồm cả `schedules`.
   ```json
   {
     "status": { "code": 200, "message": "Tạo sự kiện bản nháp thành công" },
-    "data": { "id": 2, "title": "Sơn Tùng MTP", "status": "DRAFT", ... }
+    "data": { "id": 2, "title": "...", "status": "DRAFT", "schedules": [...] }
   }
   ```
 
 ### 4.4. Cập nhật nội dung Sự Kiện (Organizer)
 
-- **Method:** `PUT /events/{id}`
-- **Quyền:** Phải là `ORGANIZER` và **bắt buộc** phải là người tạo ra sự kiện đó.
-- **Content-Type:** `multipart/form-data` (Giống form hệt Tạo Sự kiện).
-- **Ràng buộc cứng:**
-  - Backend ngầm kiểm tra xem số lượng vé Đã Bán (`ticketsSold`) là bao nhiêu.
-  - Ngăn cấm cản việc nịnh nọt giảm `capacity` nhỏ hơn `ticketsSold` (Lỗi `CAPACITY_CANNOT_BE_LESS_THAN_SOLD`).
-- **Response (200 OK):**
+- **Method:** `PUT /update-event/{id}`
+- **Quyền:** `ORGANIZER` — phải là chủ sự kiện.
+- **Content-Type:** `multipart/form-data` (giống form Tạo sự kiện).
+- **Ràng buộc:**
+  - Không được giảm `capacity` nhỏ hơn số vé đã bán (`CAPACITY_CANNOT_BE_LESS_THAN_SOLD`).
+- **Đồng bộ lịch trình (`schedules`):**
+  - **Không gửi field `schedules`** → Giữ nguyên lịch trình cũ.
+  - **Gửi `schedules: []`** → Xóa toàn bộ lịch trình.
+  - **Gửi `schedules` có dữ liệu** → Đồng bộ hoàn toàn:
+    - `id = null` → Thêm mới lịch trình.
+    - `id` có giá trị → Cập nhật lịch trình đó.
+    - Lịch trình đang có trong DB nhưng không xuất hiện trong mảng → **Tự động xóa**.
+- **Response (200 OK):** Trả về EventResponse đầy đủ kèm `schedules` sau khi đồng bộ.
   ```json
   {
     "status": { "code": 200, "message": "Cập nhật sự kiện thành công" },
-    "data": { ... }
+    "data": { "id": 2, "title": "...", "schedules": [...] }
   }
   ```
 
@@ -541,7 +580,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 4.6. Xóa event Hệ Thống (Smart Delete)
 
-- **Method:** `DELETE /events/{id}`
+- **Method:** `DELETE /delete-event/{id}`
 - **Quyền:** `ORGANIZER` hoặc `ADMIN`.
 - **Logic Xoá Kép (Smart Delete):**
   - **Trường hợp 1:** Nếu CSDL trắng xóa (Chưa bán được Vé nào) $\Rightarrow$ SQL thi triển lệnh XÓA CỨNG (Hard-Delete).
@@ -554,9 +593,11 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   }
   ```
 
-### 4.7. Lấy danh sách Lịch trình con (Event Schedules) - Public
+### 4.7. Lấy danh sách Lịch trình (Public — Dự phòng)
 
-- **Method:** `GET /events/{eventId}/schedules`
+> **Lưu ý:** Lịch trình đã được trả về trong `GET /public/event-detail/{id}` (field `schedules`). Endpoint này chỉ dùng khi cần lấy riêng lịch trình mà không fetch toàn bộ sự kiện.
+
+- **Method:** `GET /public/events/{eventId}/schedules`
 - **Quyền:** Public.
 - **Response (200 OK):**
   ```json
@@ -575,85 +616,50 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   }
   ```
 
-### 4.8. Tạo mới Lịch trình con (Organizer)
+> ~~4.8 POST /events/{eventId}/schedules~~  
+> ~~4.9 PUT /events/{eventId}/schedules~~  
+> ~~4.10 DELETE /events/{eventId}/schedules~~  
+> ~~4.11 DELETE /events/{eventId}/schedules/{scheduleId}~~  
+> **Đã được gộp vào 4.3 (Tạo) và 4.4 (Sửa) — Truyền field `schedules` trong FormData của sự kiện.**
 
-- **Method:** `POST /events/{eventId}/schedules`
-- **Quyền:** `ORGANIZER` hiện đang làm chủ Sự kiện này.
-- **Ràng buộc Thời gian:** startTime và endTime của Schedule PHẢI nằm gọn trong khung thời gian của Sự kiện.
-- **Request Body:** Truyền vào một Mảng (`Array`) các Lịch trình con để lưu hàng loạt (Batch Create) 1 lần duy nhất.
+### 4.8. Lấy danh sách giao dịch thanh toán của Sự Kiện (Organizer/Admin)
+
+- **Method:** `GET /events/{eventId}/payments`
+- **Quyền:** `ADMIN` hoặc `ORGANIZER` tạo ra sự kiện đó.
+- **Mô tả:** Trả về danh sách chi tiết các lượt mua vé thành công, thất bại, đang chờ thanh toán.
+- **Query Params (Tuỳ chọn):**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `keyword`: Tìm kiếm theo mã đơn hàng, email, họ tên người mua.
+  - `status`: Lọc theo trạng thái thanh toán (VD: `SUCCESS`, `PENDING`, `FAILED`, `CANCELLED`).
+  - `from`: Lọc từ ngày (Format chuẩn: `2024-05-01`).
+  - `to`: Lọc đến ngày (Format chuẩn: `2024-05-31`).
+- **Response (200 OK):**
   ```json
-  [
-    {
-      "title": "Đón khách và Check-in",
-      "startTime": "2024-12-31T19:00:00",
-      "endTime": "2024-12-31T20:00:00",
-      "description": "Quét mã QR tại cổng chính"
-    },
-    {
-      "title": "Khai mạc sự kiện",
-      "startTime": "2024-12-31T20:00:00",
-      "endTime": "2024-12-31T20:30:00",
-      "description": "Lễ khai mạc và phát biểu"
+  {
+    "status": { "code": 200, "message": "Lấy danh sách thanh toán thành công" },
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "pageSize": 10,
+      "totalElements": 2,
+      "data": [
+        {
+          "paymentId": 12,
+          "orderCode": "ORDER-123456",
+          "amount": 500000.0,
+          "status": "SUCCESS",
+          "paidAt": "2024-05-10T15:30:00",
+          "createdAt": "2024-05-10T15:28:00",
+          "registrationCode": "REG-ABCXYZ",
+          "userEmail": "khachhang@gmail.com",
+          "userFullName": "Nguyen Van A"
+        }
+      ]
     }
-  ]
+  }
   ```
-- **Lỗi:** `400` - `TIME_OUT_OF_EVENT_BOUNDS`: Trồi thời gian.
 
-### 4.9. Cập nhật Lịch trình con theo ID (Organizer)
-
-- **Method:** `PUT /events/{eventId}/schedules`
-- **Mô tả:** Cơ chế đồng bộ Lịch trình con (Sync). Nhận vào một _Mảng_ (`Array`) chứa tất cả lịch trình bạn muốn có trong sự kiện này.
-  - Nếu phần tử **chưa có `id` (id = null)**: Hệ thống sẽ **Thêm mới**.
-  - Nếu phần tử **đã có `id`**: Hệ thống sẽ **Cập nhật** thông tin.
-  - Các lịch trình đang nằm trong Database nhưng **không xuất hiện trong mảng gửi lên** sẽ bị hệ thống **Xoá**.
-- **Quyền:** `ORGANIZER` hiện đang làm chủ Sự kiện này.
-- **Request Body:**
-  ```json
-  [
-    {
-      "id": 101,
-      "title": "Khai mạc (Cập nhật)",
-      "startTime": "2024-12-31T19:30:00",
-      "endTime": "2024-12-31T20:00:00",
-      "description": "Mô tả đã sửa lại"
-    },
-    {
-      "id": 102,
-      "title": "Biểu diễn (Sửa giờ)",
-      "startTime": "2024-12-31T20:00:00",
-      "endTime": "2024-12-31T23:00:00",
-      "description": "Rút ngắn 30 phút"
-    }
-  ]
-  ```
-- **Lỗi:**
-  - `400` - `SCHEDULE_NOT_FOUND`: ID truyền lên không thuộc về sự kiện này.
-  - `400` - `TIME_OUT_OF_EVENT_BOUNDS`: Thời gian vượt ra ngoài khuôn khổ sự kiện.
-
-### 4.10. Xóa sạch Lịch trình con (Organizer)
-
-- **Method:** `DELETE /events/{eventId}/schedules`
-- **Mô tả:** Nếu không thích truyền Mảng rỗng `[]` vào lệnh `PUT` phía trên, sếp có thể gọi thẳng lệnh `DELETE` này. API sẽ dập đi xóa sạch sẽ toàn bộ các Lịch trình con hiện có của sự kiện.
-- **Quyền:** `ORGANIZER` hiện đang làm chủ Sự kiện này.
-- **Response (200 OK):** Trả về `code: 200` với data `null`.
-
-### 4.11. Xóa một Lịch trình con theo ID (Organizer)
-
-- **Method:** `DELETE /events/{eventId}/schedules/{scheduleId}`
-- **Mô tả:** Organizer muốn xóa lẻ một móc lịch trình con cụ thể thay vì xóa toàn bộ.
-- **Quyền:** Lấy Token của `ORGANIZER` hiện tại và xác thực. Phải là Event của thư mục đang sở hữu.
-
-**Response:**
-
-```json
-{
-  "status": {
-    "code": 200,
-    "message": "Xóa lịch trình con thành công"
-  },
-  "data": null
-}
-```
 
 ---
 

@@ -50,7 +50,7 @@ public class AuthService {
                 // Bước 3: Khởi tạo đối tượng User mới (Dùng Builder Pattern của Lombok để code
                 // cực kỳ ngắn gọn và dễ đọc)
                 User user = User.builder()
-                                .fullName(request.getFullName())
+                                .fullName(request.getFullName()) 
                                 .email(request.getEmail())
                                 .phone(request.getPhone())
                                 // BẢO MẬT TUYỆT ĐỐI: Mật khẩu phải được "băm" (hash) bằng BCrypt trước khi chạm

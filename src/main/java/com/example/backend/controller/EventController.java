@@ -4,10 +4,17 @@ import com.example.backend.dto.request.EventRequest;
 import com.example.backend.dto.response.ApiResponse;
 import com.example.backend.dto.response.EventResponse;
 import com.example.backend.dto.response.PageResponse;
+import com.example.backend.dto.response.PaymentTransactionResponse;
 import com.example.backend.enums.EventStatus;
+import com.example.backend.enums.PaymentStatus;
 import com.example.backend.service.EventService;
+import com.example.backend.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
+
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class EventController {
 
         private final EventService eventService;
+        private final PaymentService paymentService;
 
         /**
          * 1. Public API: Ai cũng có thể vào xem danh sách Sự Kiện
@@ -34,10 +42,11 @@ public class EventController {
                         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endTime,
                         @RequestParam(required = false) java.math.BigDecimal minPrice,
                         @RequestParam(required = false) java.math.BigDecimal maxPrice,
-                        @RequestParam(required = false) Boolean isFree) {
+                        @RequestParam(required = false) Boolean isFree,
+                        @RequestParam(defaultValue = "desc") String sort) {
 
                 PageResponse<EventResponse> data = eventService.getAllEvents(page, size, keyword, category, status,
-                                organizerId, startTime, endTime, minPrice, maxPrice, isFree);
+                                organizerId, startTime, endTime, minPrice, maxPrice, isFree, sort);
                 return ApiResponse.<PageResponse<EventResponse>>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .message("Lấy danh sách sự kiện thành công")
@@ -143,6 +152,32 @@ public class EventController {
                                                 .message("Lấy danh sách sự kiện phân công cho nhân viên thành công")
                                                 .build())
                                 .data(eventService.getAssignedEventsByStaffId(staffId, page, size))
+                                .build();
+        }
+
+        /**
+         * 8. Organizer/Admin API: Xem danh sách giao dịch thanh toán của sự kiện
+         * Hỗ trợ tìm kiếm theo mã đơn, email và lọc theo trạng thái, khoảng thời gian.
+         */
+        @GetMapping("/events/{eventId}/payments")
+        @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+        public ApiResponse<PageResponse<PaymentTransactionResponse>> getEventPayments(
+                        @PathVariable Long eventId,
+                        @RequestParam(required = false) String keyword,
+                        @RequestParam(required = false) PaymentStatus status,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+
+                PageResponse<PaymentTransactionResponse> data = paymentService.getEventPayments(eventId, keyword,
+                                status, from, to, page, size);
+
+                return ApiResponse.<PageResponse<PaymentTransactionResponse>>builder()
+                                .status(ApiResponse.Status.builder()
+                                                .message("Lấy danh sách thanh toán thành công")
+                                                .build())
+                                .data(data)
                                 .build();
         }
 }
