@@ -20,6 +20,10 @@ public class TicketResponse {
     private String hashedQrCode; // Mã băm (Chỉ trả về cho Staff Offline Sync)
     private Long eventId;
     private String eventTitle;
+    private String eventImageUrl;
+    private LocalDateTime startTimeEvent;
+    private LocalDateTime endTimeEvent;
+    private String locationEvent;
     private BigDecimal ticketPrice;
     private Long userId;
     private Long registrationId;

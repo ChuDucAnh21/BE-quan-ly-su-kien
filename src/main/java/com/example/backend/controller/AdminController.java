@@ -63,11 +63,12 @@ public class AdminController {
                         @RequestParam(required = false) String search,
                         @RequestParam(required = false) Role role,
                         @RequestParam(required = false) UserStatus status,
-                        @RequestParam(defaultValue = "createdAt,desc") String sort) {
-                
+                        @RequestParam(defaultValue = "desc") String sort) {
+
                 // Security check & Role forcing: Organizer chỉ được phép xem list STAFF
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                if (auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ORGANIZER"))) {
+                if (auth != null && auth.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ORGANIZER"))) {
                         role = Role.STAFF; // Ép buộc Organizer chỉ được xem danh sách STAFF
                 }
 

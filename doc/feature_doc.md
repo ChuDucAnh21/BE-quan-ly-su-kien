@@ -5,6 +5,7 @@
 # I. CHỨC NĂNG CHUNG CỦA HỆ THỐNG
 
 Áp dụng cho nhiều role tùy theo quyền truy cập.
+Chạy cổng ngrock : .\ngrok http 8080
 
 ## 1. Xác thực tài khoản
 

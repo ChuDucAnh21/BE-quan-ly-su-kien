@@ -8,7 +8,7 @@ import com.example.backend.enums.EventStatus;
 public interface EventService {
     
     // Tìm kiếm sự kiện đa năng (dành cho mọi người hoặc list của Organizer)
-    PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category, EventStatus status,
+    PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, java.util.List<String> categories, EventStatus status,
             Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
             java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree, String sort);
     

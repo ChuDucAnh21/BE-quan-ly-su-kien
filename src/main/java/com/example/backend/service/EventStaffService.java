@@ -11,7 +11,7 @@ public interface EventStaffService {
     List<StaffResponse> getAllAvailableStaffs();
 
     // API 2: Lấy danh sách Staff đang được phân công vào Event cụ thể
-    List<StaffResponse> getStaffsByEventId(Long eventId);
+    com.example.backend.dto.response.PageResponse<StaffResponse> getStaffsByEventId(Long eventId, String search, com.example.backend.enums.UserStatus status, org.springframework.data.domain.Pageable pageable);
 
     // API 3: Đồng bộ danh sách Staff: Xoá cũ dư thừa, thêm mới chưa có, giữ nguyên người hiện tại.
     List<StaffResponse> syncEventStaffs(Long eventId, Set<Long> staffIds);

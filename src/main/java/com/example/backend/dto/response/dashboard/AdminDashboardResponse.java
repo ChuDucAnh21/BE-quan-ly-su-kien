@@ -15,6 +15,7 @@ public class AdminDashboardResponse {
     private long totalUsers;
     private long totalOrganizers;
     private long totalStaff;
+    private long totalAdmin;
     private long totalEvents;
     private long totalTickets; // Tổng số vé hệ thống đã bán ra (SUCCESS)
     private BigDecimal totalRevenueSuccess; // Tổng luân chuyển dòng tiền thành công qua hệ thống

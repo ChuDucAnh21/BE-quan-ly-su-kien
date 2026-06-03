@@ -73,6 +73,7 @@ public class SecurityConfig {
                                                                         // login, register, forgot-password
                         .requestMatchers("/api/v1/public/**").permitAll() // Cho phép truy cập dữ liệu công khai (danh
                                                                           // sách sự kiện...)
+                        .requestMatchers("/api/v1/users/public/**").permitAll() // Truy cập public profile của user
                         .requestMatchers("/api/v1/payments/webhook").permitAll() // Webhook PayOS gọi ngầm không cần
                                                                                  // Token
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Giao

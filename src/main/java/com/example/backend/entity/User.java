@@ -49,4 +49,12 @@ public class User extends BaseEntity {
     private LocalDate dateOfBirth;
 
     private String address;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider")
+    @Builder.Default
+    private com.example.backend.enums.AuthProvider authProvider = com.example.backend.enums.AuthProvider.LOCAL; // Nguồn đăng nhập
+
+    @Column(name = "provider_id")
+    private String providerId; // ID từ Google
 }

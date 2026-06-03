@@ -66,16 +66,6 @@ public class EventRequest {
     // Ảnh bìa nhận trực tiếp qua MultipartFile thay vì link
     private MultipartFile bannerFile; // dạng file ảnh
 
-    /**
-     * [TÙY CHỌN] Danh sách lịch trình con của sự kiện.
-     * - Khi tạo mới (POST): truyền lên để tạo kèm lịch trình ngay lập tức.
-     * - Khi sửa (PUT): hệ thống sẽ ĐỒNG BỘ (sync) toàn bộ lịch trình.
-     * + id=null → Thêm mới
-     * + id có giá trị → Cập nhật lịch trình đó
-     * + id không có trong list → Tự động xóa
-     * - Nếu không gửi field này (null) → Không thay đổi lịch trình.
-     * - Nếu gửi mảng rỗng [] → Xóa toàn bộ lịch trình.
-     */
     @Valid
     private List<EventScheduleRequest> schedules;
 }

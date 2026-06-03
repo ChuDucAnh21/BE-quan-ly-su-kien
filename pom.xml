@@ -83,6 +83,13 @@
 			<version>2.0.1</version>
 		</dependency>
 
+		<!-- Google API Client (cho Google Login) -->
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+
 		<!-- Utilities -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

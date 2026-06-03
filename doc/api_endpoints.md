@@ -105,6 +105,18 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   ```
 - **Lỗi:** `401` – Sai email hoặc mật khẩu.
 
+### 1.2.5. Đăng nhập bằng Google (Google Login)
+
+- **Method:** `POST /auth/google-login`
+- **Mô tả:** Nhận `idToken` từ Google (do Frontend sinh ra) và tiến hành cấp phát JWT Token. Nếu email chưa tồn tại, hệ thống tự động tạo User mới với `AuthProvider=GOOGLE`. Nếu đã tồn tại, hệ thống hợp nhất và cho phép đăng nhập luôn.
+- **Request Body:**
+  ```json
+  {
+    "idToken": "eyJhbGciOiJSUzI..."
+  }
+  ```
+- **Response (200 OK):** Trả về giống hệt API Login thường (Cấp phát Cookie `access_token` và `refresh_token` tự động).
+
 ### 1.3. Đăng xuất (Logout)
 
 - **Method:** `POST /auth/logout`
@@ -203,7 +215,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.2. Cập nhật thông tin cơ bản (Update Profile)
 
-- **Method:** `PUT /users/profile`
+- **Method:** `PUT /users/profile/update-info`
 - **Request Body:**
   ```json
   {
@@ -232,7 +244,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 
 ### 2.3. Cập nhật Ảnh đại diện (Update Avatar)
 
-- **Method:** `PUT /users/profile/avatar`
+- **Method:** `PUT /users/profile/update-avatar`
 - **Content-Type:** `multipart/form-data`
 - **Param:** `file` (Multipart image file — JPG/PNG)
 - **Response (200 OK):**
@@ -275,6 +287,30 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   }
   ```
 
+### 2.6. Xem hồ sơ công khai của người dùng khác (Public Profile)
+
+- **Method:** `GET /users/info-user/{id}`
+- **Mô tả:** Lấy thông tin công khai của một người dùng bất kỳ thông qua ID của họ. API này có thể được gọi mà không cần đăng nhập (Public). Dữ liệu trả về đã được ẩn đi các thông tin nhạy cảm như SĐT, Email, Địa chỉ, Ngày sinh.
+- **Quyền:** Public (Không cần Token).
+- **Response (200 OK):**
+  ```json
+  {
+    "status": {
+      "code": 200,
+      "message": "Lấy thông tin công khai thành công",
+      "label": "API_STATUS_SUCCESS"
+    },
+    "data": {
+      "id": 2,
+      "fullName": "Nguyen Van Ban To Chuc",
+      "avatarUrl": "https://...",
+      "role": "ORGANIZER",
+      "gender": "MALE",
+      "createdAt": "2024-01-01T00:00:00"
+    }
+  }
+  ```
+
 ---
 
 ## 3. MODULE ADMIN (`/admin`)
@@ -290,7 +326,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   - `search`: Từ khóa tìm kiếm (lọc theo Email, Họ tên, SĐT).
   - `role`: Lọc theo vai trò (`ADMIN`, `ORGANIZER`, `STAFF`, `USER`).
   - `status`: Lọc theo trạng thái (`ACTIVE`, `LOCKED`).
-  - `sort`: Cú pháp sắp xếp `<tên_cột>,<hướng>` (ví dụ: `email,asc` hoặc `createdAt,desc`. Mặc định `createdAt,desc`).
+  - `sort`: Chiều sắp xếp (`asc` hoặc `desc`. Mặc định `desc`). Hệ thống mặc định sắp xếp theo ngày tạo (createdAt).
 - **Response (200 OK):**
   ```json
   {
@@ -385,6 +421,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 - **Query Params (Tuỳ chọn):**
   - `page`: Trang hiện tại (Mặc định `0`).
   - `size`: Số bản ghi (Mặc định `10`).
+  - `sort`: Sắp xếp (Mặc định `desc`). - desc: giảm dần, asc: tăng dần
   - `keyword`: Tìm theo Tên hoặc Địa điểm sự kiện.
   - `category`: Lọc theo danh mục.
   - `status`: Lọc theo Trạng thái (DRAFT, PUBLISHED...).
@@ -660,7 +697,6 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
   }
   ```
 
-
 ---
 
 ## 5. PHÂN CÔNG TỔ CHỨC (STAFF DELEGATION)
@@ -691,9 +727,38 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 ### 5.2. Lấy danh sách Staff đang phục vụ một Sự kiện
 
 - **Method:** `GET /events/{eventId}/staffs`
-- **Mô tả:** Trả về danh sách những người Staff đã được gắn vào thẻ phụ trách sự kiện.
+- **Mô tả:** Trả về danh sách những người Staff đã được gắn vào thẻ phụ trách sự kiện (hỗ trợ phân trang, tìm kiếm và lọc).
 - **Quyền:** `ADMIN`, `ORGANIZER` hoặc chính thức làm `STAFF` được phân công trong sự kiện đó. Normal User nếu cố gọi sẽ ăn lỗi 403 Access Denied.
-- **Response (200 OK):** (Trả về Array tương tự API 5.1)
+- **Query Params (Tùy chọn):**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `sort`: Sắp xếp (`asc` hoặc `desc`, mặc định `desc`).
+  - `search`: Lọc theo tên hoặc email của nhân viên.
+  - `status`: Lọc theo trạng thái hoạt động của nhân viên (`ACTIVE` / `LOCKED` / `BANNED`).
+- **Response (200 OK):** Trả về đối tượng phân trang chứa danh sách Staff.
+  ```json
+  {
+    "status": {
+      "code": 200,
+      "message": "Lấy danh sách nhân viên của sự kiện thành công"
+    },
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "pageSize": 10,
+      "totalElements": 2,
+      "data": [
+        {
+          "id": 15,
+          "fullName": "Nguyễn Văn Bảo Vệ",
+          "email": "baove@gmail.com",
+          "avatarUrl": "https://cloudinary.com/avatar1.jpg",
+          "isActive": true
+        }
+      ]
+    }
+  }
+  ```
 
 ### 5.3. Đồng bộ phân công Staff vào Sự kiện (Organizer)
 
@@ -716,7 +781,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 ### 5.5. Xem danh sách Sự kiện phân công của 1 Staff (Dành cho Admin/Organizer/Staff)
 
 - **Method:** `GET /events/assigned-to-staff/{staffId}`
-- **Mô tả:** 
+- **Mô tả:**
   - Nhân viên (Staff) tự truyền ID của mình để xem danh sách các sự kiện được phân công.
   - Ban quản trị (Admin) hoặc Người tổ chức (Organizer) có thể truyền ID của bất kỳ Staff nào để quản lý lịch trình.
 - **Quyền:** `ADMIN`, `ORGANIZER` hoặc `STAFF` (chỉ được xem của chính mình).
@@ -886,6 +951,9 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
       {
         "registrationId": 105,
         "eventId": 1,
+        "eventName": "Lễ hội Âm nhạc mùa hè",
+        "eventPrice": 500000.0,
+        "eventImage": "https://example.com/event-image.jpg",
         "eventStartTime": "2024-12-31T20:00:00",
         "userId": 5,
         "registrationCode": "REG-ABCXYZ",
@@ -927,6 +995,10 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
           "hashedQrCode": null,
           "eventId": 1,
           "eventTitle": "Lễ hội Âm nhạc mùa hè",
+          "eventImageUrl": "https://example.com/event-image.jpg",
+          "startTimeEvent": "2024-12-31T20:00:00",
+          "endTimeEvent": "2025-01-01T02:00:00",
+          "locationEvent": "Sân vận động Quốc gia",
           "ticketPrice": 500000.0,
           "userId": 5,
           "registrationId": 100,
@@ -985,6 +1057,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
   - `page`: Trang hiện tại (Mặc định `0`).
   - `size`: Kích thước (Mặc định `10`).
   - `search`: Từ khóa tìm kiếm (Tùy chọn - Lọc theo tên, email, số điện thoại, hoặc mã đăng ký).
+  - `status`: Lọc theo trạng thái vé (`ACTIVE`, `USED`, `INVALID`). (Tùy chọn)
 - **Response (200 OK):**
   ```json
   {
@@ -1102,13 +1175,14 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 ---
 
-## 8. Dashboards Thống Kê (Dashboards)
+## 8. MODULE Dashboards Thống Kê (Dashboards)
 
 ### 8.1. Thống kê toàn hệ thống (Dành cho Admin)
 
 - **Method:** `GET /dashboards/admin`
 - **Quyền:** `ADMIN`
 - **Mô tả:** Lấy dữ liệu tổng quan cho trang chủ Admin.
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn) - Định dạng YYYY-MM-DD. Nếu không truyền sẽ tính trên toàn bộ thời gian (All-time).
 - **Response (200 OK):**
   ```json
   {
@@ -1131,11 +1205,17 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Method:** `GET /dashboards/organizer`
 - **Quyền:** `ORGANIZER`
 - **Mô tả:** Lấy các chỉ số hiệu suất cá nhân của Organizer (Statistic Cards).
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn) - Định dạng YYYY-MM-DD. Nếu không truyền sẽ tính trên toàn bộ thời gian (All-time).
 - **Response (200 OK):**
   ```json
   {
+    "status": {
+      "code": 200,
+      "message": "Lấy thống kê Organizer thành công"
+    },
     "data": {
       "totalEvents": 5,
+      "totalCapacity": 1500,
       "totalTicketsSold": 1200,
       "totalRevenue": 250000000,
       "totalCheckedIn": 980
@@ -1155,109 +1235,134 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 - **Method:** `GET /dashboards/admin/role-distribution`
 - **Tác dụng**: Biểu đồ tròn thể hiện thị phần các loại tài khoản trên toàn hệ thống (ADMIN, ORGANIZER, STAFF, USER).
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "ADMIN", "count": 5 },
-    { "label": "ORGANIZER", "count": 45 },
-    { "label": "STAFF", "count": 150 },
-    { "label": "USER", "count": 1300 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "ADMIN", "count": 5 },
+      { "label": "ORGANIZER", "count": 45 },
+      { "label": "STAFF", "count": 150 },
+      { "label": "USER", "count": 1300 }
+    ]
+  }
   ```
 
 ### 9.2. Tăng trưởng người dùng (Line Chart)
 
-- **Method:** `GET /dashboards/admin/user-growth?from=2024-05-01&to=2024-05-31`
+- **Method:** `GET /dashboards/admin/user-growth`
 - **Tác dụng**: Biểu đồ đường thể hiện tốc độ gia tăng tài khoản (tách riêng USER và ORGANIZER) theo thời gian.
 - **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
 - **Response Data:**
   ```json
-  [
-    { "date": "2024-05-01", "count": 10, "type": "USER" },
-    { "date": "2024-05-01", "count": 2, "type": "ORGANIZER" },
-    { "date": "2024-05-02", "count": 15, "type": "USER" }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "date": "2024-05-01", "count": 10, "type": "USER" },
+      { "date": "2024-05-01", "count": 2, "type": "ORGANIZER" },
+      { "date": "2024-05-02", "count": 15, "type": "STAFF" },
+      { "date": "2024-05-03", "count": 18, "type": "ADMIN" }
+    ]
+  }
   ```
 
 ### 9.3. Top 5 Organizer (Bar Chart)
 
 - **Method:** `GET /dashboards/admin/top-organizers`
 - **Tác dụng**: Biểu đồ cột ngang xếp hạng 5 nhà tổ chức có nhiều sự kiện nhất.
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "Tên nhà tổ chức A", "count": 25 },
-    { "label": "Tên nhà tổ chức B", "count": 18 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "Tên nhà tổ chức A", "count": 25 },
+      { "label": "Tên nhà tổ chức B", "count": 18 }
+    ]
+  }
   ```
 
 ### 9.4. Sự kiện mới theo Tháng (Column Chart)
 
-- **Method:** `GET /dashboards/admin/monthly-events?from=2024-01-01&to=2024-12-31`
+- **Method:** `GET /dashboards/admin/monthly-events`
 - **Tác dụng**: Biểu đồ cột dọc thống kê số lượng sự kiện được tạo mới trong từng tháng (dùng để thấy xu hướng mùa vụ).
 - **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
 - **Response Data:**
   ```json
-  [
-    { "label": "2024-01", "count": 12 },
-    { "label": "2024-02", "count": 20 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "2024-01", "count": 12 },
+      { "label": "2024-02", "count": 20 }
+    ]
+  }
   ```
 
 ### 9.5. Trạng thái sự kiện (Pie Chart)
 
 - **Method:** `GET /dashboards/admin/event-status`
 - **Tác dụng**: Biểu đồ tròn thể hiện tỉ lệ các trạng thái của sự kiện (Sắp diễn ra, Đang diễn ra, Đã kết thúc, Đã hủy).
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "PUBLISHED", "count": 30 },
-    { "label": "DRAFT", "count": 5 },
-    { "label": "ENDED", "count": 80 },
-    { "label": "CANCELLED", "count": 10 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "PUBLISHED", "count": 30 },
+      { "label": "DRAFT", "count": 5 },
+      { "label": "ENDED", "count": 80 },
+      { "label": "CANCELLED", "count": 10 }
+    ]
+  }
   ```
 
 ### 9.6. Sự kiện theo Danh mục (Horizontal Bar Chart)
 
 - **Method:** `GET /dashboards/admin/event-category`
 - **Tác dụng**: Biểu đồ cột ngang liệt kê số lượng sự kiện thuộc từng danh mục (Music, Tech, Fashion...).
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "Âm nhạc", "count": 45 },
-    { "label": "Công nghệ", "count": 32 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "Âm nhạc", "count": 45 },
+      { "label": "Công nghệ", "count": 32 }
+    ]
+  }
   ```
 
 ### 9.7. Doanh thu theo Ngày (Bar Chart)
 
-- **Method:** `GET /dashboards/admin/revenue-stats?from=2024-05-01&to=2024-05-31`
+- **Method:** `GET /dashboards/admin/revenue-stats`
 - **Tác dụng**: Biểu đồ cột dọc thể hiện biến động doanh thu thực nhận (sau khi trừ phí cổng) qua từng ngày.
 - **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
 - **Response Data:**
   ```json
-  [
-    { "date": "2024-05-01", "revenue": 5000000 },
-    { "date": "2024-05-02", "revenue": 8000000 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "date": "2024-05-01", "revenue": 5000000 },
+      { "date": "2024-05-02", "revenue": 8000000 }
+    ]
+  }
   ```
 
 ### 9.8. Vé Free vs Trả phí theo Tháng (Stacked Column Chart)
 
-- **Method:** `GET /dashboards/admin/ticket-type-stats?from=2024-01-01&to=2024-12-31`
+- **Method:** `GET /dashboards/admin/ticket-type-stats`
 - **Tác dụng**: Biểu đồ cột chồng thể hiện cơ cấu vé Miễn phí và Trả phí theo từng tháng (giúp Admin thấy xu hướng người dùng ưu tiên loại vé nào).
 - **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
 - **Response Data:**
   ```json
-  [
-    { "month": "2024-05", "count": 450, "type": "VÉ TRẢ PHÍ" },
-    { "month": "2024-05", "count": 200, "type": "VÉ MIỄN PHÍ" }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "month": "2024-05", "count": 450, "type": "VÉ TRẢ PHÍ" },
+      { "month": "2024-05", "count": 200, "type": "VÉ MIỄN PHÍ" }
+    ]
+  }
   ```
 
 ---
@@ -1271,13 +1376,16 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 - **Method:** `GET /dashboards/organizer/occupancy`
 - **Tác dụng**: Biểu đồ tròn so sánh tỉ lệ vé Đã bán so với Vé Còn trống, giúp Organizer đánh giá sức hút của sự kiện.
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "Đã bán", "count": 850 },
-    { "label": "Còn trống", "count": 150 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "Đã bán", "count": 850 },
+      { "label": "Còn trống", "count": 150 }
+    ]
+  }
   ```
 
 ### 10.2. Biến động bán vé (Line Chart)
@@ -1287,36 +1395,45 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
 - **Response Data:**
   ```json
-  [
-    { "date": "2024-05-01", "value": 12 },
-    { "date": "2024-05-02", "value": 45 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "date": "2024-05-01", "value": 12 },
+      { "date": "2024-05-02", "value": 45 }
+    ]
+  }
   ```
 
 ### 10.3. Cơ cấu khách tham gia (Pie Chart)
 
 - **Method:** `GET /dashboards/organizer/attendee-structure`
 - **Tác dụng**: Biểu đồ tròn phân loại khách tham gia dựa trên loại vé họ sở hữu (Vé Trả phí, Vé Miễn phí, Vé Đặc biệt).
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "Khách mua vé", "count": 700 },
-    { "label": "Khách mời/Free", "count": 150 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "Khách mua vé", "count": 700 },
+      { "label": "Khách mời/Free", "count": 150 }
+    ]
+  }
   ```
 
 ### 10.4. Trạng thái Check-in (Pie Chart)
 
 - **Method:** `GET /dashboards/organizer/checkin-status`
 - **Tác dụng**: Biểu đồ tròn thống kê số lượng khách đã check-in so với số lượng vé đã phát hành (thể hiện hiệu quả công tác tổ chức cổng soát vé).
-- **Query Params:** Không có
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn). Định dạng `yyyy-MM-dd`. Nếu không truyền → All-time.
 - **Response Data:**
   ```json
-  [
-    { "label": "Đã vào cổng", "count": 600 },
-    { "label": "Chưa đến", "count": 250 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "label": "Đã vào cổng", "count": 600 },
+      { "label": "Chưa đến", "count": 250 }
+    ]
+  }
   ```
 
 ### 10.5. Tần suất Check-in theo Giờ (Column Chart)
@@ -1327,14 +1444,62 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Ghi chú:** `hour` là số nguyên từ 0 đến 23. Frontend tự quy đổi sang dạng "18:00 - 19:00".
 - **Response Data:**
   ```json
-  [
-    { "hour": 18, "count": 120 },
-    { "hour": 19, "count": 450 },
-    { "hour": 20, "count": 30 }
-  ]
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": [
+      { "hour": 18, "count": 120 },
+      { "hour": 19, "count": 450 },
+      { "hour": 20, "count": 30 }
+    ]
+  }
   ```
 
-## 11. HỆ THỐNG MÃ LỖI CHUẨN (ERROR HANDLING)
+## 11. THỐNG KÊ SỰ KIỆN CỤ THỂ
+
+- **Method:** `GET /dashboards/events/{eventId}/statistics`
+- **Quyền:** `ADMIN` hoặc `ORGANIZER` (chủ của sự kiện đó).
+- **Mô tả:** Thống kê chi tiết 1 sự kiện. Vé bán/còn/đã check-in, doanh thu, tỉ lệ lấp đầy, biểu đồ bán vé theo ngày và check-in theo giờ. Các thông tin, số liệu thống kê và biểu đồ đều được lọc theo khoảng thời gian `from/to` (nếu có truyền). Nếu không truyền sẽ tính toàn bộ thời gian (ALL-TIME).
+- **Query Params:**
+  - `from`: Từ ngày lọc biểu đồ (yyyy-MM-dd). Null = từ ngày mở đăng ký sự kiện.
+  - `to`: Đến ngày lọc biểu đồ (yyyy-MM-dd). Null = hôm nay.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": {
+      "code": 200,
+      "message": "Lấy thống kê sự kiện thành công"
+    },
+    "data": {
+      "eventId": 1,
+      "eventTitle": "Lễ hội Âm nhạc mùa hè",
+      "status": "PUBLISHED",
+      "capacity": 1500,
+      "totalTicketsSold": 1200,
+      "ticketsRemaining": 300,
+      "occupancyRate": 80.0,
+      "checkedInCount": 980,
+      "notCheckedInCount": 220,
+      "checkInRate": 81.67,
+      "ticketPrice": 500000,
+      "totalRevenue": 600000000,
+      "successPaymentCount": 1200,
+      "pendingPaymentCount": 50,
+      "cancelledPaymentCount": 20,
+      "ticketSalesByDay": [
+        { "label": "2024-05-01", "count": 120 },
+        { "label": "2024-05-02", "count": 250 }
+      ],
+      "checkInByHour": [
+        { "label": "18:00 - 19:00", "count": 400 },
+        { "label": "19:00 - 20:00", "count": 580 }
+      ]
+    }
+  }
+  ```
+
+---
+
+## 12. HỆ THỐNG MÃ LỖI CHUẨN (ERROR HANDLING)
 
 ### 8.1. Lỗi Xác thực (401 Unauthorized)
 

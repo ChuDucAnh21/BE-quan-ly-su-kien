@@ -28,14 +28,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         Optional<Event> findByIdAndOrganizer(Long id, User organizer);
 
         // Tìm kiếm sự kiện đa luồng cho User, Organizer, Admin
-        // - keyword: tìm theo tên hoặc địa điểm
-        // - category: lọc theo danh mục
-        // - status: lọc theo trạng thái
-        // - organizerId: Nếu truy xuất danh sách của riêng 1 Organizer nào đó
         @Query("SELECT e FROM Event e WHERE " +
                         "(:keyword IS NULL OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(e.location) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
                         +
-                        "AND (:category IS NULL OR e.category = :category) " +
+                        "AND (:hasCategories = false OR e.category IN :categories) " +
                         "AND (:status IS NULL OR e.status = :status) " +
                         "AND (:organizerId IS NULL OR e.organizer.id = :organizerId) " +
                         "AND (CAST(:startTime AS timestamp) IS NULL OR e.startTime >= :startTime) " +
@@ -44,7 +40,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                         "AND (:maxPrice IS NULL OR e.ticketPrice <= :maxPrice) " +
                         "AND (:isFree IS NULL OR (:isFree = true AND e.ticketPrice = 0) OR (:isFree = false AND e.ticketPrice > 0))")
         Page<Event> searchEvents(@Param("keyword") String keyword,
-                        @Param("category") String category,
+                        @Param("hasCategories") boolean hasCategories,
+                        @Param("categories") java.util.List<String> categories,
                         @Param("status") EventStatus status,
                         @Param("organizerId") Long organizerId,
                         @Param("startTime") java.time.LocalDateTime startTime,
@@ -56,14 +53,19 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
         long countByOrganizer(User organizer);
 
+        @Query("SELECT COUNT(e) FROM Event e WHERE e.createdAt BETWEEN :startDate AND :endDate")
+        long countByCreatedAtBetween(@Param("startDate") java.time.LocalDateTime startDate,
+                        @Param("endDate") java.time.LocalDateTime endDate);
+
+        @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer = :organizer AND e.createdAt BETWEEN :startDate AND :endDate")
+        long countByOrganizerAndCreatedAtBetween(@Param("organizer") User organizer,
+                        @Param("startDate") java.time.LocalDateTime startDate,
+                        @Param("endDate") java.time.LocalDateTime endDate);
+
         // ===========================================================
         // CÁC QUERY THỐNG KÊ CHO DASHBOARD BIỂU ĐỒ
         // ===========================================================
 
-        /**
-         * Đếm số lượng sự kiện theo từng Trạng thái (Pie Chart).
-         * Kết quả: [{ status: "PUBLISHED", count: 30 }, ...]
-         */
         @Query("SELECT e.status as status, COUNT(e) as count FROM Event e GROUP BY e.status")
         List<Object[]> countGroupByStatus();
 

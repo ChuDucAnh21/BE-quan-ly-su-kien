@@ -39,7 +39,7 @@ public class PaymentTimeoutScheduler {
     @Scheduled(fixedRate = 300000) // @Scheduled là annotation của Spring Boot để lên lịch cho một phương thức
     @Transactional
     public void cancelUnpaidOrders() {
-        LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(5); // Thời hạn 5 phút
+        LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(30); // Thời hạn 5 phút
 
         List<Payment> expiredPayments = paymentRepository.findByStatusAndCreatedAtBefore(
                 PaymentStatus.PENDING, timeoutThreshold);
@@ -48,7 +48,7 @@ public class PaymentTimeoutScheduler {
             return;
         }
 
-        log.info("Bắt đầu quét và dọn dẹp {} đơn hàng ngâm quá 5 phút...", expiredPayments.size());
+        log.info("Bắt đầu quét và dọn dẹp {} đơn hàng ngâm quá 30 phút...", expiredPayments.size());
 
         for (Payment payment : expiredPayments) {
             // 1. Huỷ Payment

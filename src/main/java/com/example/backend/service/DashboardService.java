@@ -16,8 +16,8 @@ import java.util.List;
 public interface DashboardService {
 
     // ===================== API TỔNG QUAN =====================
-    AdminDashboardResponse getAdminDashboard();
-    OrganizerDashboardResponse getOrganizerDashboard();
+    AdminDashboardResponse getAdminDashboard(LocalDate from, LocalDate to);
+    OrganizerDashboardResponse getOrganizerDashboard(LocalDate from, LocalDate to);
 
     // ===================== BIỂU ĐỒ ADMIN =====================
 

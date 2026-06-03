@@ -25,6 +25,9 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     // Tìm kiếm đăng ký theo EventId và UserId
     Optional<Registration> findByEventIdAndUserId(Long eventId, Long userId);
 
+    // Tìm tất cả các đăng ký của một sự kiện
+    List<Registration> findByEventId(Long eventId);
+
     // Đếm số lượng vé đã bán theo nhóm eventId (Giải quyết N+1 Query trong getAllEvents)
     // Kết quả: [[eventId, count], [eventId, count], ...]
     @Query("SELECT r.event.id, COUNT(r) FROM Registration r " +

@@ -55,15 +55,44 @@ public class DashboardServiceImpl implements DashboardService {
         // API TỔNG QUAN (ĐÃ CÓ)
         // ===========================================================
 
+        private LocalDateTime toStartOfDay(LocalDate date) {
+                return date != null ? date.atStartOfDay() : null;
+        }
+
+        private LocalDateTime toEndOfDay(LocalDate date) {
+                return date != null ? date.atTime(LocalTime.MAX) : null;
+        }
+
         @Override
-        public AdminDashboardResponse getAdminDashboard() {
-                long totalUsers = userRepository.countByRole(Role.USER);
-                long totalOrganizers = userRepository.countByRole(Role.ORGANIZER);
-                long totalStaff = userRepository.countByRole(Role.STAFF);
-                long totalEvents = eventRepository.count();
-                long totalTickets = ticketRepository.count();
-                BigDecimal totalRevenueSuccess = paymentRepository.sumAmountByStatus(PaymentStatus.SUCCESS);
-                BigDecimal totalRevenueFail = paymentRepository.sumAmountByStatus(PaymentStatus.FAILED);
+        public AdminDashboardResponse getAdminDashboard(LocalDate from, LocalDate to) {
+                long totalUsers, totalOrganizers, totalStaff, totalAdmin, totalEvents, totalTickets;
+                BigDecimal totalRevenueSuccess, totalRevenueFail;
+
+                if (from == null && to == null) {
+                        totalUsers = userRepository.countByRole(Role.USER);
+                        totalOrganizers = userRepository.countByRole(Role.ORGANIZER);
+                        totalStaff = userRepository.countByRole(Role.STAFF);
+                        totalAdmin = userRepository.countByRole(Role.ADMIN);
+                        totalEvents = eventRepository.count();
+                        totalTickets = ticketRepository.count();
+                        totalRevenueSuccess = paymentRepository.sumAmountByStatus(PaymentStatus.SUCCESS);
+                        totalRevenueFail = paymentRepository.sumAmountByStatus(PaymentStatus.FAILED);
+                } else {
+                        LocalDateTime start = toStartOfDay(from != null ? from : LocalDate.of(2000, 1, 1));
+                        LocalDateTime end = toEndOfDay(to != null ? to : LocalDate.now());
+
+                        totalUsers = userRepository.countByRoleInRange(Role.USER, start, end);
+                        totalOrganizers = userRepository.countByRoleInRange(Role.ORGANIZER, start, end);
+                        totalStaff = userRepository.countByRoleInRange(Role.STAFF, start, end);
+                        totalAdmin = userRepository.countByRoleInRange(Role.ADMIN, start, end);
+                        totalEvents = eventRepository.countByCreatedAtBetween(start, end);
+                        totalTickets = ticketRepository.countByIssuedAtBetween(start, end);
+                        totalRevenueSuccess = paymentRepository
+                                        .sumAmountByStatusAndCreatedAtBetween(PaymentStatus.SUCCESS, start, end);
+                        totalRevenueFail = paymentRepository.sumAmountByStatusAndCreatedAtBetween(PaymentStatus.FAILED,
+                                        start, end);
+                }
+
                 if (totalRevenueSuccess == null)
                         totalRevenueSuccess = BigDecimal.ZERO;
                 if (totalRevenueFail == null)
@@ -73,6 +102,7 @@ public class DashboardServiceImpl implements DashboardService {
                                 .totalUsers(totalUsers)
                                 .totalOrganizers(totalOrganizers)
                                 .totalStaff(totalStaff)
+                                .totalAdmin(totalAdmin)
                                 .totalEvents(totalEvents)
                                 .totalTickets(totalTickets)
                                 .totalRevenueSuccess(totalRevenueSuccess)
@@ -81,21 +111,45 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         @Override
-        public OrganizerDashboardResponse getOrganizerDashboard() {
+        public OrganizerDashboardResponse getOrganizerDashboard(LocalDate from, LocalDate to) {
                 User organizer = getCurrentUser();
-                long totalEvents = eventRepository.countByOrganizer(organizer);
-                long totalTicketsSold = ticketRepository.countByOrganizerAndStatus(organizer.getId(),
-                                TicketStatus.ACTIVE)
-                                + ticketRepository.countByOrganizerAndStatus(organizer.getId(), TicketStatus.USED);
-                long totalCheckedIn = ticketRepository.countByOrganizerAndStatus(organizer.getId(), TicketStatus.USED);
-                BigDecimal totalRevenue = paymentRepository.sumAmountByOrganizerAndStatus(organizer.getId(),
-                                PaymentStatus.SUCCESS);
+                long totalEvents, totalTicketsSold, totalCheckedIn, totalCapacity;
+                BigDecimal totalRevenue;
+
+                if (from == null && to == null) {
+                        totalEvents = eventRepository.countByOrganizer(organizer);
+                        totalTicketsSold = ticketRepository.countByOrganizerAndStatus(organizer.getId(),
+                                        TicketStatus.ACTIVE)
+                                        + ticketRepository.countByOrganizerAndStatus(organizer.getId(),
+                                                        TicketStatus.USED);
+                        totalCheckedIn = ticketRepository.countByOrganizerAndStatus(organizer.getId(),
+                                        TicketStatus.USED);
+                        totalRevenue = paymentRepository.sumAmountByOrganizerAndStatus(organizer.getId(),
+                                        PaymentStatus.SUCCESS);
+                        totalCapacity = eventRepository.sumCapacityByOrganizerId(organizer.getId());
+                } else {
+                        LocalDateTime start = toStartOfDay(from != null ? from : LocalDate.of(2000, 1, 1));
+                        LocalDateTime end = toEndOfDay(to != null ? to : LocalDate.now());
+
+                        totalEvents = eventRepository.countByOrganizerAndCreatedAtBetween(organizer, start, end);
+                        totalTicketsSold = ticketRepository.countByOrganizerAndStatusInRange(organizer.getId(),
+                                        TicketStatus.ACTIVE, start, end)
+                                        + ticketRepository.countByOrganizerAndStatusInRange(organizer.getId(),
+                                                        TicketStatus.USED, start, end);
+                        totalCheckedIn = ticketRepository.countByOrganizerAndStatusInRange(organizer.getId(),
+                                        TicketStatus.USED, start, end);
+                        totalRevenue = paymentRepository.sumAmountByOrganizerAndStatusAndCreatedAtBetween(
+                                        organizer.getId(), PaymentStatus.SUCCESS, start, end);
+                        totalCapacity = eventRepository.sumCapacityByOrganizerIdInRange(organizer.getId(), start, end);
+                }
+
                 if (totalRevenue == null)
                         totalRevenue = BigDecimal.ZERO;
 
                 return OrganizerDashboardResponse.builder()
                                 .totalEvents(totalEvents)
                                 .totalTicketsSold(totalTicketsSold)
+                                .totalCapacity(totalCapacity)
                                 .totalCheckedIn(totalCheckedIn)
                                 .totalRevenue(totalRevenue)
                                 .build();
@@ -137,6 +191,7 @@ public class DashboardServiceImpl implements DashboardService {
          */
         @Override
         public List<UserGrowthPointDTO> getUserGrowthChart(LocalDate from, LocalDate to) {
+
                 LocalDateTime startDT = resolveFrom(from).atStartOfDay();
                 LocalDateTime endDT = resolveTo(to).atTime(LocalTime.MAX);
 
@@ -229,6 +284,50 @@ public class DashboardServiceImpl implements DashboardService {
                         LocalDateTime endDT = resolveTo(to).atTime(LocalTime.MAX);
                         rows = eventRepository.countGroupByCategoryInRange(startDT, endDT);
                 }
+                // config lại label để hiển thị tiếng việt
+                // { label: 'Âm nhạc và Giải trí', value: 'MUSIC' },
+                // { label: 'Hội nghị', value: 'CONFERENCE' },
+                // { label: 'Workshop', value: 'WORKSHOP' },
+                // { label: 'Triển lãm', value: 'EXHIBITION' },
+                // { label: 'Thể thao', value: 'SPORT' },
+                // { label: 'Công nghệ', value: 'TECH' },
+                // { label: 'Doanh nghiệp', value: 'BUSINESSES' },
+                // { label: 'Nghệ thuật', value: 'ART' },
+                // { label: 'Lễ hội', value: 'FESTIVAL' },
+                // { label: 'Cộng đồng', value: 'COMMUNITY' },
+                // { label: 'Trực tuyến', value: 'ONLINE' },
+                // { label: 'Khác', value: 'OTHER' },
+
+                rows.stream().forEach(row -> {
+                        String label = row[0].toString();
+                        if (label.equals("MUSIC")) {
+                                row[0] = "Âm nhạc và Giải trí";
+                        } else if (label.equals("SPORT")) {
+                                row[0] = "Thể thao";
+                        } else if (label.equals("ART_THEATER")) {
+                                row[0] = "Nghệ thuật";
+                        } else if (label.equals("CONFERENCE")) {
+                                row[0] = "Hội nghị";
+                        } else if (label.equals("TECH")) {
+                                row[0] = "Công nghệ";
+                        } else if (label.equals("FESTIVAL")) {
+                                row[0] = "Lễ hội";
+                        } else if (label.equals("WORKSHOP")) {
+                                row[0] = "Workshop";
+                        } else if (label.equals("EXHIBITION")) {
+                                row[0] = "Triển lãm";
+                        } else if (label.equals("ONLINE")) {
+                                row[0] = "Trực tuyến";
+                        } else if (label.equals("BUSINESS")) {
+                                row[0] = "Doanh nghiệp";
+                        } else if (label.equals("COMMUNITY")) {
+                                row[0] = "Cộng đồng";
+                        } else if (label.equals("OTHER")) {
+                                row[0] = "Khác";
+                        } else {
+                                row[0] = label;
+                        }
+                });
                 return rows.stream()
                                 .map(row -> ChartPointDTO.builder()
                                                 .label((String) row[0])
@@ -426,21 +525,42 @@ public class DashboardServiceImpl implements DashboardService {
                                 ? to.atTime(LocalTime.MAX)
                                 : LocalDateTime.now().with(LocalTime.MAX);
 
-                // 4. Thống kê vé (tổng hợp ALL-TIME — không lọc thời gian vì đây là số tuyệt
-                // đối)
-                long activeCount = ticketRepository.countByEventIdAndStatus(eventId, TicketStatus.ACTIVE);
-                long usedCount = ticketRepository.countByEventIdAndStatus(eventId, TicketStatus.USED);
+                // 4. Thống kê vé
+                long activeCount, usedCount;
+                if (from == null && to == null) {
+                        activeCount = ticketRepository.countByEventIdAndStatus(eventId, TicketStatus.ACTIVE);
+                        usedCount = ticketRepository.countByEventIdAndStatus(eventId, TicketStatus.USED);
+                } else {
+                        activeCount = ticketRepository.countByEventIdAndStatusInRange(eventId, TicketStatus.ACTIVE,
+                                        fromDT, toDT);
+                        usedCount = ticketRepository.countByEventIdAndStatusInRange(eventId, TicketStatus.USED, fromDT,
+                                        toDT);
+                }
+
                 long totalSold = activeCount + usedCount;
                 int capacity = event.getCapacity() != null ? event.getCapacity() : 0;
                 long remaining = Math.max(0, capacity - totalSold);
                 double occupancy = capacity > 0 ? Math.round((totalSold * 100.0 / capacity) * 10.0) / 10.0 : 0;
                 double checkInRate = totalSold > 0 ? Math.round((usedCount * 100.0 / totalSold) * 10.0) / 10.0 : 0;
 
-                // 5. Thống kê thanh toán (ALL-TIME)
-                BigDecimal revenue = paymentRepository.sumRevenueByEventId(eventId);
-                long successPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.SUCCESS);
-                long pendingPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.PENDING);
-                long cancelledPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.CANCELLED);
+                // 5. Thống kê thanh toán
+                BigDecimal revenue;
+                long successPayments, pendingPayments, cancelledPayments;
+
+                if (from == null && to == null) {
+                        revenue = paymentRepository.sumRevenueByEventId(eventId);
+                        successPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.SUCCESS);
+                        pendingPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.PENDING);
+                        cancelledPayments = paymentRepository.countByEventIdAndStatus(eventId, PaymentStatus.CANCELLED);
+                } else {
+                        revenue = paymentRepository.sumRevenueByEventIdInRange(eventId, fromDT, toDT);
+                        successPayments = paymentRepository.countByEventIdAndStatusInRange(eventId,
+                                        PaymentStatus.SUCCESS, fromDT, toDT);
+                        pendingPayments = paymentRepository.countByEventIdAndStatusInRange(eventId,
+                                        PaymentStatus.PENDING, fromDT, toDT);
+                        cancelledPayments = paymentRepository.countByEventIdAndStatusInRange(eventId,
+                                        PaymentStatus.CANCELLED, fromDT, toDT);
+                }
 
                 // 6. Biểu đồ bán vé theo ngày (lọc theo from/to)
                 List<Object[]> salesRows = ticketRepository.countSoldByDayForEvent(eventId, fromDT, toDT);

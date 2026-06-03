@@ -50,7 +50,7 @@ public class TicketServiceImpl implements TicketService {
         @Override
         @Transactional(readOnly = true)
         // Lấy danh sách vé của khách hàng theo id sự kiện
-        public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword, Pageable pageable) {
+        public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword, com.example.backend.enums.TicketStatus status, Pageable pageable) {
                 // 1. Kiểm tra quyền sở hữu sự kiện
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
@@ -68,11 +68,8 @@ public class TicketServiceImpl implements TicketService {
 
                 // 2. Fetch data và Mapping
                 Page<Ticket> tickets;
-                if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
-                        tickets = ticketRepository.findByEventIdAndSearch(eventId, searchKeyword.trim(), pageable);
-                } else {
-                        tickets = ticketRepository.findByRegistration_Event_Id(eventId, pageable);
-                }
+                String search = (searchKeyword != null && !searchKeyword.trim().isEmpty()) ? searchKeyword.trim() : null;
+                tickets = ticketRepository.findByEventIdAndSearchAndStatus(eventId, search, status, pageable);
 
                 return tickets.map(t -> {
                         User buyer = t.getRegistration().getUser();
@@ -287,11 +284,11 @@ public class TicketServiceImpl implements TicketService {
 
         @Override
         @Transactional(readOnly = true)
-        public Page<TicketResponse> getMyTickets(Pageable pageable) {
+        public Page<TicketResponse> getMyTickets(com.example.backend.enums.TicketStatus status, Pageable pageable) {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 log.info("Khách hàng đang truy vấn danh sách vé cá nhân: {}", email);
 
-                Page<Ticket> tickets = ticketRepository.findByRegistration_User_Email(email, pageable);
+                Page<Ticket> tickets = ticketRepository.findMyTickets(email, status, pageable);
 
                 return tickets.map(t -> TicketResponse.builder()
                                 .id(t.getId())
@@ -299,6 +296,10 @@ public class TicketServiceImpl implements TicketService {
                                 .hashedQrCode(null) // Không cần trả mã băm
                                 .eventId(t.getRegistration().getEvent().getId())
                                 .eventTitle(t.getRegistration().getEvent().getTitle())
+                                .eventImageUrl(t.getRegistration().getEvent().getBannerUrl())
+                                .startTimeEvent(t.getRegistration().getEvent().getStartTime())
+                                .endTimeEvent(t.getRegistration().getEvent().getEndTime())
+                                .locationEvent(t.getRegistration().getEvent().getLocation())
                                 .ticketPrice(t.getRegistration().getEvent().getTicketPrice())
                                 .registrationCode(t.getRegistration().getRegistrationCode())
                                 .userId(t.getRegistration().getUser().getId())

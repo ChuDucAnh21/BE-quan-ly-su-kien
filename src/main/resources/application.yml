@@ -43,8 +43,10 @@ app:
   jwt:
     # Key này phải cực kỳ bảo mật (Base64 JWT Secret có độ dài tối thiểu 256bit)
     secret: VmVyeVNlY3JldEtleUZvckV2ZW50TWFuYWdlbWVudEFwcGxpY2F0aW9uSHMyNTZTaWduYXR1cmUyMDI0
-    expiration: 300000 # 5 phút (Access Token)
+    expiration: 3600000 # 1 phút (Access Token)
     refresh-expiration: 2592000000 # 30 ngày (Refresh Token)
+  google:
+    client-id: "596490033528-oa192astnfgc18ipmhbkn06qj71r4idq.apps.googleusercontent.com"
 
 # Cấu hình Cloudinary (Thực tế sẽ nhét giá trị lấy từ nền tảng Cloudinary)
 # để lưu trữ ảnh sự kiện

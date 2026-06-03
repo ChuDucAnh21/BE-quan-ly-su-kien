@@ -22,4 +22,13 @@ public interface EventStaffAssignmentRepository extends JpaRepository<EventStaff
     // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID (Dành cho Admin/Organizer/Staff xem của chính mình)
     @org.springframework.data.jpa.repository.Query("SELECT e.event FROM EventStaffAssignment e WHERE e.staff.id = :staffId")
     org.springframework.data.domain.Page<com.example.backend.entity.Event> findEventsByStaffId(@org.springframework.data.repository.query.Param("staffId") Long staffId, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM EventStaffAssignment e WHERE e.event.id = :eventId " +
+            "AND (:status IS NULL OR e.staff.status = :status) " +
+            "AND (:search IS NULL OR LOWER(e.staff.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(e.staff.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+    org.springframework.data.domain.Page<EventStaffAssignment> findStaffsByEventIdWithFilters(
+            @org.springframework.data.repository.query.Param("eventId") Long eventId,
+            @org.springframework.data.repository.query.Param("search") String search,
+            @org.springframework.data.repository.query.Param("status") com.example.backend.enums.UserStatus status,
+            org.springframework.data.domain.Pageable pageable);
 }

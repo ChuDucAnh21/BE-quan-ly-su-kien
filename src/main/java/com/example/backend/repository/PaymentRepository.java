@@ -22,7 +22,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
         // Lấy danh sách giao dịch đang chờ thanh toán của người dùng hiện tại (để có
         // thể mở lại trang thanh toán)
-        List<Payment> findByRegistration_User_EmailAndStatusOrderByCreatedAtDesc(String email, PaymentStatus status);
+        @Query("SELECT p FROM Payment p WHERE p.registration.user.email = :email AND p.status = :status AND (:search IS NULL OR LOWER(p.registration.event.title) LIKE LOWER(CONCAT('%', :search, '%')))")
+        org.springframework.data.domain.Page<Payment> findPendingPaymentsWithSearch(
+            @org.springframework.data.repository.query.Param("email") String email, 
+            @org.springframework.data.repository.query.Param("status") PaymentStatus status, 
+            @org.springframework.data.repository.query.Param("search") String search, 
+            org.springframework.data.domain.Pageable pageable);
 
         // Kỹ thuật PESSIMISTIC_WRITE (Khóa bi quan): Khi một request (Webhook PayOS)
         // gọi hàm này,
@@ -46,6 +51,19 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         java.math.BigDecimal sumAmountByOrganizerAndStatus(
                         @org.springframework.data.repository.query.Param("organizerId") Long organizerId,
                         @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+
+        @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
+        java.math.BigDecimal sumAmountByStatusAndCreatedAtBetween(
+                        @org.springframework.data.repository.query.Param("status") PaymentStatus status,
+                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
+                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status AND p.registration.event.organizer.id = :organizerId AND p.createdAt BETWEEN :startDate AND :endDate")
+        java.math.BigDecimal sumAmountByOrganizerAndStatusAndCreatedAtBetween(
+                        @org.springframework.data.repository.query.Param("organizerId") Long organizerId,
+                        @org.springframework.data.repository.query.Param("status") PaymentStatus status,
+                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
+                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
 
         // ===========================================================
         // CÁC QUERY THỐNG KÊ CHO DASHBOARD BIỂU ĐỒ
@@ -99,12 +117,29 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         java.math.BigDecimal sumRevenueByEventId(
                 @org.springframework.data.repository.query.Param("eventId") Long eventId);
 
+        /** Tổng doanh thu SUCCESS của 1 sự kiện trong khoảng thời gian */
+        @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+               "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate")
+        java.math.BigDecimal sumRevenueByEventIdInRange(
+                @org.springframework.data.repository.query.Param("eventId") Long eventId,
+                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
+
         /** Đếm giao dịch theo trạng thái cho 1 sự kiện */
         @Query("SELECT COUNT(p) FROM Payment p " +
                "WHERE p.registration.event.id = :eventId AND p.status = :status")
         long countByEventIdAndStatus(
                 @org.springframework.data.repository.query.Param("eventId") Long eventId,
                 @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+
+        /** Đếm giao dịch theo trạng thái cho 1 sự kiện trong khoảng thời gian */
+        @Query("SELECT COUNT(p) FROM Payment p " +
+               "WHERE p.registration.event.id = :eventId AND p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
+        long countByEventIdAndStatusInRange(
+                @org.springframework.data.repository.query.Param("eventId") Long eventId,
+                @org.springframework.data.repository.query.Param("status") PaymentStatus status,
+                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
 
         /** Lấy danh sách giao dịch thanh toán của một sự kiện, có phân trang, tìm kiếm và lọc theo khoảng thời gian */
         @Query("SELECT p FROM Payment p " +

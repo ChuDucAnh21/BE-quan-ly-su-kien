@@ -20,6 +20,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.example.backend.dto.request.GoogleLoginRequest;
+
+import java.util.Collections;
 
 @Service // Đánh dấu đây là lớp xử lý logic nghiệp vụ, Spring sẽ quản lý nó dưới dạng 1
          // Bean
@@ -32,6 +42,9 @@ public class AuthService {
         private final PasswordEncoder passwordEncoder; // Công cụ dùng để băm (hash) mật khẩu (Bcrypt)/ tức là mã hóa
                                                        // mật khẩu
         private final JwtTokenProvider tokenProvider; // Công cụ sinh và xác thực mã Token JWT
+
+        @Value("${app.google.client-id}")
+        private String googleClientId;
 
         @Transactional // Đảm bảo tính Toàn Vẹn: Nếu việc lưu User bị lỗi, thì mọi thứ trước đó trong
                        // hàm này cũng sẽ bị hủy bỏ (Rollback).
@@ -142,5 +155,91 @@ public class AuthService {
                 // 4. Sinh Access Token mới
                 CustomUserDetails userDetails = new CustomUserDetails(user);
                 return tokenProvider.generateAccessToken(userDetails);
+        }
+
+        /**
+         * Xử lý luồng Đăng nhập bằng Google.
+         * Xác minh idToken từ Google, nếu email chưa tồn tại thì tạo tài khoản mới (Provider = GOOGLE).
+         * Nếu đã tồn tại (dù là LOCAL hay GOOGLE), hợp nhất và cho phép đăng nhập luôn.
+         */
+        @Transactional
+        public LoginResponse googleLogin(GoogleLoginRequest request) {
+                try {
+                        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                                        .setAudience(Collections.singletonList(googleClientId))
+                                        .build();
+
+                        GoogleIdToken idToken = verifier.verify(request.getIdToken());
+                        if (idToken != null) {
+                                Payload payload = idToken.getPayload();
+                                String email = payload.getEmail();
+                                String name = (String) payload.get("name");
+                                String pictureUrl = (String) payload.get("picture");
+                                String googleId = payload.getSubject();
+
+                                // Kiểm tra xem user đã tồn tại chưa
+                                User user = userRepository.findByEmail(email).orElse(null);
+                                if (user == null) {
+                                        // Tạo mới hoàn toàn (Mật khẩu = null vì đăng nhập Google)
+                                        user = User.builder()
+                                                        .email(email)
+                                                        .fullName(name)
+                                                        .avatarUrl(pictureUrl)
+                                                        .role(Role.USER)
+                                                        .status(UserStatus.ACTIVE)
+                                                        .authProvider(com.example.backend.enums.AuthProvider.GOOGLE)
+                                                        .providerId(googleId)
+                                                        .build();
+                                        user = userRepository.save(user);
+                                } else {
+                                        // Nếu User đã tồn tại (dù trước đó là LOCAL), ta tự động map và hợp nhất.
+                                        // Có thể cập nhật lại avatar nếu chưa có
+                                        if (user.getAvatarUrl() == null || user.getAvatarUrl().contains("ui-avatars.com")) {
+                                                user.setAvatarUrl(pictureUrl);
+                                        }
+                                        // Cập nhật lại provider Id cho chắc chắn
+                                        if (user.getProviderId() == null) {
+                                                user.setProviderId(googleId);
+                                                user.setAuthProvider(com.example.backend.enums.AuthProvider.GOOGLE);
+                                        }
+                                        userRepository.save(user);
+                                }
+
+                                // Sau khi lấy hoặc tạo User thành công -> Xác thực ảo với Spring Security
+                                CustomUserDetails userDetails = new CustomUserDetails(user);
+                                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                                userDetails, null, userDetails.getAuthorities());
+                                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                                // Trả về Token và Profile
+                                String accessToken = tokenProvider.generateAccessToken(userDetails);
+                                String refreshToken = tokenProvider.generateRefreshToken(userDetails);
+
+                                UserProfileResponse userResponse = UserProfileResponse.builder()
+                                                .id(user.getId())
+                                                .email(user.getEmail())
+                                                .fullName(user.getFullName())
+                                                .phone(user.getPhone())
+                                                .avatarUrl(user.getAvatarUrl())
+                                                .role(user.getRole().name())
+                                                .status(user.getStatus().name())
+                                                .gender(user.getGender() != null ? user.getGender().name() : null)
+                                                .dateOfBirth(user.getDateOfBirth())
+                                                .address(user.getAddress())
+                                                .createdAt(user.getCreatedAt())
+                                                .build();
+
+                                return LoginResponse.builder()
+                                                .accessToken(accessToken)
+                                                .refreshToken(refreshToken)
+                                                .user(userResponse)
+                                                .build();
+                        } else {
+                                throw new AppException(ErrorCode.UNAUTHENTICATED);
+                        }
+                } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new AppException(ErrorCode.UNAUTHENTICATED); // Báo lỗi nếu token Google giả mạo hoặc hết hạn
+                }
         }
 }

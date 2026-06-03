@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.PayOS;
@@ -154,18 +155,31 @@ public class PaymentController {
 
     @GetMapping("/my-tickets-pending")
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<RegistrationResponse>>> getMyPendingPayments() {
+    public ResponseEntity<ApiResponse<com.example.backend.dto.response.PageResponse<RegistrationResponse>>> getMyPendingPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "desc") String sort,
+            @RequestParam(required = false) String search) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("Lấy danh sách đơn hàng đang chờ thanh toán (PENDING) cho user: {}", email);
 
-        List<Payment> pendingPayments = paymentRepository
-                .findByRegistration_User_EmailAndStatusOrderByCreatedAtDesc(email, PaymentStatus.PENDING);
+        org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort)
+                ? org.springframework.data.domain.Sort.Direction.ASC
+                : org.springframework.data.domain.Sort.Direction.DESC;
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by(direction, "createdAt"));
 
-        List<RegistrationResponse> data = pendingPayments.stream().map(payment -> {
+        org.springframework.data.domain.Page<Payment> pendingPaymentsPage = paymentRepository
+                .findPendingPaymentsWithSearch(email, PaymentStatus.PENDING, search, pageable);
+
+        org.springframework.data.domain.Page<RegistrationResponse> dataPage = pendingPaymentsPage.map(payment -> {
             Registration registration = payment.getRegistration();
             return RegistrationResponse.builder()
                     .registrationId(registration.getId())
                     .eventId(registration.getEvent().getId())
+                    .eventName(registration.getEvent().getTitle())
+                    .eventPrice(registration.getEvent().getTicketPrice())
+                    .eventImage(registration.getEvent().getBannerUrl())
                     .eventStartTime(registration.getEvent().getStartTime())
                     .userId(registration.getUser().getId())
                     .registrationCode(registration.getRegistrationCode())
@@ -175,12 +189,22 @@ public class PaymentController {
                     .orderCode(payment.getOrderCode())
                     .amount(payment.getAmount())
                     .build();
-        }).toList();
+        });
 
-        return ResponseEntity.ok(ApiResponse.<List<RegistrationResponse>>builder()
-                .status(ApiResponse.Status.builder().code(200)
-                        .message("Lấy danh sách các khoản chờ thanh toán thành công").build())
-                .data(data)
-                .build());
+        com.example.backend.dto.response.PageResponse<RegistrationResponse> pageResponse = com.example.backend.dto.response.PageResponse
+                .<RegistrationResponse>builder()
+                .currentPage(dataPage.getNumber())
+                .totalPages(dataPage.getTotalPages())
+                .pageSize(dataPage.getSize())
+                .totalElements(dataPage.getTotalElements())
+                .data(dataPage.getContent())
+                .build();
+
+        return ResponseEntity
+                .ok(ApiResponse.<com.example.backend.dto.response.PageResponse<RegistrationResponse>>builder()
+                        .status(ApiResponse.Status.builder().code(200)
+                                .message("Lấy danh sách các khoản chờ thanh toán thành công").build())
+                        .data(pageResponse)
+                        .build());
     }
 }

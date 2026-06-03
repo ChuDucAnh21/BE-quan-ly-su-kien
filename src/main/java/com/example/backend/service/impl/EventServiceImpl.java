@@ -7,6 +7,7 @@ import com.example.backend.dto.response.EventScheduleResponse;
 import com.example.backend.dto.response.PageResponse;
 import com.example.backend.entity.Event;
 import com.example.backend.entity.EventSchedule;
+import com.example.backend.entity.Registration;
 import com.example.backend.entity.User;
 import com.example.backend.enums.EventStatus;
 import com.example.backend.enums.RegistrationStatus;
@@ -53,6 +54,8 @@ public class EventServiceImpl implements EventService {
     // Dùng để lấy danh sách lịch trình con khi trả về chi tiết sự kiện
     private final EventScheduleRepository eventScheduleRepository;
     private final com.example.backend.repository.EventStaffAssignmentRepository eventStaffAssignmentRepository;
+    private final com.example.backend.repository.TicketRepository ticketRepository;
+    private final com.example.backend.repository.PaymentRepository paymentRepository;
 
     // Helper: Lấy User đang đăng nhập dựa trên email trong Token
     private User getCurrentUser() {
@@ -177,7 +180,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<EventResponse> getAllEvents(int page, int size, String keyword, String category,
+    public PageResponse<EventResponse> getAllEvents(int page, int size, String keyword,
+            java.util.List<String> categories,
             EventStatus status, Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
             java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree, String sort) {
         // Tùy chỉnh sắp xếp mới nhất (desc) hoặc cũ nhất (asc)
@@ -186,7 +190,7 @@ public class EventServiceImpl implements EventService {
 
         // Chuyển rỗng thành null để Query JPQL lờ đi
         String finalKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
-        String finalCategory = (category != null && category.trim().isEmpty()) ? null : category;
+        java.util.List<String> finalCategories = (categories != null && !categories.isEmpty()) ? categories : null;
 
         // BẢO MẬT HIỂN THỊ (VISIBILITY SECURITY)
         // Nếu không phải ADMIN, và cũng không phải ORGANIZER đang truy cập danh sách
@@ -212,7 +216,10 @@ public class EventServiceImpl implements EventService {
             finalStatus = EventStatus.PUBLISHED; // Lọc cứng những sự kiện thuộc về mảng Public
         }
 
-        Page<Event> eventPage = eventRepository.searchEvents(finalKeyword, finalCategory, finalStatus, organizerId,
+        boolean hasCategories = (finalCategories != null);
+
+        Page<Event> eventPage = eventRepository.searchEvents(finalKeyword, hasCategories, finalCategories, finalStatus,
+                organizerId,
                 startTime, endTime, minPrice, maxPrice, isFree, pageable);
 
         List<Long> eventIds = eventPage.getContent().stream()
@@ -460,13 +467,32 @@ public class EventServiceImpl implements EventService {
                 List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
 
         if (ticketsSold > 0) {
-            // KHÔNG xóa vật lý kể cả là Admin để bảo toàn dữ liệu (Tickets, Payments, Registrations...)
+            // KHÔNG xóa vật lý kể cả là Admin để bảo toàn dữ liệu (Tickets, Payments,
+            // Registrations...)
             // Ép sang trạng thái CANCELLED
             event.setStatus(EventStatus.CANCELLED);
             eventRepository.save(event);
-            log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé (Người thực hiện: {})", eventId, currentUser.getId());
+            log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé (Người thực hiện: {})",
+                    eventId, currentUser.getId());
         } else {
-            // Xóa vật lý khi chưa có ai mua vé
+            // Xóa vật lý khi chưa có ai mua vé thành công
+            // 1. Xóa toàn bộ Staff Assignments
+            List<com.example.backend.entity.EventStaffAssignment> assignments = eventStaffAssignmentRepository
+                    .findByEventId(eventId);
+            eventStaffAssignmentRepository.deleteAll(assignments);
+
+            // 2. Xóa toàn bộ Registration rác (PENDING_PAYMENT, CANCELLED)
+            List<Registration> junkRegistrations = registrationRepository.findByEventId(eventId);
+            for (Registration reg : junkRegistrations) {
+                ticketRepository.findByRegistrationId(reg.getId()).ifPresent(ticketRepository::delete);
+                paymentRepository.findByRegistrationId(reg.getId()).ifPresent(paymentRepository::delete);
+                registrationRepository.delete(reg);
+            }
+
+            // 3. Xóa các lịch trình con
+            eventScheduleRepository.deleteAllByEventId(eventId);
+
+            // 4. Xóa sự kiện
             eventRepository.delete(event);
             log.info("Đã xóa vĩnh viễn EVENT_ID {} ra khỏi hệ thống", eventId);
         }

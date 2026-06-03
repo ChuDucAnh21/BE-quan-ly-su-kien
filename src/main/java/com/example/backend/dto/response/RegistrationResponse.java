@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 public class RegistrationResponse {
     private Long registrationId;
     private Long eventId;
+    private String eventName;
+    private BigDecimal eventPrice;
+    private String eventImage;
     private LocalDateTime eventStartTime;
     private Long userId;
     private String registrationCode;

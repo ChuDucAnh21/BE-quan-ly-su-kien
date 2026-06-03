@@ -1,7 +1,9 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.response.ApiResponse;
+import com.example.backend.dto.response.PageResponse;
 import com.example.backend.dto.response.StaffResponse;
+import com.example.backend.enums.UserStatus;
 import com.example.backend.service.EventStaffService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +23,23 @@ public class EventStaffController {
         // API 2: Lấy danh sách Staff đang phụ trách sự kiện này
         @GetMapping
         @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
-        public ResponseEntity<ApiResponse<List<StaffResponse>>> getStaffsByEvent(
-                        @PathVariable("eventId") Long eventId) {
-                List<StaffResponse> data = eventStaffService.getStaffsByEventId(eventId);
-                ApiResponse<List<StaffResponse>> response = ApiResponse.<List<StaffResponse>>builder()
+        public ResponseEntity<ApiResponse<PageResponse<StaffResponse>>> getStaffsByEvent(
+                        @PathVariable("eventId") Long eventId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "desc") String sort,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(required = false) UserStatus status) {
+
+                org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort)
+                                ? org.springframework.data.domain.Sort.Direction.ASC
+                                : org.springframework.data.domain.Sort.Direction.DESC;
+                org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page,
+                                size, org.springframework.data.domain.Sort.by(direction, "createdAt"));
+
+                com.example.backend.dto.response.PageResponse<StaffResponse> data = eventStaffService
+                                .getStaffsByEventId(eventId, search, status, pageable);
+                ApiResponse<com.example.backend.dto.response.PageResponse<StaffResponse>> response = ApiResponse.<com.example.backend.dto.response.PageResponse<StaffResponse>>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .code(200)
                                                 .message("Lấy danh sách nhân viên của sự kiện thành công")

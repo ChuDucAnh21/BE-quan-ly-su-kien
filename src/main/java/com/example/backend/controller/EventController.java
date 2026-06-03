@@ -35,17 +35,17 @@ public class EventController {
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(required = false) String keyword,
-                        @RequestParam(required = false) String category,
+                        @RequestParam(required = false) java.util.List<String> categories,
                         @RequestParam(required = false) EventStatus status,
                         @RequestParam(required = false) Long organizerId,
-                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startTime,
-                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endTime,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startTime,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endTime,
                         @RequestParam(required = false) java.math.BigDecimal minPrice,
                         @RequestParam(required = false) java.math.BigDecimal maxPrice,
                         @RequestParam(required = false) Boolean isFree,
                         @RequestParam(defaultValue = "desc") String sort) {
 
-                PageResponse<EventResponse> data = eventService.getAllEvents(page, size, keyword, category, status,
+                PageResponse<EventResponse> data = eventService.getAllEvents(page, size, keyword, categories, status,
                                 organizerId, startTime, endTime, minPrice, maxPrice, isFree, sort);
                 return ApiResponse.<PageResponse<EventResponse>>builder()
                                 .status(ApiResponse.Status.builder()
@@ -114,7 +114,7 @@ public class EventController {
                 eventService.changeEventStatus(id, newStatus);
                 return ApiResponse.<Void>builder()
                                 .status(ApiResponse.Status.builder()
-                                                .message("Cập nhật trạng thái sự kiện thành: " + newStatus)
+                                                .message("Cập nhật trạng thái sự kiện thành công.")
                                                 .build())
                                 .build();
         }
@@ -131,7 +131,7 @@ public class EventController {
                 eventService.deleteEvent(id);
                 return ApiResponse.<Void>builder()
                                 .status(ApiResponse.Status.builder()
-                                                .message("Thao tác loại bỏ sự kiện thành công")
+                                                .message("Xóa hoặc hủy sự kiện thành công")
                                                 .build())
                                 .build();
         }

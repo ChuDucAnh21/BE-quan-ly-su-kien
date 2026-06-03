@@ -74,6 +74,36 @@ public class AuthController {
                                 .build();
         }
 
+        // 2.5 API Đăng nhập bằng Google
+        @PostMapping("/google-login")
+        public ApiResponse<LoginResponse> googleLogin(@RequestBody @Valid com.example.backend.dto.request.GoogleLoginRequest request,
+                        HttpServletResponse response) {
+                LoginResponse loginResponse = authService.googleLogin(request);
+
+                // Lưu JWT vào Cookie tương tự login bình thường
+                Cookie accessCookie = new Cookie("access_token", loginResponse.getAccessToken());
+                accessCookie.setHttpOnly(true);
+                accessCookie.setSecure(true);
+                accessCookie.setPath("/");
+                accessCookie.setMaxAge(24 * 60 * 60);
+
+                Cookie refreshCookie = new Cookie("refresh_token", loginResponse.getRefreshToken());
+                refreshCookie.setHttpOnly(true);
+                refreshCookie.setSecure(true);
+                refreshCookie.setPath("/api/v1/auth/refresh");
+                refreshCookie.setMaxAge(30 * 24 * 60 * 60);
+
+                response.addCookie(accessCookie);
+                response.addCookie(refreshCookie);
+
+                return ApiResponse.<LoginResponse>builder()
+                                .status(ApiResponse.Status.builder()
+                                                .message("Google Login successful")
+                                                .build())
+                                .data(loginResponse)
+                                .build();
+        }
+
         // 3. API Đăng xuất hệ thống (Logout)
         @PostMapping("/logout")
         public ApiResponse<Void> logout(HttpServletResponse response) {

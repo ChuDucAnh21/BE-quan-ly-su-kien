@@ -1,5 +1,7 @@
 package com.example.backend.dto.response;
 
+import com.example.backend.enums.UserStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,4 +17,5 @@ public class StaffResponse {
     private String email;
     private String phone;
     private String avatarUrl;
+    private Boolean isActive;
 }

@@ -31,10 +31,11 @@ public class TicketController {
                         @PathVariable Long eventId,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(required = false) String search) {
+                        @RequestParam(required = false) String search,
+                        @RequestParam(required = false) com.example.backend.enums.TicketStatus status) {
 
                 Pageable pageable = PageRequest.of(page, size);
-                Page<TicketResponse> ticketPage = ticketService.getTicketsCustomerByEventId(eventId, search, pageable);
+                Page<TicketResponse> ticketPage = ticketService.getTicketsCustomerByEventId(eventId, search, status, pageable);
 
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
                                 .currentPage(ticketPage.getNumber())
@@ -56,9 +57,12 @@ public class TicketController {
         @PreAuthorize("isAuthenticated()") // User nào cũng lấy được vé của chính mình
         public ApiResponse<PageResponse<TicketResponse>> getMyTickets(
                         @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
-                Pageable pageable = PageRequest.of(page, size);
-                Page<TicketResponse> dataPage = ticketService.getMyTickets(pageable);
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "desc") String sort,
+                        @RequestParam(required = false) com.example.backend.enums.TicketStatus status) {
+                org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? org.springframework.data.domain.Sort.Direction.ASC : org.springframework.data.domain.Sort.Direction.DESC;
+                Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by(direction, "createdAt"));
+                Page<TicketResponse> dataPage = ticketService.getMyTickets(status, pageable);
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
                                 .currentPage(dataPage.getNumber())
                                 .totalPages(dataPage.getTotalPages())

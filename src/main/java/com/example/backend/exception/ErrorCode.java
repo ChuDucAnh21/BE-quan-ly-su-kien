@@ -15,6 +15,7 @@ public enum ErrorCode {
         INVALID_PASSWORD(400, "Mật khẩu không chính xác", HttpStatus.BAD_REQUEST),
         UNAUTHENTICATED(401, "Nguoi dung chua xac thuc", HttpStatus.UNAUTHORIZED),
         ACCESS_DENIED(403, "Không có quyền truy cập", HttpStatus.FORBIDDEN),
+        NO_CAN_BLOCK_ADMIN_ACCOUNT(400, "Bạn không thể khóa tài khoản ADMIN", HttpStatus.BAD_REQUEST),
 
         // Lỗi liên quan đến Sự kiện (Event Phase 5)
         EVENT_NOT_FOUND(404, "Không tìm thấy sự kiện", HttpStatus.NOT_FOUND),

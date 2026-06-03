@@ -50,7 +50,7 @@ public class RegistrationController {
                 ApiResponse<Void> response = ApiResponse.<Void>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .code(200)
-                                                .message("Đã hủy vé thành công. Hệ thống đã nhả lại suất trống cho những người khác.")
+                                                .message("Đã hủy đăng ký thành công. Hệ thống đã nhả lại suất trống cho những người khác.")
                                                 .build())
                                 .build();
 

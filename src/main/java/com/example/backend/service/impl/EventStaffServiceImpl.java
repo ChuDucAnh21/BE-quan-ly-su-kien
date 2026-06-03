@@ -45,6 +45,7 @@ public class EventStaffServiceImpl implements EventStaffService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .isActive(user.getStatus() == UserStatus.ACTIVE)
                 .avatarUrl(user.getAvatarUrl())
                 .build();
     }
@@ -69,12 +70,11 @@ public class EventStaffServiceImpl implements EventStaffService {
 
     // Lấy danh sách nhân viên đã được phân công vào sự kiện
     @Override
-    public List<StaffResponse> getStaffsByEventId(Long eventId) {
+    public com.example.backend.dto.response.PageResponse<StaffResponse> getStaffsByEventId(Long eventId, String search,
+            com.example.backend.enums.UserStatus status, org.springframework.data.domain.Pageable pageable) {
         if (!eventRepository.existsById(eventId)) {
             throw new AppException(ErrorCode.EVENT_NOT_FOUND);
         }
-
-        List<EventStaffAssignment> assignments = eventStaffAssignmentRepository.findByEventId(eventId);
 
         // --- BẢO MẬT PHÂN QUYỀN TRUY CẬP (Theo yêu cầu: ADMIN, ORGANIZER và Staff
         // thuộc Event) ---
@@ -85,11 +85,10 @@ public class EventStaffServiceImpl implements EventStaffService {
         if (role == Role.USER) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         // Nếu là STAFF thì phải chắc chắn nằm trong danh sách phân công của Event này
         if (role == Role.STAFF) {
-            boolean isAssignedToThisEvent = assignments.stream()
-                    .anyMatch(assignment -> assignment.getStaff().getId().equals(currentUser.getId()));
+            boolean isAssignedToThisEvent = eventStaffAssignmentRepository.existsByEventIdAndStaff_Email(eventId,
+                    currentUser.getEmail());
 
             if (!isAssignedToThisEvent) {
                 // Trả về lỗi không có quyền truy cập
@@ -98,9 +97,19 @@ public class EventStaffServiceImpl implements EventStaffService {
         }
         // Admin và Organizer được xem thoải mái
 
-        return assignments.stream()
-                .map(assignment -> mapToStaffResponse(assignment.getStaff()))
-                .collect(Collectors.toList());
+        org.springframework.data.domain.Page<EventStaffAssignment> assignmentPage = eventStaffAssignmentRepository
+                .findStaffsByEventIdWithFilters(eventId, search, status, pageable);
+
+        org.springframework.data.domain.Page<StaffResponse> staffPage = assignmentPage
+                .map(assignment -> mapToStaffResponse(assignment.getStaff()));
+
+        return com.example.backend.dto.response.PageResponse.<StaffResponse>builder()
+                .currentPage(staffPage.getNumber())
+                .totalPages(staffPage.getTotalPages())
+                .pageSize(staffPage.getSize())
+                .totalElements(staffPage.getTotalElements())
+                .data(staffPage.getContent())
+                .build();
     }
 
     @Override
@@ -170,7 +179,9 @@ public class EventStaffServiceImpl implements EventStaffService {
         }
 
         // Trả về danh sách Staff sau khi đã Sync
-        return getStaffsByEventId(eventId);
+        return eventStaffAssignmentRepository.findByEventId(eventId).stream()
+                .map(assignment -> mapToStaffResponse(assignment.getStaff()))
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.example.backend.dto.request.ChangePasswordRequest;
 import com.example.backend.dto.request.UpdateProfileRequest;
 import com.example.backend.dto.response.UserProfileResponse;
 import com.example.backend.entity.User;
+import com.example.backend.enums.Role;
 import com.example.backend.enums.UserStatus;
 import com.example.backend.exception.AppException;
 import com.example.backend.exception.ErrorCode;
@@ -89,6 +90,11 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+        // Kiểm tra nếu là ADMIN thì ném lỗi
+        if (user.getRole() == Role.ADMIN) {
+            throw new AppException(ErrorCode.NO_CAN_BLOCK_ADMIN_ACCOUNT);
+        }
+
         // Chuyển trạng thái sang LOCKED (Người dùng sẽ không thể login được nữa)
         user.setStatus(UserStatus.LOCKED);
         userRepository.save(user);
@@ -110,5 +116,14 @@ public class UserService {
                 .address(user.getAddress())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    // 6. Lấy thông tin công khai của một người dùng bất kỳ
+    @Transactional(readOnly = true)
+    public UserProfileResponse getPublicProfileById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        return buildProfileResponse(user);
     }
 }

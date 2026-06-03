@@ -50,11 +50,12 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final PaymentConfigRepository paymentConfigRepository;
     private final TicketRepository ticketRepository;
 
-    // URL callback của FE sau khi thanh toán PayOS, cấu hình trong application.properties
-    @Value("${app.payment.return-url:http://localhost:3000/payment-success}")
+    // URL callback của FE sau khi thanh toán PayOS, cấu hình trong
+    // application.properties
+    @Value("${app.payment.return-url:http://localhost:3000/notifincation/register/registerSuccess}")
     private String paymentReturnUrl;
 
-    @Value("${app.payment.cancel-url:http://localhost:3000/payment-cancel}")
+    @Value("${app.payment.cancel-url:http://localhost:3000/notifincation/register/registerFaild}")
     private String paymentCancelUrl;
 
     private User getCurrentUser() {
@@ -103,27 +104,21 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         // 4. Khóa User (UniqueConstraint): 1 User chỉ được mua 1 vé cho 1 Event
-        if (registrationRepository.existsByEventIdAndUserId(eventId, currentUser.getId())) {
-            // Optional<Registration> registrationCurrent = registrationRepository
-            // .findByEventIdAndUserId(eventId, currentUser.getId());
-            // if (registrationCurrent.get().getStatus() ==
-            // RegistrationStatus.PENDING_PAYMENT
-            // || registrationCurrent.get().getStatus() == RegistrationStatus.CONFIRMED
-            // || registrationCurrent.get().getStatus() == RegistrationStatus.CHECKED_IN) {
-            throw new AppException(ErrorCode.ALREADY_REGISTERED);
-            // } else if (registrationCurrent.get().getStatus() ==
-            // RegistrationStatus.CANCELLED) {
-            // // Xử lý logic cho trường hợp vé đã bị hủy
-            // ticketRepository.findByRegistrationId(registrationCurrent.get().getId()).ifPresent(ticket
-            // -> {
-            // ticketRepository.delete(ticket);
-            // });
-            // paymentRepository.findByRegistrationId(registrationCurrent.get().getId()).ifPresent(payment
-            // -> {
-            // paymentRepository.delete(payment);
-            // });
-            // registrationRepository.delete(registrationCurrent.get());
-            // }
+        java.util.Optional<Registration> optReg = registrationRepository.findByEventIdAndUserId(eventId, currentUser.getId());
+        if (optReg.isPresent()) {
+            Registration existingReg = optReg.get();
+            if (existingReg.getStatus() == RegistrationStatus.CANCELLED) {
+                // Nếu đã hủy trước đó -> Xóa sạch lịch sử để tạo mới
+                ticketRepository.findByRegistrationId(existingReg.getId()).ifPresent(ticketRepository::delete);
+                paymentRepository.findByRegistrationId(existingReg.getId()).ifPresent(paymentRepository::delete);
+                registrationRepository.delete(existingReg);
+                
+                // Ép Hibernate đẩy lệnh DELETE xuống Database ngay lập tức
+                // Tránh lỗi Unique Constraint khi lệnh INSERT bên dưới chạy
+                registrationRepository.flush(); 
+            } else {
+                throw new AppException(ErrorCode.ALREADY_REGISTERED);
+            }
         }
 
         // 5. GIỮ CHỖ (Bảo vệ rổ hàng): Tăng tạm thời SoldTickets lên 1
@@ -324,6 +319,7 @@ public class RegistrationServiceImpl implements RegistrationService {
             eventRepository.save(event);
         }
 
-        log.info("Hủy đăng ký thành công: User {}, Event {}, Trạng thái cũ: {}", currentUser.getEmail(), event.getTitle(), isFreeTicket ? "VÉ FREE" : "VÉ CHƯA THANH TOÁN");
+        log.info("Hủy đăng ký thành công: User {}, Event {}, Trạng thái cũ: {}", currentUser.getEmail(),
+                event.getTitle(), isFreeTicket ? "VÉ FREE" : "VÉ CHƯA THANH TOÁN");
     }
 }

@@ -67,16 +67,11 @@ public class AdminServiceImpl implements AdminService {
             UserStatus status, String sort) {
 
         /**
-         * Kỹ thuật phân tách tham số "sort" (Ví dụ chuỗi truyền vào: "email,asc")
-         * Cắt chuỗi bởi dấu phẩy để lấy tên cột (email) và chiều sắp xếp (asc).
+         * Chuyển đổi tham số sort ("asc" hoặc "desc") thành chiều sắp xếp.
+         * Mặc định sắp xếp theo trường "createdAt".
          */
-        String[] sortParams = sort.split(",");
-        String sortProperty = sortParams[0];
-        Sort.Direction direction = Sort.Direction.DESC; // Mặc định desc (Thời gian mới nhất lên đầu)
-
-        if (sortParams.length > 1 && sortParams[1].equalsIgnoreCase("asc")) {
-            direction = Sort.Direction.ASC;
-        }
+        Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String sortProperty = "createdAt";
 
         /**
          * PageRequest.of(): Một tính năng tuyệt vời của Spring Data.

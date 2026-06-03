@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentTransactionResponse {
-    
+
     // ID nội bộ của giao dịch
     private Long paymentId;
 
@@ -39,6 +39,8 @@ public class PaymentTransactionResponse {
 
     // Mã đăng ký (Registration code) liên kết với giao dịch này
     private String registrationCode;
+
+    private Long userId;
 
     // Email của người dùng thực hiện giao dịch
     private String userEmail;

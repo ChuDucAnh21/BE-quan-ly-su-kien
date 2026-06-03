@@ -37,21 +37,27 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Page<Ticket> findByRegistration_Event_Id(Long eventId, Pageable pageable);
 
     // Tìm kiếm vé theo keyword (Tên, Email, SĐT, Mã đăng ký)
-    @Query("SELECT t FROM Ticket t WHERE t.registration.event.id = :eventId AND (" +
-           "LOWER(t.registration.user.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+    @Query("SELECT t FROM Ticket t WHERE t.registration.event.id = :eventId AND " +
+           "(:status IS NULL OR t.status = :status) AND (" +
+           ":search IS NULL OR LOWER(t.registration.user.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(t.registration.user.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(t.registration.user.phone) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(t.registration.registrationCode) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<Ticket> findByEventIdAndSearch(@Param("eventId") Long eventId, @Param("search") String search, Pageable pageable);
+    Page<Ticket> findByEventIdAndSearchAndStatus(@Param("eventId") Long eventId, @Param("search") String search, @Param("status") com.example.backend.enums.TicketStatus status, Pageable pageable);
 
     // Tìm danh sách vé mà khách hàng sở hữu
     // SQL: SELECT * FROM tickets t
     // JOIN registrations r ON t.registration_id = r.id
     // JOIN users u ON r.user_id = u.id
     // WHERE u.email = :email
-    Page<Ticket> findByRegistration_User_Email(String email, Pageable pageable);
+    @Query("SELECT t FROM Ticket t WHERE t.registration.user.email = :email AND (:status IS NULL OR t.status = :status)")
+    Page<Ticket> findMyTickets(@Param("email") String email, @Param("status") com.example.backend.enums.TicketStatus status, Pageable pageable);
 
     long count();
+
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.issuedAt BETWEEN :startDate AND :endDate")
+    long countByIssuedAtBetween(@Param("startDate") java.time.LocalDateTime startDate,
+                                @Param("endDate") java.time.LocalDateTime endDate);
 
     long countByStatus(com.example.backend.enums.TicketStatus status);
 
@@ -153,6 +159,13 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.registration.event.id = :eventId AND t.status = :status")
     long countByEventIdAndStatus(@Param("eventId") Long eventId,
                                   @Param("status") com.example.backend.enums.TicketStatus status);
+
+    /** Đếm vé theo trạng thái cho 1 sự kiện trong khoảng thời gian */
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.registration.event.id = :eventId AND t.status = :status AND t.issuedAt BETWEEN :startDate AND :endDate")
+    long countByEventIdAndStatusInRange(@Param("eventId") Long eventId,
+                                  @Param("status") com.example.backend.enums.TicketStatus status,
+                                  @Param("startDate") java.time.LocalDateTime startDate,
+                                  @Param("endDate") java.time.LocalDateTime endDate);
 
     /** Bán vé theo Ngày cho 1 sự kiện cụ thể (Line Chart) — lọc trong khoảng from/to */
     @Query("SELECT FUNCTION('DATE_FORMAT', t.issuedAt, '%Y-%m-%d') as date, COUNT(t) as value " +

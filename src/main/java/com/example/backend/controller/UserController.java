@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.dto.request.ChangePasswordRequest;
 import com.example.backend.dto.request.UpdateProfileRequest;
 import com.example.backend.dto.response.ApiResponse;
+import com.example.backend.dto.response.PublicUserProfileResponse;
 import com.example.backend.dto.response.StaffResponse;
 import com.example.backend.dto.response.UserProfileResponse;
 import com.example.backend.service.CloudinaryService;
@@ -43,7 +44,7 @@ public class UserController {
         }
 
         // 2. API Cập nhật thông tin cá nhân
-        @PutMapping("/profile")
+        @PutMapping("/profile/update-info")
         public ApiResponse<UserProfileResponse> updateProfile(
                         Authentication authentication,
                         @RequestBody @Valid UpdateProfileRequest request) {
@@ -55,7 +56,7 @@ public class UserController {
         }
 
         // 3. API Tải ảnh đại diện lên
-        @PutMapping("/profile/avatar")
+        @PutMapping("/profile/update-avatar")
         public ApiResponse<UserProfileResponse> updateAvatar(
                         Authentication authentication,
                         @RequestParam("file") MultipartFile file) throws IOException { // MultipartFile: Kiểu dữ liệu
@@ -93,6 +94,17 @@ public class UserController {
                 return ApiResponse.<Void>builder()
                                 .status(ApiResponse.Status.builder().message("Tài khoản đã được khóa thành công")
                                                 .build())
+                                .build();
+        }
+
+        // 6. API Lấy thông tin công khai của một người dùng bất kỳ (dựa vào ID)
+        @GetMapping("/info-user/{id}")
+        public ApiResponse<UserProfileResponse> getPublicProfileById(
+                        @PathVariable Long id) {
+                return ApiResponse.<UserProfileResponse>builder()
+                                .status(ApiResponse.Status.builder().message("Lấy thông tin công khai thành công")
+                                                .build())
+                                .data(userService.getPublicProfileById(id))
                                 .build();
         }
 
