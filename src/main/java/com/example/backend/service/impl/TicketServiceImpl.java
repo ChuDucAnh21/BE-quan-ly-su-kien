@@ -3,6 +3,7 @@ package com.example.backend.service.impl;
 import com.example.backend.dto.request.BatchCheckInRequest;
 import com.example.backend.dto.request.CheckInRequest;
 import com.example.backend.dto.response.BatchCheckInResponse;
+import com.example.backend.dto.response.CheckInLogResponse;
 import com.example.backend.dto.response.TicketResponse;
 import com.example.backend.dto.response.BatchCheckInResponse.BatchCheckInError;
 import com.example.backend.entity.CheckInLog;
@@ -50,7 +51,8 @@ public class TicketServiceImpl implements TicketService {
         @Override
         @Transactional(readOnly = true)
         // Lấy danh sách vé của khách hàng theo id sự kiện
-        public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword, com.example.backend.enums.TicketStatus status, Pageable pageable) {
+        public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword,
+                        com.example.backend.enums.TicketStatus status, Pageable pageable) {
                 // 1. Kiểm tra quyền sở hữu sự kiện
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
@@ -68,7 +70,8 @@ public class TicketServiceImpl implements TicketService {
 
                 // 2. Fetch data và Mapping
                 Page<Ticket> tickets;
-                String search = (searchKeyword != null && !searchKeyword.trim().isEmpty()) ? searchKeyword.trim() : null;
+                String search = (searchKeyword != null && !searchKeyword.trim().isEmpty()) ? searchKeyword.trim()
+                                : null;
                 tickets = ticketRepository.findByEventIdAndSearchAndStatus(eventId, search, status, pageable);
 
                 return tickets.map(t -> {
@@ -87,7 +90,7 @@ public class TicketServiceImpl implements TicketService {
                                         .genderUser(buyer.getGender())
                                         .avatarUrlUser(buyer.getAvatarUrl())
                                         .addressUser(buyer.getAddress())
-                                        .status(t.getStatus())
+                                        .status(t.getStatus()) // trạng thái vé
                                         .checkedInAt(t.getCheckedInAt() != null ? t.getCheckedInAt() : null)
                                         .issuedAt(t.getIssuedAt())
                                         .build();
@@ -346,13 +349,14 @@ public class TicketServiceImpl implements TicketService {
                                         pageable);
                 }
 
-                return logs.map(log -> com.example.backend.dto.response.CheckInLogResponse.builder()
+                return logs.map(log -> CheckInLogResponse.builder()
                                 .id(log.getId())
                                 .hashedQrCode(log.getTicket().getHashedQrCode())
                                 .customerEmail(log.getTicket().getRegistration().getUser().getEmail())
                                 .customerFullName(log.getTicket().getRegistration().getUser().getFullName())
                                 .checkedInAt(log.getCreatedAt())
                                 .staffEmail(log.getCheckedInBy().getEmail())
+                                .staffId(log.getCheckedInBy().getId())
                                 .staffFullName(log.getCheckedInBy().getFullName())
                                 .checkInMethod(log.getMethod().name())
                                 .build());

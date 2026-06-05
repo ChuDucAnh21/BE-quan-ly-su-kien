@@ -19,9 +19,14 @@ public interface EventStaffAssignmentRepository extends JpaRepository<EventStaff
 
     boolean existsByEventIdAndStaff_Email(Long eventId, String email);
 
-    // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID (Dành cho Admin/Organizer/Staff xem của chính mình)
-    @org.springframework.data.jpa.repository.Query("SELECT e.event FROM EventStaffAssignment e WHERE e.staff.id = :staffId")
-    org.springframework.data.domain.Page<com.example.backend.entity.Event> findEventsByStaffId(@org.springframework.data.repository.query.Param("staffId") Long staffId, org.springframework.data.domain.Pageable pageable);
+    // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID, có lọc theo từ khóa (Dành cho Admin/Organizer/Staff xem của chính mình)
+    @org.springframework.data.jpa.repository.Query("SELECT e.event FROM EventStaffAssignment e WHERE e.staff.id = :staffId " +
+            "AND e.event.status != com.example.backend.enums.EventStatus.DRAFT " +
+            "AND (:search IS NULL OR LOWER(e.event.title) LIKE LOWER(CONCAT('%', :search, '%')))")
+    org.springframework.data.domain.Page<com.example.backend.entity.Event> findEventsByStaffIdWithFilters(
+            @org.springframework.data.repository.query.Param("staffId") Long staffId,
+            @org.springframework.data.repository.query.Param("search") String search,
+            org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("SELECT e FROM EventStaffAssignment e WHERE e.event.id = :eventId " +
             "AND (:status IS NULL OR e.staff.status = :status) " +

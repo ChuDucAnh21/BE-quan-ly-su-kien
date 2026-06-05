@@ -28,5 +28,5 @@ public interface EventService {
     void deleteEvent(Long eventId);
 
     // Lấy danh sách sự kiện mà nhân viên được phân công dựa trên ID (Dành cho Admin/Organizer/Staff xem chính mình)
-    PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size);
+    PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size, String sort, String search);
 }

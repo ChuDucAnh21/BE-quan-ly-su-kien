@@ -501,21 +501,22 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     // Lấy danh sách sự kiện được gán cho nhân viên (staff) theo id
-    public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size) {
+    public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size, String sort, String search) {
         User currentUser = getCurrentUser();
 
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOrganizer = currentUser.getRole() == Role.ORGANIZER;
         boolean isSelf = currentUser.getId().equals(staffId);
 
-        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất
-        // kỳ ai
+        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất kỳ ai
         if (!isAdmin && !isOrganizer && !isSelf) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffId(staffId, pageable);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+        
+        Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffIdWithFilters(staffId, search, pageable);
 
         List<Long> eventIds = eventPage.getContent().stream()
                 .map(Event::getId).collect(Collectors.toList());

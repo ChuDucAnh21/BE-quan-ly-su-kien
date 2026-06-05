@@ -17,6 +17,7 @@ public class CheckInLogResponse {
     private String customerEmail;
     private String customerFullName;
     private LocalDateTime checkedInAt;
+    private Long staffId;
     private String staffEmail;
     private String staffFullName;
     private String checkInMethod; // QR or MANUAL

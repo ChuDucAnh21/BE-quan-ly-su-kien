@@ -659,7 +659,38 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
 > ~~4.11 DELETE /events/{eventId}/schedules/{scheduleId}~~  
 > **Đã được gộp vào 4.3 (Tạo) và 4.4 (Sửa) — Truyền field `schedules` trong FormData của sự kiện.**
 
-### 4.8. Lấy danh sách giao dịch thanh toán của Sự Kiện (Organizer/Admin)
+### 4.8. Xem danh sách sự kiện được phân công của một Staff
+
+- **Method:** `GET /events/assigned-to-staff/{staffId}`
+- **Quyền:** `ADMIN`, `ORGANIZER`, hoặc `STAFF` (Staff chỉ được xem của chính mình, Admin/Organizer được xem của tất cả).
+- **Mô tả:** Lấy danh sách các sự kiện mà nhân viên đã được phân công.
+- **Query Params (Tuỳ chọn):**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `search`: Từ khóa tìm kiếm theo tên sự kiện.
+  - `sort`: Sắp xếp theo ngày tạo (`asc` hoặc `desc`. Mặc định `desc`).
+- **Response (200 OK):** Trả về danh sách Event (phân trang).
+  ```json
+  {
+    "status": { "code": 200, "message": "Lấy danh sách sự kiện phân công cho nhân viên thành công" },
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "pageSize": 10,
+      "totalElements": 2,
+      "data": [
+        {
+          "id": 1,
+          "title": "Sự kiện âm nhạc",
+          "status": "PUBLISHED",
+          ...
+        }
+      ]
+    }
+  }
+  ```
+
+### 4.9. Lấy danh sách giao dịch thanh toán của Sự Kiện (Organizer/Admin)
 
 - **Method:** `GET /events/{eventId}/payments`
 - **Quyền:** `ADMIN` hoặc `ORGANIZER` tạo ra sự kiện đó.
@@ -1048,10 +1079,10 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
   }
   ```
 
-### 7.2. Lấy danh sách Toàn bộ Vé của Sự kiện
+### 7.2. Lấy danh sách người tham dự của Sự kiện
 
 - **Method:** `GET /api/v1/events/{eventId}/tickets`
-- **Mô tả:** Phục vụ giao diện Quản lý Khách tham gia của Ban Tổ Chức. Hiển thị danh sách vé, thông tin cá nhân khách đã mua và tình trạng Vé (`ACTIVE`, `USED`, `INVALID`). Có thể tìm kiếm theo mã QR code, mã vé thủ công dành cho Staff check-in tại sự kiện.
+- **Mô tả:** Phục vụ giao diện Quản lý Khách tham gia của Ban Tổ Chức. Hiển thị danh sách người tham dự, thông tin cá nhân khách đã mua và tình trạng Vé (`ACTIVE`, `USED`, `INVALID`). Có thể tìm kiếm theo mã QR code, mã vé thủ công dành cho Staff check-in tại sự kiện.
 - **Quyền:** Lệnh kẹp thẻ `Authorization: Bearer <Token>`. Yêu cầu Role là `ADMIN` hoặc chính tác giả `ORGANIZER` tạo ra Sự kiện đó, hoặc `STAFF` được phân công vào sự kiện đó.
 - **Query Params:**
   - `page`: Trang hiện tại (Mặc định `0`).

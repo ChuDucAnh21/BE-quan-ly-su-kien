@@ -145,13 +145,15 @@ public class EventController {
         public ApiResponse<PageResponse<EventResponse>> getAssignedEventsByStaffId(
                         @PathVariable Long staffId,
                         @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "desc") String sort,
+                        @RequestParam(required = false) String search) {
 
                 return ApiResponse.<PageResponse<EventResponse>>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .message("Lấy danh sách sự kiện phân công cho nhân viên thành công")
                                                 .build())
-                                .data(eventService.getAssignedEventsByStaffId(staffId, page, size))
+                                .data(eventService.getAssignedEventsByStaffId(staffId, page, size, sort, search))
                                 .build();
         }
 
