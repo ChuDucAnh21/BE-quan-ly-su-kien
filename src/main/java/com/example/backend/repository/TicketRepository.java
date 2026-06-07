@@ -192,4 +192,16 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             @Param("eventId") Long eventId,
             @Param("fromDate") java.time.LocalDateTime fromDate,
             @Param("toDate") java.time.LocalDateTime toDate);
+
+    /** Lấy top các sự kiện có số vé bán ra nhiều nhất trong khoảng thời gian */
+    @Query("SELECT t.registration.event.title as label, COUNT(t) as value " +
+           "FROM Ticket t " +
+           "WHERE t.status IN (com.example.backend.enums.TicketStatus.ACTIVE, com.example.backend.enums.TicketStatus.USED) " +
+           "AND t.issuedAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY t.registration.event.id, t.registration.event.title " +
+           "ORDER BY value DESC")
+    org.springframework.data.domain.Page<Object[]> findTopEventsByTicketsSold(
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate,
+            org.springframework.data.domain.Pageable pageable);
 }

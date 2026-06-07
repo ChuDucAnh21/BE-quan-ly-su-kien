@@ -45,6 +45,9 @@ public interface DashboardService {
     /** Số vé Free/Trả phí theo Tháng */
     List<TicketTypePointDTO> getTicketTypeChart(LocalDate from, LocalDate to);
 
+    /** Top 5 Sự kiện nổi bật (Theo doanh thu và Số vé bán ra) */
+    com.example.backend.dto.response.dashboard.TopEventsChartResponse getTopEventsChart(LocalDate from, LocalDate to);
+
     // ===================== BIỂU ĐỒ ORGANIZER =====================
 
     /** Tỉ lệ lấp đầy (Đã bán vs Còn trống). from/to null → All-time */

@@ -159,4 +159,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                 @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
                 @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
                 org.springframework.data.domain.Pageable pageable);
+
+        /** Lấy top các sự kiện có doanh thu cao nhất trong khoảng thời gian */
+        @Query("SELECT p.registration.event.title as label, SUM(p.amount) as value " +
+               "FROM Payment p " +
+               "WHERE p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate " +
+               "GROUP BY p.registration.event.id, p.registration.event.title " +
+               "ORDER BY value DESC")
+        org.springframework.data.domain.Page<Object[]> findTopEventsByRevenue(
+                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
+                org.springframework.data.domain.Pageable pageable);
 }

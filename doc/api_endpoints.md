@@ -449,6 +449,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
           "title": "Đêm nhạc Sân Hàng Đẫy",
           "category": "Âm Nhạc",
           "shortDescription": "Đêm nhạc sôi động đầu năm",
+          "description": "Chi tiết toàn bộ dàn khách mời hạng A...",
           "bannerUrl": "https://cloudinary.com/event_banner.jpg",
           "registrationStartTime": "2024-12-01T00:00:00",
           "registrationEndTime": "2024-12-30T23:59:00",
@@ -460,7 +461,8 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
           "status": "PUBLISHED",
           "ticketsSold": 150,
           "createdAt": "2024-05-15T10:00:00",
-          "updatedAt": "2024-05-15T12:00:00"
+          "updatedAt": "2024-05-15T12:00:00",
+          "schedules": null
         }
       ]
     }
@@ -720,6 +722,7 @@ _Ghi chú: `code` luôn khớp với mã trạng thái HTTP thực tế (200, 40
           "paidAt": "2024-05-10T15:30:00",
           "createdAt": "2024-05-10T15:28:00",
           "registrationCode": "REG-ABCXYZ",
+          "userId": 5,
           "userEmail": "khachhang@gmail.com",
           "userFullName": "Nguyen Van A"
         }
@@ -736,8 +739,8 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 ### 5.1. Lấy toàn bộ danh sách Staff hệ thống (Admin & Organizer)
 
-- **Method:** `GET /users/staff-list`
-- **Mô tả:** Lấy rổ nhân viên có quyền `STAFF` đang `ACTIVE` trên toàn hệ thống để Organizer chọn lựa lúc phân công.
+- **Method:** `GET /admin/get-all-users` (Truyền thêm tham số `role=STAFF`)
+- **Mô tả:** Lấy rổ nhân viên có quyền `STAFF` đang `ACTIVE` trên toàn hệ thống để Organizer chọn lựa lúc phân công. Khi Organizer gọi API `/admin/get-all-users`, Backend sẽ tự động ép buộc lọc tham số `role=STAFF`.
 - **Quyền:** `ADMIN` hoặc `ORGANIZER`.
 - **Response (200 OK):**
   ```json
@@ -783,6 +786,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
           "id": 15,
           "fullName": "Nguyễn Văn Bảo Vệ",
           "email": "baove@gmail.com",
+          "phone": "0987654321",
           "avatarUrl": "https://cloudinary.com/avatar1.jpg",
           "isActive": true
         }
@@ -858,7 +862,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 ### 6.3. Đăng ký tham gia Sự kiện (User)
 
-- **Method:** `POST /registrations`
+- **Method:** `POST /api/v1/registrations`
 - **Quyền:** Tài khoản đã xác thực (`USER`, `ORGANIZER`, `ADMIN`).
 - **Mô tả:** Hệ thống tự tách luồng: Nếu Vé Miễn phí $\Rightarrow$ Thành công luôn (Sinh Dummy Payment giá 0đ). Nếu Vé Trả phí $\Rightarrow$ Trả về Link Checkout PayOS.
 - **Ràng buộc Mạng:** Số vé (`soldTickets`) tự động tăng lên 1 để bảo vệ giỏ hàng. Quá 5 phút không thanh toán, hệ thống dọn đơn và tự trả lại sức chứa.
@@ -883,7 +887,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
       "registrationCode": "ABC123XY",
       "status": "PENDING_PAYMENT",
       "createdAt": "2024-05-30T10:00:00",
-      "checkoutUrl": "https://payos.vn/checkout/ORDER-XXXXX", // đây là link thanh toán PAYOS
+      "checkoutUrl": "https://payos.vn/checkout/ORDER-XXXXX",
       "orderCode": "ORDER-XXXXX",
       "amount": 500000.0
     }
@@ -897,116 +901,65 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 
 ### 6.4. Hủy vé (Chỉ áp dụng cho vé Free)
 
-- **Method:** `POST /api/v1/registrations/{id}/cancel`
-- **Quyền:** Tài khoản đã mua vé.
-- **Ràng buộc:** Chỉ cho phép ủy đối với các vé miễn phí. Nếu vé có tính phí sẽ báo lỗi.
-- **Request Body:** Không có Body JSON. (Chỉ truyền biến {id} là ID của Vé đăng ký ngay trên URL, ví dụ: `POST /api/v1/registrations/100/cancel`)
+- **Method:** `POST /api/v1/registrations/{registrationId}/cancel`
+- **Quyền:** Người đã mua vé (`USER`, `ORGANIZER`, `ADMIN`).
+- **Mô tả:** Cho phép khách hàng chủ động trả lại vé miễn phí nếu không thể tham gia, nhằm nhả lại sức chứa (`capacity`) cho người khác đăng ký. Không áp dụng cho vé đã thanh toán.
 - **Response (200 OK):**
   ```json
   {
     "status": {
       "code": 200,
-      "message": "Đã hủy vé thành công. Hệ thống đã nhả lại suất trống cho những người khác.",
-      "label": "API_STATUS_SUCCESS"
+      "message": "Đã hủy đăng ký thành công. Hệ thống đã nhả lại suất trống cho những người khác."
     },
     "data": null
   }
   ```
 - **Lỗi:** `400` - `CANNOT_CANCEL_PAID_TICKET`: Không thể hủy vé trả phí.
 
-### 6.5. Đón Webhook từ Hệ thống PayOS
-
-- **Method:** `POST /api/v1/payments/webhook`
-- **Quyền:** Mở công khai nhưng bảo mật bằng cơ chế Checksum `HMAC-SHA256` bằng thư viện `payos-java` nội bộ.
-- **Mô tả:** Nhận Json báo cáo giao dịch từ PayOS dội về. Tự động kiểm tra HMAC-SHA256, so sánh `orderCode` để gán trạng thái (`SUCCESS` hoặc `FAILED`) vào Database. Đồng bộ cấp thẻ thẻ Ticket kèm mã QR nếu như được thanh toán tiền thành công. Tự nhả ghế nếu đơn quá hạn hoặc lỗi. Đan xen cơ chế chống đua lệnh Database `@Lock` để bảo đảm Idempotency.
-- **Request Body mẫu (Webhook PayOS gửi lên):**
-  ```json
-  {
-    "code": "00",
-    "desc": "success",
-    "success": true,
-    "data": {
-      "orderCode": 172901235612,
-      "amount": 500000.0,
-      "description": "Thanh toan ve Son Tung",
-      "accountNumber": "0123xxx",
-      "transactionDateTime": "2024-05-30 08:00:00"
-    },
-    "signature": "hmac_sha256_hash_here...."
-  }
-  ```
-- **Lưu lý quan trọng (Frontend không cần quan tâm):**
-  - **Idempotency:** Nếu chọc vào API Hook 2 lần liên tục cho cùng 1 đơn hàng hóa, hệ thống sẽ phát tín hiệu ngầm chặn ngay và không cho phép chốt xuất ra Tới 2 Vé Lậu.
-  - **Multi-Tenant:** API có phân biệt nhiều tài khoản ngân hàng riêng biệt ứng với từng Organizer khác nhau.
-
-- **Response trả về mẫu (Báo hiệu cho PayOS biết là Server đã nhận được tiền):**
-
-```json
-{
-  "code": 200,
-  "message": "success"
-}
-```
-
-### 6.6. Đồng bộ trạng thái đơn hàng chủ động (Sync)
-
-- **Method:** `GET /api/v1/payments/sync/{orderCode}`
-- **Mô tả:** Trong trường hợp Webhook của PayOS bị lỗi mạng (hoặc khi chạy ở môi trường localhost nhưng Ngrok bị sập), Frontend có thể gọi API này để hệ thống chủ động chọc lên PayOS bằng SDK v2 lấy tình trạng đơn hàng về và xé vé cho khách ngay lập tức (Nếu status = PAID).
-- **Quyền:** Public.
-- **Response (200 OK):**
-  ```json
-  {
-    "status": {
-      "code": 200,
-      "message": "Kiểm tra thấy đơn hàng đã thanh toán. Đã sinh vé!",
-      "label": "API_STATUS_SUCCESS"
-    },
-    "data": "PAID_AND_TICKET_CREATED"
-  }
-  ```
-
-### 6.7. Lấy danh sách các đơn hàng chờ thanh toán (My pending payments)
+### 6.5. Danh sách đơn hàng đang chờ thanh toán (Pending)
 
 - **Method:** `GET /api/v1/payments/my-tickets-pending`
-- **Mô tả:** Lấy danh sách các đơn hàng đang ở trạng thái chờ thanh toán để người mua có thể bấm lại link PayOS tiếp tục nộp tiền nếu lỡ tắt mất trình duy`ệt.
-- **Quyền:** Đã đăng nhập (`USER`, `ORGANIZER`, `ADMIN`).
+- **Quyền:** Tài khoản đã xác thực (`USER`, `ORGANIZER`, `ADMIN`).
+- **Mô tả:** Lấy danh sách các vé/đơn hàng đang ở trạng thái `PENDING_PAYMENT` của chính mình để thanh toán nốt.
+- **Query Params (Tuỳ chọn):**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `sort`: Sắp xếp (`asc` hoặc `desc`. Mặc định `desc`).
+  - `search`: Lọc theo từ khóa.
+- **Response (200 OK):** Trả về PageResponse của RegistrationResponse.
+
+### 6.6. Đồng bộ trạng thái đơn hàng thủ công (Sync PayOS)
+
+- **Method:** `GET /api/v1/payments/sync/{orderCode}`
+- **Quyền:** Public hoặc theo quyền sở hữu của user.
+- **Mô tả:** Sử dụng khi mạng có sự cố hoặc Webhook PayOS bị rớt. Frontend chủ động gọi API này khi người dùng vừa thanh toán xong và được Redirect về trang Success/Fail để ép Backend kiểm tra trạng thái bên PayOS và xé vé ngay lập tức.
 - **Response (200 OK):**
-  ```json
-  {
-    "status": {
-      "code": 200,
-      "message": "Lấy danh sách các khoản chờ thanh toán thành công",
-      "label": "API_STATUS_SUCCESS"
-    },
-    "data": [
-      {
-        "registrationId": 105,
-        "eventId": 1,
-        "eventName": "Lễ hội Âm nhạc mùa hè",
-        "eventPrice": 500000.0,
-        "eventImage": "https://example.com/event-image.jpg",
-        "eventStartTime": "2024-12-31T20:00:00",
-        "userId": 5,
-        "registrationCode": "REG-ABCXYZ",
-        "status": "PENDING_PAYMENT",
-        "createdAt": "2024-05-30T10:00:00",
-        "checkoutUrl": "https://payos.vn/checkout/...",
-        "orderCode": "ORDER-...",
-        "amount": 500000.0
-      }
-    ]
-  }
-  ```
+  - `"PAID_AND_TICKET_CREATED"`: Đồng bộ thành công, đã sinh vé.
+  - `"ALREADY_PAID"`: Đơn hàng đã được thanh toán từ trước.
+  - `"CANCELLED" / "EXPIRED"`: Đơn bị hủy.
+  - `"PENDING"`: Đơn vẫn đang chờ thanh toán.
+
+### 6.7. PayOS Webhook (Dành cho Server to Server)
+
+- **Method:** `POST /api/v1/payments/webhook`
+- **Quyền:** Public (PayOS sẽ gọi vào đây).
+- **Mô tả:** Đây là cổng hứng thông tin giao dịch từ PayOS gửi về mỗi khi khách hàng chuyển khoản thành công.
+- **Response:** HTTP 200 OK kèm ObjectNode theo chuẩn PayOS.
 
 ---
 
-## 7. MODULE KIỂM SOÁT VÉ VÀ CHECK-IN (PHASE 9)
+## 7. MODULE VÉ & CHECK-IN (TICKET)
 
-### 7.1. Lấy danh sách Vé của cá nhân (My Tickets)
+### 7.1. Lấy danh sách Vé của Tôi
 
-- **Method:** `GET /api/v1/tickets/my-tickets`
-- **Mô tả:** Người dùng đã mua vé thành công (hoặc nhận vé miễn phí) có thể gọi API này để xem toàn bộ vé trong kho vé cá nhân của mình, kèm mã QR để đi quét qua cửa.
-- **Quyền:** Lệnh kẹp thẻ `Authorization: Bearer <Token>`. Dành cho bất kỳ tài khoản có quyền `USER`, `ORGANIZER`, `ADMIN`.
+- **Method:** `GET /tickets/my-tickets`
+- **Quyền:** Tài khoản đã đăng nhập (`USER`, `ORGANIZER`, `ADMIN`).
+- **Mô tả:** Lấy toàn bộ vé mình đã mua thành công. Dùng để mở mã QR tại cổng hoặc xem lịch sử đi quẩy.
+- **Query Params:**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `sort`: Sắp xếp theo ngày (`asc` hoặc `desc`. Mặc định `desc`).
+  - `status`: Lọc theo trạng thái vé (`ACTIVE`, `USED`, `INVALID`, `REVOKED`). Mặc định null = lấy tất cả.
 - **Response (200 OK):**
   ```json
   {
@@ -1022,6 +975,7 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
       "data": [
         {
           "id": 1,
+          "ticketCode": "...",
           "qrCode": "c4d32a8-12ab-...",
           "hashedQrCode": null,
           "eventId": 1,
@@ -1038,41 +992,6 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
           "status": "ACTIVE",
           "checkedInAt": null,
           "issuedAt": "2024-05-20T10:00:00"
-        }
-      ]
-    }
-  }
-  ```
-
-### 7.1.5. Lấy lịch sử Check-in (Check-in History)
-
-- **Method:** `GET /api/v1/events/{eventId}/checkin-history`
-- **Mô tả:** Lấy danh sách lịch sử các mã QR đã được quét qua cổng.
-- **Quyền:** `ADMIN`, hoặc `ORGANIZER` tạo ra sự kiện, hoặc `STAFF` được phân công.
-- **Query Params:**
-  - `page`: Trang hiện tại (Mặc định `0`).
-  - `size`: Kích thước (Mặc định `10`).
-  - `search`: Từ khóa tìm kiếm (Lọc theo tên khách, email, mã đăng ký, mã băm QR). (Tùy chọn)
-  - `method`: Phương thức check-in (`QR` hoặc `MANUAL`). (Tùy chọn)
-  - `fromDate`: Thời gian bắt đầu (Ví dụ: `2024-05-01T00:00:00`). (Tùy chọn)
-  - `toDate`: Thời gian kết thúc (Ví dụ: `2024-05-31T23:59:59`). (Tùy chọn)
-- **Response (200 OK):**
-  ```json
-  {
-    "status": { "code": 200, "message": "Lấy lịch sử Check-in thành công" },
-    "data": {
-      "currentPage": 0,
-      "totalPages": 1,
-      "totalElements": 5,
-      "data": [
-        {
-          "id": 1,
-          "hashedQrCode": "e3b0c4429...",
-          "customerEmail": "khachhang@gmail.com",
-          "customerFullName": "Nguyen Van A",
-          "checkedInAt": "2024-05-20T10:05:00",
-          "staffEmail": "staff@gmail.com",
-          "checkInMethod": "QR"
         }
       ]
     }
@@ -1105,12 +1024,19 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
           "hashedQrCode": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "eventId": 1,
           "eventTitle": "Lễ hội Âm nhạc mùa hè",
+          "eventImageUrl": "https://cloudinary.com/event.jpg",
+          "startTimeEvent": "2024-05-20T18:00:00",
+          "endTimeEvent": "2024-05-20T23:00:00",
+          "locationEvent": "Hà Nội",
           "ticketPrice": 500000.0,
           "userId": 5,
           "registrationId": 100,
           "registrationCode": "REG-ABCXYZ",
           "userEmail": "khachhang@gmail.com",
           "userFullName": "Nguyen Van A",
+          "genderUser": "MALE",
+          "avatarUrlUser": "https://cloudinary.com/avatar.jpg",
+          "addressUser": "123 ABC",
           "phoneNumber": "0912345678",
           "status": "ACTIVE",
           "checkedInAt": null,
@@ -1129,7 +1055,8 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
 - **Request Body:**
   ```json
   {
-    "qrCode": "c4d32a8-12ab-..."
+    "qrCode": "c4d32a8-12ab-...",
+    "eventId": 1
   }
   ```
 - **Response (200 OK - Cửa mở):**
@@ -1172,7 +1099,8 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
     "hashedQrCodes": [
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "b5d120a233... (Mã băm khác)"
-    ]
+    ],
+    "eventId": 1
   }
   ```
 - **Response (200 OK):**
@@ -1198,6 +1126,48 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
         {
           "hashedQrCode": "b5d120a233...",
           "errorMessage": "TICKET_ALREADY_USED"
+        }
+      ]
+    }
+  }
+  ```
+
+### 7.5. Lịch sử Check-in tại Sự kiện (Nhật ký Cổng)
+
+- **Method:** `GET /api/v1/events/{eventId}/checkin-history`
+- **Quyền:** `ADMIN`, `ORGANIZER` chủ sự kiện, hoặc `STAFF` được phân công.
+- **Mô tả:** Lấy danh sách lịch sử tất cả các lượt check-in qua cổng thành công. Dữ liệu bao gồm thông tin vé, người soát vé (staff), và thời gian check-in.
+- **Query Params:**
+  - `page`: Trang hiện tại (Mặc định `0`).
+  - `size`: Số bản ghi (Mặc định `10`).
+  - `search`: Từ khóa tìm kiếm theo tên hoặc mã vé.
+  - `method`: Hình thức check-in (`QR` hoặc `MANUAL`).
+  - `fromDate`: Lọc từ ngày giờ (ISO DateTime).
+  - `toDate`: Lọc đến ngày giờ (ISO DateTime).
+- **Response (200 OK):**
+  ```json
+  {
+    "status": {
+      "code": 200,
+      "message": "Lấy lịch sử Check-in thành công"
+    },
+    "data": {
+      "currentPage": 0,
+      "totalPages": 1,
+      "pageSize": 10,
+      "totalElements": 1,
+      "data": [
+        {
+          "id": 1,
+          "ticketCode": "...",
+          "hashedQrCode": "e3b0c44298fc1c149afbf4c...",
+          "customerEmail": "khachhang@gmail.com",
+          "customerFullName": "Nguyen Khach Hang",
+          "checkedInAt": "2024-05-20T19:30:00",
+          "staffId": 15,
+          "staffEmail": "baove@gmail.com",
+          "staffFullName": "Bao Ve Nguyen",
+          "checkInMethod": "QR"
         }
       ]
     }
@@ -1393,6 +1363,28 @@ Chỉ có Organizer mới được phép phân công nhân viên kiểm vé (Sta
       { "month": "2024-05", "count": 450, "type": "VÉ TRẢ PHÍ" },
       { "month": "2024-05", "count": 200, "type": "VÉ MIỄN PHÍ" }
     ]
+  }
+  ```
+
+### 9.9. Top 10 Sự kiện nổi bật (Bar/Column Chart)
+
+- **Method:** `GET /dashboards/admin/top-events`
+- **Tác dụng**: Trả về 2 luồng dữ liệu song song (Top 10 sự kiện mang lại doanh thu cao nhất và Top 10 sự kiện bán được nhiều vé nhất). Giúp Admin dễ dàng đưa vào 2 biểu đồ cột cạnh nhau.
+- **Query Params:** `from` (tùy chọn), `to` (tùy chọn)
+- **Response Data:**
+  ```json
+  {
+    "status": { "code": 200, "message": "OK" },
+    "data": {
+      "topRevenueEvents": [
+        { "label": "Lễ hội Âm nhạc mùa hè", "count": 600000000 },
+        { "label": "Hội thảo Công nghệ 2024", "count": 250000000 }
+      ],
+      "topSoldEvents": [
+        { "label": "Lễ hội Âm nhạc mùa hè", "count": 1200 },
+        { "label": "Chạy bộ vì sức khỏe", "count": 850 }
+      ]
+    }
   }
   ```
 

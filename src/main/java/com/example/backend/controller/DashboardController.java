@@ -153,6 +153,18 @@ public class DashboardController {
                                 .build();
         }
 
+        @Operation(summary = "[Admin] Top 10 Sự kiện nổi bật (Bar/Column Chart)", description = "Trả về 2 luồng dữ liệu: Top 10 theo Doanh thu và Top 10 theo Số vé bán ra.")
+        @GetMapping("/admin/top-events")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ApiResponse<TopEventsChartResponse> getTopEventsChart(
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+                return ApiResponse.<TopEventsChartResponse>builder()
+                                .status(ApiResponse.Status.builder().message("OK").build())
+                                .data(dashboardService.getTopEventsChart(from, to))
+                                .build();
+        }
+
         // ============================================================
         // BIỂU ĐỒ ORGANIZER
         // ============================================================

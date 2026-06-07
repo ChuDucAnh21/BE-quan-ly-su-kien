@@ -374,6 +374,41 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         // ===========================================================
+        // BIỂU ĐỒ ADMIN: TOP 10 SỰ KIỆN THEO DOANH THU & SỐ VÉ
+        // ===========================================================
+
+        @Override
+        public TopEventsChartResponse getTopEventsChart(LocalDate from, LocalDate to) {
+                // 1. Xác định khoảng thời gian lọc (Mặc định All-time cho Top 10 nếu không
+                // truyền)
+                LocalDateTime start = toStartOfDay(from != null ? from : LocalDate.of(2000, 1, 1));
+                LocalDateTime end = toEndOfDay(to != null ? to : LocalDate.now());
+
+                // 2. Query DB giới hạn top 10
+                org.springframework.data.domain.Pageable top10 = PageRequest.of(0, 10);
+
+                org.springframework.data.domain.Page<Object[]> revenueData = paymentRepository
+                                .findTopEventsByRevenue(start, end, top10);
+                org.springframework.data.domain.Page<Object[]> ticketsData = ticketRepository
+                                .findTopEventsByTicketsSold(start, end, top10);
+
+                // 3. Map kết quả sang ChartPointDTO
+                List<ChartPointDTO> topRevenueEvents = revenueData.getContent().stream()
+                                .map(row -> new ChartPointDTO((String) row[0],
+                                                ((java.math.BigDecimal) row[1]).longValue()))
+                                .collect(Collectors.toList());
+
+                List<ChartPointDTO> topSoldEvents = ticketsData.getContent().stream()
+                                .map(row -> new ChartPointDTO((String) row[0], ((Number) row[1]).longValue()))
+                                .collect(Collectors.toList());
+
+                return TopEventsChartResponse.builder()
+                                .topRevenueEvents(topRevenueEvents)
+                                .topSoldEvents(topSoldEvents)
+                                .build();
+        }
+
+        // ===========================================================
         // API BIỂU ĐỒ ORGANIZER
         // ===========================================================
 

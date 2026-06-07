@@ -19,7 +19,8 @@ public enum ErrorCode {
 
         // Lỗi liên quan đến Sự kiện (Event Phase 5)
         EVENT_NOT_FOUND(404, "Không tìm thấy sự kiện", HttpStatus.NOT_FOUND),
-        TICKET_SOLD_OUT(400, "Sự kiện đã hết vé", HttpStatus.BAD_REQUEST),
+        TICKET_SOLD_OUT(400, "Sự kiện đã bán hết vé hoặc đang chờ thanh toán, hãy thử lại sau ít phút",
+                        HttpStatus.BAD_REQUEST),
         ALREADY_REGISTERED(400, "Bạn đã đăng ký sự kiện này rồi", HttpStatus.BAD_REQUEST),
         CAPACITY_CANNOT_BE_LESS_THAN_SOLD(400, "Sức chứa tối đa không thể nhỏ hơn số vé đã bán",
                         HttpStatus.BAD_REQUEST),

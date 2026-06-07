@@ -174,7 +174,7 @@ public class EventServiceImpl implements EventService {
     private EventResponse mapToEventResponse(Event event) {
         long ticketsSold = registrationRepository.countByEventIdAndStatusIn(
                 event.getId(),
-                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
+                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT));
         return mapToEventResponse(event, Map.of(event.getId(), ticketsSold));
     }
 
@@ -229,7 +229,7 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
                 : registrationRepository.countTicketsSoldGroupByEventId(
                         eventIds,
-                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN)).stream()
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT)).stream()
                         .collect(Collectors.toMap(
                                 row -> (Long) row[0],
                                 row -> (Long) row[1]));
@@ -525,7 +525,7 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
                 : registrationRepository.countTicketsSoldGroupByEventId(
                         eventIds,
-                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN)).stream()
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT)).stream()
                         .collect(Collectors.toMap(
                                 row -> (Long) row[0],
                                 row -> (Long) row[1]));

@@ -58,6 +58,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // Kích hoạt tích hợp CORS cho Spring Security (BẮT BUỘC ĐỂ KHÔNG BỊ BLOCK
+                // OPTIONS REQUEST)
+                .cors(org.springframework.security.config.Customizer.withDefaults())
                 // Tắt CSRF vì chúng ta dùng JWT (Stateless), không dùng Session
                 .csrf(AbstractHttpConfigurer::disable)
 
@@ -73,8 +76,9 @@ public class SecurityConfig {
                                                                         // login, register, forgot-password
                         .requestMatchers("/api/v1/public/**").permitAll() // Cho phép truy cập dữ liệu công khai (danh
                                                                           // sách sự kiện...)
-                        .requestMatchers("/api/v1/users/public/**").permitAll() // Truy cập public profile của user
+                        .requestMatchers("/api/v1/users/info-user/**").permitAll() // Truy cập public profile của user
                         .requestMatchers("/api/v1/payments/webhook").permitAll() // Webhook PayOS gọi ngầm không cần
+                                                                                 // Token
                                                                                  // Token
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Giao
                                                                                                               // diện
@@ -92,5 +96,23 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // Cấu hình CORS chuẩn cho Spring Security
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.setAllowedOrigins(java.util.Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:5173"));
+        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
