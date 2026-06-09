@@ -7,6 +7,7 @@ import com.example.backend.dto.response.EventScheduleResponse;
 import com.example.backend.dto.response.PageResponse;
 import com.example.backend.entity.Event;
 import com.example.backend.entity.EventSchedule;
+import com.example.backend.entity.EventStaffAssignment;
 import com.example.backend.entity.Registration;
 import com.example.backend.entity.User;
 import com.example.backend.enums.EventStatus;
@@ -16,8 +17,11 @@ import com.example.backend.exception.AppException;
 import com.example.backend.exception.ErrorCode;
 import com.example.backend.repository.EventRepository;
 import com.example.backend.repository.EventScheduleRepository;
+import com.example.backend.repository.EventStaffAssignmentRepository;
 import com.example.backend.repository.PaymentConfigRepository;
+import com.example.backend.repository.PaymentRepository;
 import com.example.backend.repository.RegistrationRepository;
+import com.example.backend.repository.TicketRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.CloudinaryService;
 import com.example.backend.service.EventService;
@@ -53,9 +57,9 @@ public class EventServiceImpl implements EventService {
 
     // Dùng để lấy danh sách lịch trình con khi trả về chi tiết sự kiện
     private final EventScheduleRepository eventScheduleRepository;
-    private final com.example.backend.repository.EventStaffAssignmentRepository eventStaffAssignmentRepository;
-    private final com.example.backend.repository.TicketRepository ticketRepository;
-    private final com.example.backend.repository.PaymentRepository paymentRepository;
+    private final EventStaffAssignmentRepository eventStaffAssignmentRepository;
+    private final TicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
 
     // Helper: Lấy User đang đăng nhập dựa trên email trong Token
     private User getCurrentUser() {
@@ -174,23 +178,24 @@ public class EventServiceImpl implements EventService {
     private EventResponse mapToEventResponse(Event event) {
         long ticketsSold = registrationRepository.countByEventIdAndStatusIn(
                 event.getId(),
-                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT));
+                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
+                        RegistrationStatus.PENDING_PAYMENT));
         return mapToEventResponse(event, Map.of(event.getId(), ticketsSold));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<EventResponse> getAllEvents(int page, int size, String keyword,
-            java.util.List<String> categories,
-            EventStatus status, Long organizerId, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime,
-            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Boolean isFree, String sort) {
+            List<String> categories,
+            EventStatus status, Long organizerId, LocalDateTime startTime, LocalDateTime endTime,
+            BigDecimal minPrice, BigDecimal maxPrice, Boolean isFree, String sort) {
         // Tùy chỉnh sắp xếp mới nhất (desc) hoặc cũ nhất (asc)
         Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
 
         // Chuyển rỗng thành null để Query JPQL lờ đi
         String finalKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
-        java.util.List<String> finalCategories = (categories != null && !categories.isEmpty()) ? categories : null;
+        List<String> finalCategories = (categories != null && !categories.isEmpty()) ? categories : null;
 
         // BẢO MẬT HIỂN THỊ (VISIBILITY SECURITY)
         // Nếu không phải ADMIN, và cũng không phải ORGANIZER đang truy cập danh sách
@@ -229,7 +234,9 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
                 : registrationRepository.countTicketsSoldGroupByEventId(
                         eventIds,
-                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT)).stream()
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
+                                RegistrationStatus.PENDING_PAYMENT))
+                        .stream()
                         .collect(Collectors.toMap(
                                 row -> (Long) row[0],
                                 row -> (Long) row[1]));
@@ -477,7 +484,7 @@ public class EventServiceImpl implements EventService {
         } else {
             // Xóa vật lý khi chưa có ai mua vé thành công
             // 1. Xóa toàn bộ Staff Assignments
-            List<com.example.backend.entity.EventStaffAssignment> assignments = eventStaffAssignmentRepository
+            List<EventStaffAssignment> assignments = eventStaffAssignmentRepository
                     .findByEventId(eventId);
             eventStaffAssignmentRepository.deleteAll(assignments);
 
@@ -501,22 +508,25 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     // Lấy danh sách sự kiện được gán cho nhân viên (staff) theo id
-    public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size, String sort, String search) {
+    public PageResponse<EventResponse> getAssignedEventsByStaffId(Long staffId, int page, int size, String sort,
+            String search) {
         User currentUser = getCurrentUser();
 
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOrganizer = currentUser.getRole() == Role.ORGANIZER;
         boolean isSelf = currentUser.getId().equals(staffId);
 
-        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất kỳ ai
+        // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất
+        // kỳ ai
         if (!isAdmin && !isOrganizer && !isSelf) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
         Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
-        
-        Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffIdWithFilters(staffId, search, pageable);
+
+        Page<Event> eventPage = eventStaffAssignmentRepository.findEventsByStaffIdWithFilters(staffId, search,
+                pageable);
 
         List<Long> eventIds = eventPage.getContent().stream()
                 .map(Event::getId).collect(Collectors.toList());
@@ -525,7 +535,9 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> ticketsSoldMap = eventIds.isEmpty() ? Map.of()
                 : registrationRepository.countTicketsSoldGroupByEventId(
                         eventIds,
-                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN, RegistrationStatus.PENDING_PAYMENT)).stream()
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
+                                RegistrationStatus.PENDING_PAYMENT))
+                        .stream()
                         .collect(Collectors.toMap(
                                 row -> (Long) row[0],
                                 row -> (Long) row[1]));

@@ -1,6 +1,6 @@
 # 🗺️ LỘ TRÌNH ĐỌC HIỂU DỰ ÁN (CHI TIẾT TỪ A - Z)
 
-Đây là bản đồ lộ trình giúp bạn đọc hiểu toàn bộ cấu trúc code, logic nghiệp vụ và các công nghệ cốt lõi của dự án (Cập nhật đến hết Phase 10).
+Đây là bản đồ lộ trình giúp bạn đọc hiểu toàn bộ cấu trúc code, logic nghiệp vụ và các công nghệ cốt lõi của dự án (Cập nhật đến tiến độ hiện tại, bao gồm Phase 11: Google OAuth2, Tối ưu Code và Tích hợp Chatbot AI).
 
 ---
 
@@ -21,56 +21,67 @@ Trước khi đọc code chức năng, hãy hiểu cách dữ liệu vận hành
 
 ## 🔐 PHẦN 2: BẢO MẬT & NGƯỜI DÙNG (AUTH & USER)
 
-### 3. Cơ chế Đăng nhập & Bảo mật JWT
+### 3. Cơ chế Đăng nhập, Cookie & Bảo mật JWT
 - **`security/JwtAuthenticationFilter.java`**: "Vọng gác" cổng. Kiểm tra Token từ Cookie/Header, giải mã để biết ai đang gọi API và họ có quyền gì.
-- **`controller/AuthController.java`**: Sử dụng **HttpOnly Cookie** để lưu Token, giúp chống lại các cuộc tấn công đánh cắp Token từ JavaScript (XSS).
-- **`service/impl/AuthServiceImpl.java`**: Logic mã hóa mật khẩu (BCrypt) và sinh mã Token.
+- **`controller/AuthController.java`**: Sử dụng **HttpOnly Cookie** để lưu Token, giúp chống lại các cuộc tấn công đánh cắp Token từ JavaScript (XSS). Cookie Max-Age được tính toán động (Dynamic Expiration) lấy trực tiếp từ cấu hình Bean (`JwtTokenProvider`) đảm bảo cookie hoạt động chính xác.
+- **`service/impl/AuthServiceImpl.java`**: Logic mã hóa mật khẩu (BCrypt), sinh mã Token và làm mới Token (Refresh Token).
 
-### 4. Quản lý Tài khoản & Phân quyền
+### 4. Đăng nhập bằng Google (Phase 11)
+- **`AuthController.googleLogin()`** và **`AuthServiceImpl.googleLogin()`**: Xử lý giải mã và xác thực `IdToken` từ Google thông qua thư viện `google-api-client`.
+- Tự động tạo tài khoản mới nếu email chưa tồn tại, hoặc hợp nhất (merge) nếu đã có tài khoản, sau đó trả về JWT Token và gài vào Cookie.
+
+### 5. Quản lý Tài khoản & Phân quyền
 - **`service/impl/UserServiceImpl.java`**: Xử lý logic xóa mềm (LOCKED) thay vì xóa cứng để giữ lại dữ liệu thống kê.
-- **`controller/AdminController.java`**: Được bảo vệ bởi `@PreAuthorize("hasRole('ADMIN')")`, nơi Admin quản lý danh sách người dùng toàn hệ thống.
+- **`controller/AdminController.java`**: Được bảo vệ bởi `@PreAuthorize("hasRole('ADMIN')")`.
 
 ---
 
 ## 🎟️ PHẦN 3: LÕI NGHIỆP VỤ (EVENTS & TICKETS)
 
-### 5. Quản lý Sự kiện & Lịch trình (Phase 5)
+### 6. Quản lý Sự kiện & Lịch trình (Phase 5)
 - **`entity/Event.java`**: Thực thể quan trọng nhất. Chứa thông tin về Sức chứa (`capacity`), Giá vé (`ticketPrice`) và Số vé đã bán (`soldTickets`).
 - **`service/impl/EventServiceImpl.java`**: Logic kiểm soát sức chứa, không cho phép Organizer giảm sức chứa thấp hơn số lượng vé đã bán thực tế.
 
-### 6. Đăng ký vé & Thanh toán PayOS (Phase 7 - 8)
-- **`service/impl/RegistrationServiceImpl.java`**: Logic "Giữ chỗ tạm thời" (Race Condition). Khi khách bấm mua, hệ thống nhích `soldTickets` lên ngay lập tức để tránh bán quá số lượng (Overbooking).
-- **`service/impl/WebhookServiceImpl.java`**: Xử lý tín hiệu từ Ngân hàng (PayOS). Sử dụng **Khóa Bi quan (`@Lock(PESSIMISTIC_WRITE)`)** để đảm bảo nếu ngân hàng gửi 2 thông báo cùng lúc, hệ thống cũng chỉ sinh duy nhất 1 vé.
+### 7. Đăng ký vé & Thanh toán PayOS (Phase 7 - 8)
+- **`service/impl/RegistrationServiceImpl.java`**: Logic "Giữ chỗ tạm thời". Khi khách bấm mua, hệ thống sử dụng Khóa Bi Quan để nhích `soldTickets` lên ngay lập tức nhằm tránh bán quá số lượng (Overbooking - Race Condition).
+- **`service/impl/WebhookServiceImpl.java`**: Xử lý tín hiệu từ Ngân hàng (PayOS). Sử dụng **Khóa Bi quan (`@Lock(PESSIMISTIC_WRITE)`)** thông qua `PaymentRepository` để đảm bảo hệ thống chặn đứng việc webhook gọi lặp lại (Idempotency).
 
-### 7. Cổng Check-in QrCode (Phase 9)
-- **`service/impl/TicketServiceImpl.java`**: Quản lý rào chắn vào cửa. Đảm bảo 1 vé chỉ được quét 1 lần (`USED`).
+### 8. Cổng Check-in QrCode (Phase 9)
+- **`service/impl/TicketServiceImpl.java`**: Quản lý rào chắn vào cửa. Khóa vé lại khi quét để đảm bảo 1 mã QR không bị quét 2 lần (`USED`).
 
 ---
 
-## 📊 PHẦN 4: HỆ THỐNG BÁO CÁO & DASHBOARD (PHASE 10)
+## 🤖 PHẦN 4: HỆ THỐNG AI CHATBOT TƯ VẤN (MỚI)
+
+Sử dụng Spring AI kết nối với model AI qua OpenRouter để đóng vai trò trợ lý ảo.
+
+### 9. Cấu hình & Tools (Function Calling)
+- **`config/ChatbotConfig.java`**: Trái tim của Chatbot. Định nghĩa 5 "Công cụ" (Tools/Functions) giúp AI tự động chọc vào Database để trả lời câu hỏi: Tìm sự kiện, lấy chi tiết sự kiện, lịch trình, sự kiện sắp tới, và thông tin ban tổ chức.
+- **`controller/CustomerChatbotController.java`**: Cung cấp API dạng luồng dữ liệu (Stream) dạng văn bản để hiển thị hiệu ứng gõ chữ (typing effect) cho Frontend.
+
+---
+
+## 📊 PHẦN 5: HỆ THỐNG BÁO CÁO & DASHBOARD (PHASE 10)
 
 Đây là phần quan trọng nhất để hiểu cách biến dữ liệu thô thành thông tin hữu ích.
 
-### 8. Thống kê & Tổng hợp dữ liệu (Aggregations)
-- **`repository/` (Tất cả)**: Hãy xem các hàm có `@Query`. Chúng sử dụng SQL Aggregate (`COUNT`, `SUM`, `GROUP BY`) để tính toán trực tiếp trên DB.
-  - `UserRepository`: Đếm User theo Role.
-  - `PaymentRepository`: Tính tổng doanh thu thành công.
-  - `TicketRepository`: Đếm tần suất check-in theo khung giờ (dùng `HOUR(checkedInAt)`).
+### 10. Kiến trúc Dashboard Module
+- **`controller/DashboardController.java`**: Chia nhỏ thành 14 Endpoints độc lập (8 cho Admin, 6 cho Organizer). Class này đã được "dọn dẹp" (Clean Code) loại bỏ hoàn toàn các Annotation của Swagger để code cực kỳ gọn gàng, thuần khiết.
+- **`service/impl/DashboardServiceImpl.java`**: Mapping kết quả từ SQL thô sang chuẩn JSON mà thư viện Ant Design Charts yêu cầu.
 
-### 9. Kiến trúc Dashboard Module (API Độc lập)
-- **`controller/DashboardController.java`**: Thay vì tạo 1 API khổng lồ, chúng ta chia nhỏ thành 14 Endpoints độc lập (8 cho Admin, 6 cho Organizer).
-- **Lý do:** Giúp Frontend có thể load từng biểu đồ riêng lẻ, mỗi biểu đồ có bộ lọc thời gian (`from`/`to`) riêng mà không làm chậm cả trang web.
-- **`service/impl/DashboardServiceImpl.java`**: Trung tâm xử lý logic mapping từ kết quả SQL thô sang định dạng JSON mà thư viện biểu đồ (Ant Design Charts) yêu cầu.
+### 11. Thống kê Database Tối ưu (Aggregations)
+- **`repository/` (Tất cả)**: Sử dụng SQL Aggregate (`COUNT`, `SUM`, `GROUP BY`) để tính toán trực tiếp trên DB thay vì lấy lên RAM.
+  - Ví dụ: `sumRevenueGroupByDay` trong `PaymentRepository`.
 
 ---
 
-## 📚 PHẦN 5: CÔNG CỤ HỖ TRỢ PHÁT TRIỂN
+## 📚 PHẦN 6: CÔNG CỤ HỖ TRỢ PHÁT TRIỂN
 
-### 10. Swagger UI - Tài liệu API Tự động
-- **Cấu hình:** `config/OpenApiConfig.java`.
-- **Cách dùng:** Truy cập `http://localhost:8080/swagger-ui.html`. Bạn có thể thử nghiệm (Try it out) trực tiếp mọi API của dự án tại đây mà không cần dùng Postman.
+### 12. Swagger UI - Tài liệu API
+- **Cấu hình:** `config/OpenApiConfig.java`. Dùng cấu hình tập trung để các Controller luôn được giữ sạch sẽ 100%.
+- **Cách dùng:** Truy cập `http://localhost:8080/swagger-ui.html` để kiểm thử (Try it out) trực tiếp mọi API của dự án.
 
-### 11. Các Tài liệu Quan trọng (Thư mục `doc/`)
+### 13. Các Tài liệu Quan trọng (Thư mục `doc/`)
 1. **`api_endpoints.md`**: Chi tiết danh sách API cho Frontend.
 2. **`plan_dashboard.md`**: Cấu trúc dữ liệu JSON chi tiết cho từng loại biểu đồ.
 3. **`technical_guide.md`**: Giải thích sâu về các kỹ thuật khó như Khóa Bi Quan, Race Condition, Webhook.
@@ -81,55 +92,43 @@ Trước khi đọc code chức năng, hãy hiểu cách dữ liệu vận hành
 - `@Transactional`: Đảm bảo tính toàn vẹn (Hoặc thành công hết, hoặc hủy bỏ hết nếu có lỗi).
 - `@PreAuthorize`: Rào chắn quyền truy cập (Admin/Organizer/Staff).
 - `@Lock(LockModeType.PESSIMISTIC_WRITE)`: Khóa dòng dữ liệu trong DB, chống tranh chấp dữ liệu khi nhiều người cùng thao tác 1 lúc.
-- `@Scheduled`: Tự động chạy ngầm (ví dụ: Tự động hủy đơn hàng nếu khách ngâm thanh toán quá 5 phút).
+- `@Scheduled`: Tự động chạy ngầm (ví dụ: Tự động hủy đơn hàng).
 
 ---
 
-## 🌀 PHẦN 6: CÁC LUỒNG NGHIỆP VỤ TRỌNG YẾU (TRACING GUIDE)
+## 🌀 PHẦN 7: CÁC LUỒNG NGHIỆP VỤ TRỌNG YẾU (TRACING GUIDE)
 
 Nếu bạn muốn biết "một yêu cầu từ Frontend sẽ đi qua những đâu", hãy đọc theo thứ tự các hàm sau:
 
-### 1. Luồng Đăng ký & Mua vé (Phức tạp nhất)
+### 1. Luồng Đăng nhập Google (OAuth2)
+1.  **`AuthController.googleLogin()`**: Nhận `IdToken` từ Frontend.
+2.  **`AuthServiceImpl.googleLogin()`**: Dùng `GoogleIdTokenVerifier` giải mã token. Nếu hợp lệ, lấy Email và Tên. Cấp JWT và nhét vào HttpOnly Cookie một cách an toàn.
+
+### 2. Luồng Đăng ký & Mua vé (Phức tạp nhất)
 Hệ thống xử lý từ lúc khách bấm mua đến lúc nhận được vé:
 1.  **`RegistrationController.registerToEvent()`**: Tiếp nhận yêu cầu.
-2.  **`RegistrationServiceImpl.registerToEvent()`**: 
-    - Gọi `soldTickets + 1` để giữ chỗ.
-    - Gọi `payOS.createPaymentLink()` để lấy link thanh toán.
-3.  **`WebhookController.handlePayosWebhook()`**: Đón tín hiệu khi khách chuyển khoản xong.
-4.  **`WebhookServiceImpl.processWebhook()`**: 
-    - Xác thực chữ ký số an toàn.
-    - Gọi `ticketService.createTicket()` để sinh QR Code và gửi về Email.
+2.  **`RegistrationServiceImpl.registerToEvent()`**: Mở `@Lock`, tăng `soldTickets + 1` để giữ chỗ. Tạo Payment. Gọi `payOS.createPaymentLink()`.
+3.  **`WebhookController.handlePayosWebhook()`**: Đón tín hiệu khi chuyển khoản xong.
+4.  **`WebhookServiceImpl.processWebhook()`**: Mở `@Lock` cho Payment, kiểm tra chữ ký số, gọi `ticketService.createTicket()` để sinh mã QR gửi Email.
 
-### 2. Luồng Dashboard & Biểu đồ (Mới nhất - Phase 10)
-Cách dữ liệu từ hàng vạn bản ghi biến thành biểu đồ Ant Design:
-1.  **`DashboardController.getRevenueChart()`**: Tiếp nhận tham số `from`/`to`.
-2.  **`DashboardServiceImpl.getRevenueChart()`**: 
-    - Gọi `paymentRepository.sumRevenueGroupByDay()`.
-3.  **`PaymentRepository.sumRevenueGroupByDay()`**: Thực thi SQL: `SELECT DATE(createdAt), SUM(amount) ... GROUP BY DATE`.
-4.  **`DashboardServiceImpl`**: Map kết quả từ mảng `Object[]` sang `RevenuePointDTO` để trả về JSON chuẩn.
-
-### 3. Luồng Check-in tại cổng (Staff)
-1.  **`TicketController.checkIn()`**: Nhân viên quét mã QR.
-2.  **`TicketServiceImpl.checkInTicket()`**: 
-    - Sử dụng `@Lock` để khóa vé, tránh 1 vé quét 2 lần cùng lúc.
-    - Kiểm tra trạng thái vé (`ACTIVE`) và thời gian sự kiện.
-    - Chuyển trạng thái sang `USED` và lưu thời điểm check-in.
+### 3. Luồng Hỏi đáp Chatbot AI
+1.  **`CustomerChatbotController.streamChat()`**: Nhận prompt từ khách hàng.
+2.  **Spring AI (ChatClient)**: Phân tích câu hỏi. Nếu cần, AI sẽ tự gọi hàm (`@Tool`) trong `ChatbotConfig`.
+3.  **`EventRepository.findTop5ByStatusAndStartTimeAfterOrderByStartTimeAsc()`**: Hàm tối ưu lấy dữ liệu trả cho AI mà không gây tràn bộ nhớ.
+4.  **Spring AI**: Nhận dữ liệu DB, sinh câu trả lời tự nhiên và Stream trả về.
 
 ---
 
-## 🛠️ PHẦN 7: DANH SÁCH FILE "PHẢI ĐỌC" THEO THỨ TỰ (TOP 10)
+## 🛠️ PHẦN 8: DANH SÁCH FILE "PHẢI ĐỌC" THEO THỨ TỰ (TOP 10)
 
-Để nắm bắt dự án trong 60 phút, hãy mở file theo đúng trật tự này:
-1.  **`entity/BaseEntity.java`**: Hiểu về dấu mốc thời gian.
-2.  **`exception/ErrorCode.java`**: Hiểu về các quy tắc nghiệp vụ (Business Rules).
-3.  **`entity/Event.java`**: Hiểu về cấu trúc dữ liệu cốt lõi.
-4.  **`security/JwtAuthenticationFilter.java`**: Hiểu về cách bảo vệ hệ thống.
-5.  **`service/impl/RegistrationServiceImpl.java`**: Hiểu về logic bán vé và thanh toán.
-6.  **`service/impl/WebhookServiceImpl.java`**: Hiểu về cách kết nối với bên thứ 3 (PayOS).
-7.  **`service/impl/TicketServiceImpl.java`**: Hiểu về logic Check-in và bảo mật vé.
-8.  **`repository/TicketRepository.java`**: Xem các câu lệnh SQL nâng cao.
-9.  **`service/impl/DashboardServiceImpl.java`**: Xem cách xử lý dữ liệu cho biểu đồ.
-10. **`controller/DashboardController.java`**: Xem cách thiết kế API chuyên nghiệp với Swagger.
-
----
-**Lời khuyên:** Đừng cố đọc hết code trong một file. Hãy nhìn vào **Tên hàm** và **Comment** tôi đã viết cực kỳ chi tiết bằng tiếng Việt để hiểu "Ý đồ thiết kế" trước khi đi sâu vào từng dòng logic.
+Để nắm bắt dự án một cách nhanh chóng, hãy mở file theo đúng trật tự này:
+1.  **`entity/BaseEntity.java` & `entity/Event.java`**: Hiểu về nền tảng dữ liệu.
+2.  **`exception/ErrorCode.java`**: Nắm bắt các quy tắc nghiệp vụ (Business Rules).
+3.  **`config/SecurityConfig.java`**: Hiểu quyền hạn, phân luồng API và CORS.
+4.  **`controller/AuthController.java`**: Đọc cách Controller tính toán vòng đời (Dynamic Expiration) để cấu hình Cookie JWT an toàn.
+5.  **`service/impl/RegistrationServiceImpl.java`**: Đọc để hiểu logic bán vé, khóa bi quan (Race Condition).
+6.  **`service/impl/WebhookServiceImpl.java`**: Đọc để hiểu bảo mật Webhook PayOS (Idempotency).
+7.  **`service/impl/TicketServiceImpl.java`**: Đọc để hiểu logic Check-in bằng QR Code.
+8.  **`config/ChatbotConfig.java`**: Đọc để mở mang kiến thức về AI Function Calling.
+9.  **`service/impl/DashboardServiceImpl.java`**: Đọc để hiểu nghệ thuật biến hóa số liệu thành JSON chuẩn cho biểu đồ.
+10. **`controller/DashboardController.java`**: Đọc để tận hưởng một class API cực kỳ "sạch sẽ", gọn gàng sau khi loại bỏ hoàn toàn Swagger Polishing.

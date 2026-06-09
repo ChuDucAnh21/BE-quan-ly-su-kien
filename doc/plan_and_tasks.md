@@ -167,13 +167,13 @@
   - [x] Tài liệu `doc/plan_dashboard.md` đồng bộ với tên API và JSON Format chuẩn.
   - [x] Tài liệu `doc/api_endpoints.md` bổ sung Mục 9 và 10 đặc tả đầy đủ.
 
-- [ ] **Phase 11: Nâng cấp Trải Nghiệm (Bonus OAuth2 Google)**
-  - [ ] Đăng ký Google Cloud Console để trích xuất `Client ID` và cấu hình miền được phép gọi API (CORS Origin).
-  - [ ] Phát triển API cổng tiếp nhận: `POST /api/v1/auth/google`. Mở khóa bảo mật SecurityConfig cho đường dẫn này.
-  - [ ] Tích hợp thư viện `google-api-client` của Google. Giải mã và Verify (xác thực) `IdToken` từ Frontend văng lên.
-  - [ ] Bóc xuất siêu dữ liệu: Trích lấy Email, Họ tên, Avatar URL từ Google Payload.
-  - [ ] Nhánh Logic 1: Nếu Email tồn tại trong DB, lấy User đó ra sinh JWT và cấp phát thẳng Access Token.
-  - [ ] Nhánh Logic 2: Nếu Email chưa tồn tại, Backend tự động đóng gói đối tượng `User` kèm Role `USER` mặc định, lưu xuống DataBase, sau đó sinh JWT và Login trong nháy mắt.
+- [x] **Phase 11: Nâng cấp Trải Nghiệm (Bonus OAuth2 Google)**
+  - [x] Đăng ký Google Cloud Console để trích xuất `Client ID` và cấu hình miền được phép gọi API (CORS Origin).
+  - [x] Phát triển API cổng tiếp nhận: `POST /api/v1/auth/google-login`. Mở khóa bảo mật SecurityConfig cho đường dẫn này.
+  - [x] Tích hợp thư viện `google-api-client` của Google. Giải mã và Verify (xác thực) `IdToken` từ Frontend văng lên.
+  - [x] Bóc xuất siêu dữ liệu: Trích lấy Email, Họ tên, Avatar URL từ Google Payload.
+  - [x] Nhánh Logic 1: Nếu Email tồn tại trong DB, lấy User đó ra sinh JWT và cấp phát thẳng Access Token.
+  - [x] Nhánh Logic 2: Nếu Email chưa tồn tại, Backend tự động đóng gói đối tượng `User` kèm Role `USER` mặc định, lưu xuống DataBase, sau đó sinh JWT và Login trong nháy mắt.
 
 
 

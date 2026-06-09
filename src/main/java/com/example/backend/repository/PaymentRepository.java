@@ -5,9 +5,12 @@ import com.example.backend.enums.PaymentStatus;
 
 import jakarta.persistence.LockModeType;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -23,11 +26,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         // Lấy danh sách giao dịch đang chờ thanh toán của người dùng hiện tại (để có
         // thể mở lại trang thanh toán)
         @Query("SELECT p FROM Payment p WHERE p.registration.user.email = :email AND p.status = :status AND (:search IS NULL OR LOWER(p.registration.event.title) LIKE LOWER(CONCAT('%', :search, '%')))")
-        org.springframework.data.domain.Page<Payment> findPendingPaymentsWithSearch(
-            @org.springframework.data.repository.query.Param("email") String email, 
-            @org.springframework.data.repository.query.Param("status") PaymentStatus status, 
-            @org.springframework.data.repository.query.Param("search") String search, 
-            org.springframework.data.domain.Pageable pageable);
+        Page<Payment> findPendingPaymentsWithSearch(
+                        @Param("email") String email,
+                        @Param("status") PaymentStatus status,
+                        @Param("search") String search,
+                        Pageable pageable);
 
         // Kỹ thuật PESSIMISTIC_WRITE (Khóa bi quan): Khi một request (Webhook PayOS)
         // gọi hàm này,
@@ -45,25 +48,25 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
         @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status")
         java.math.BigDecimal sumAmountByStatus(
-                        @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+                        @Param("status") PaymentStatus status);
 
         @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status AND p.registration.event.organizer.id = :organizerId")
         java.math.BigDecimal sumAmountByOrganizerAndStatus(
-                        @org.springframework.data.repository.query.Param("organizerId") Long organizerId,
-                        @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+                        @Param("organizerId") Long organizerId,
+                        @Param("status") PaymentStatus status);
 
         @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
         java.math.BigDecimal sumAmountByStatusAndCreatedAtBetween(
-                        @org.springframework.data.repository.query.Param("status") PaymentStatus status,
-                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
-                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+                        @Param("status") PaymentStatus status,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status AND p.registration.event.organizer.id = :organizerId AND p.createdAt BETWEEN :startDate AND :endDate")
         java.math.BigDecimal sumAmountByOrganizerAndStatusAndCreatedAtBetween(
-                        @org.springframework.data.repository.query.Param("organizerId") Long organizerId,
-                        @org.springframework.data.repository.query.Param("status") PaymentStatus status,
-                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
-                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+                        @Param("organizerId") Long organizerId,
+                        @Param("status") PaymentStatus status,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         // ===========================================================
         // CÁC QUERY THỐNG KÊ CHO DASHBOARD BIỂU ĐỒ
@@ -82,8 +85,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                         "GROUP BY FUNCTION('DATE_FORMAT', p.createdAt, '%Y-%m-%d') " +
                         "ORDER BY FUNCTION('DATE_FORMAT', p.createdAt, '%Y-%m-%d')")
         List<Object[]> sumRevenueGroupByDay(
-                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
-                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         /**
          * Đếm số lượng vé (Trả phí / Miễn phí) theo từng Tháng (Stacked Column Chart).
@@ -104,8 +107,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                         "CASE WHEN p.registration.event.ticketPrice > 0 THEN 'VÉ TRẢ PHÍ' ELSE 'VÉ MIỄN PHÍ' END " +
                         "ORDER BY FUNCTION('DATE_FORMAT', p.createdAt, '%Y-%m')")
         List<Object[]> countTicketTypeGroupByMonth(
-                        @org.springframework.data.repository.query.Param("startDate") LocalDateTime startDate,
-                        @org.springframework.data.repository.query.Param("endDate") LocalDateTime endDate);
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         // ===========================================================
         // QUERY THỐNG KÊ THEO SỰ KIỆN CỤ THỂ
@@ -113,61 +116,64 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
         /** Tổng doanh thu SUCCESS của 1 sự kiện */
         @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
-               "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS'")
+                        "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS'")
         java.math.BigDecimal sumRevenueByEventId(
-                @org.springframework.data.repository.query.Param("eventId") Long eventId);
+                        @Param("eventId") Long eventId);
 
         /** Tổng doanh thu SUCCESS của 1 sự kiện trong khoảng thời gian */
         @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
-               "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate")
+                        "WHERE p.registration.event.id = :eventId AND p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate")
         java.math.BigDecimal sumRevenueByEventIdInRange(
-                @org.springframework.data.repository.query.Param("eventId") Long eventId,
-                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
-                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
+                        @Param("eventId") Long eventId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         /** Đếm giao dịch theo trạng thái cho 1 sự kiện */
         @Query("SELECT COUNT(p) FROM Payment p " +
-               "WHERE p.registration.event.id = :eventId AND p.status = :status")
+                        "WHERE p.registration.event.id = :eventId AND p.status = :status")
         long countByEventIdAndStatus(
-                @org.springframework.data.repository.query.Param("eventId") Long eventId,
-                @org.springframework.data.repository.query.Param("status") PaymentStatus status);
+                        @Param("eventId") Long eventId,
+                        @Param("status") PaymentStatus status);
 
         /** Đếm giao dịch theo trạng thái cho 1 sự kiện trong khoảng thời gian */
         @Query("SELECT COUNT(p) FROM Payment p " +
-               "WHERE p.registration.event.id = :eventId AND p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
+                        "WHERE p.registration.event.id = :eventId AND p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
         long countByEventIdAndStatusInRange(
-                @org.springframework.data.repository.query.Param("eventId") Long eventId,
-                @org.springframework.data.repository.query.Param("status") PaymentStatus status,
-                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
-                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
+                        @Param("eventId") Long eventId,
+                        @Param("status") PaymentStatus status,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-        /** Lấy danh sách giao dịch thanh toán của một sự kiện, có phân trang, tìm kiếm và lọc theo khoảng thời gian */
+        /**
+         * Lấy danh sách giao dịch thanh toán của một sự kiện, có phân trang, tìm kiếm
+         * và lọc theo khoảng thời gian
+         */
         @Query("SELECT p FROM Payment p " +
-               "WHERE p.registration.event.id = :eventId " +
-               "AND (:status IS NULL OR p.status = :status) " +
-               "AND (CAST(:startDate AS timestamp) IS NULL OR p.createdAt >= :startDate) " +
-               "AND (CAST(:endDate AS timestamp) IS NULL OR p.createdAt <= :endDate) " +
-               "AND (:keyword IS NULL OR " +
-               "LOWER(p.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-               "LOWER(p.registration.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-               "LOWER(p.registration.user.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-               "LOWER(p.registration.registrationCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+                        "WHERE p.registration.event.id = :eventId " +
+                        "AND (:status IS NULL OR p.status = :status) " +
+                        "AND (CAST(:startDate AS timestamp) IS NULL OR p.createdAt >= :startDate) " +
+                        "AND (CAST(:endDate AS timestamp) IS NULL OR p.createdAt <= :endDate) " +
+                        "AND (:keyword IS NULL OR " +
+                        "LOWER(p.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+                        "LOWER(p.registration.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+                        "LOWER(p.registration.user.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+                        "LOWER(p.registration.registrationCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
         org.springframework.data.domain.Page<Payment> findPaymentsByEventIdWithFilters(
-                @org.springframework.data.repository.query.Param("eventId") Long eventId,
-                @org.springframework.data.repository.query.Param("keyword") String keyword,
-                @org.springframework.data.repository.query.Param("status") PaymentStatus status,
-                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
-                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
-                org.springframework.data.domain.Pageable pageable);
+                        @Param("eventId") Long eventId,
+                        @Param("keyword") String keyword,
+                        @Param("status") PaymentStatus status,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
 
         /** Lấy top các sự kiện có doanh thu cao nhất trong khoảng thời gian */
         @Query("SELECT p.registration.event.title as label, SUM(p.amount) as value " +
-               "FROM Payment p " +
-               "WHERE p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate " +
-               "GROUP BY p.registration.event.id, p.registration.event.title " +
-               "ORDER BY value DESC")
-        org.springframework.data.domain.Page<Object[]> findTopEventsByRevenue(
-                @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
-                @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
-                org.springframework.data.domain.Pageable pageable);
+                        "FROM Payment p " +
+                        "WHERE p.status = 'SUCCESS' AND p.createdAt BETWEEN :startDate AND :endDate " +
+                        "GROUP BY p.registration.event.id, p.registration.event.title " +
+                        "ORDER BY value DESC")
+        Page<Object[]> findTopEventsByRevenue(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
 }

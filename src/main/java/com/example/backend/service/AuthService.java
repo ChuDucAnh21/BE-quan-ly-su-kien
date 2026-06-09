@@ -63,7 +63,7 @@ public class AuthService {
                 // Bước 3: Khởi tạo đối tượng User mới (Dùng Builder Pattern của Lombok để code
                 // cực kỳ ngắn gọn và dễ đọc)
                 User user = User.builder()
-                                .fullName(request.getFullName()) 
+                                .fullName(request.getFullName())
                                 .email(request.getEmail())
                                 .phone(request.getPhone())
                                 // BẢO MẬT TUYỆT ĐỐI: Mật khẩu phải được "băm" (hash) bằng BCrypt trước khi chạm
@@ -159,13 +159,15 @@ public class AuthService {
 
         /**
          * Xử lý luồng Đăng nhập bằng Google.
-         * Xác minh idToken từ Google, nếu email chưa tồn tại thì tạo tài khoản mới (Provider = GOOGLE).
+         * Xác minh idToken từ Google, nếu email chưa tồn tại thì tạo tài khoản mới
+         * (Provider = GOOGLE).
          * Nếu đã tồn tại (dù là LOCAL hay GOOGLE), hợp nhất và cho phép đăng nhập luôn.
          */
         @Transactional
         public LoginResponse googleLogin(GoogleLoginRequest request) {
                 try {
-                        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(),
+                                        new GsonFactory())
                                         .setAudience(Collections.singletonList(googleClientId))
                                         .build();
 
@@ -194,7 +196,8 @@ public class AuthService {
                                 } else {
                                         // Nếu User đã tồn tại (dù trước đó là LOCAL), ta tự động map và hợp nhất.
                                         // Có thể cập nhật lại avatar nếu chưa có
-                                        if (user.getAvatarUrl() == null || user.getAvatarUrl().contains("ui-avatars.com")) {
+                                        if (user.getAvatarUrl() == null
+                                                        || user.getAvatarUrl().contains("ui-avatars.com")) {
                                                 user.setAvatarUrl(pictureUrl);
                                         }
                                         // Cập nhật lại provider Id cho chắc chắn
@@ -239,7 +242,8 @@ public class AuthService {
                         }
                 } catch (Exception e) {
                         e.printStackTrace();
-                        throw new AppException(ErrorCode.UNAUTHENTICATED); // Báo lỗi nếu token Google giả mạo hoặc hết hạn
+                        throw new AppException(ErrorCode.UNAUTHENTICATED); // Báo lỗi nếu token Google giả mạo hoặc hết
+                                                                           // hạn
                 }
         }
 }

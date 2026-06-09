@@ -26,6 +26,7 @@ import com.example.backend.util.HashUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
@@ -104,7 +105,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         // 4. Khóa User (UniqueConstraint): 1 User chỉ được mua 1 vé cho 1 Event
-        java.util.Optional<Registration> optReg = registrationRepository.findByEventIdAndUserId(eventId, currentUser.getId());
+        java.util.Optional<Registration> optReg = registrationRepository.findByEventIdAndUserId(eventId,
+                currentUser.getId());
         if (optReg.isPresent()) {
             Registration existingReg = optReg.get();
             if (existingReg.getStatus() == RegistrationStatus.CANCELLED) {
@@ -112,10 +114,10 @@ public class RegistrationServiceImpl implements RegistrationService {
                 ticketRepository.findByRegistrationId(existingReg.getId()).ifPresent(ticketRepository::delete);
                 paymentRepository.findByRegistrationId(existingReg.getId()).ifPresent(paymentRepository::delete);
                 registrationRepository.delete(existingReg);
-                
+
                 // Ép Hibernate đẩy lệnh DELETE xuống Database ngay lập tức
                 // Tránh lỗi Unique Constraint khi lệnh INSERT bên dưới chạy
-                registrationRepository.flush(); 
+                registrationRepository.flush();
             } else {
                 throw new AppException(ErrorCode.ALREADY_REGISTERED);
             }
@@ -197,7 +199,7 @@ public class RegistrationServiceImpl implements RegistrationService {
             // Kết nối với PayOS SDK để lấy Link thanh toán thật
             try {
                 // 1. Khởi tạo đối tượng PayOS với cấu hình của Event Organizer
-                vn.payos.PayOS payOS = new vn.payos.PayOS(
+                PayOS payOS = new PayOS(
                         config.getClientId(),
                         config.getApiKey(),
                         config.getChecksumKey());

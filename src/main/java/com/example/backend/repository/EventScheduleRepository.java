@@ -2,6 +2,9 @@ package com.example.backend.repository;
 
 import com.example.backend.entity.EventSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,8 +20,9 @@ public interface EventScheduleRepository extends JpaRepository<EventSchedule, Lo
     // Lấy chi tiết 1 lịch trình con đảm bảo nó thuộc quyền của đúng Event đó
     Optional<EventSchedule> findByIdAndEventId(Long id, Long eventId);
 
-    // Dùng để Xóa toàn bộ lịch trình khi có tác động Đồng bộ (Tối ưu Bulk Delete bằng SQL)
-    @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.data.jpa.repository.Query("DELETE FROM EventSchedule e WHERE e.event.id = :eventId")
-    void deleteAllByEventId(@org.springframework.data.repository.query.Param("eventId") Long eventId);
+    // Dùng để Xóa toàn bộ lịch trình khi có tác động Đồng bộ (Tối ưu Bulk Delete
+    // bằng SQL)
+    @Modifying
+    @Query("DELETE FROM EventSchedule e WHERE e.event.id = :eventId")
+    void deleteAllByEventId(@Param("eventId") Long eventId);
 }

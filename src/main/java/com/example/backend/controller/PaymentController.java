@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.response.ApiResponse;
+import com.example.backend.dto.response.PageResponse;
 import com.example.backend.entity.Event;
 import com.example.backend.entity.Payment;
 import com.example.backend.entity.PaymentConfig;
@@ -19,6 +20,12 @@ import com.example.backend.repository.TicketRepository;
 import com.example.backend.dto.response.RegistrationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -161,7 +168,7 @@ public class PaymentController {
 
         @GetMapping("/my-tickets-pending")
         @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN','STAFF')")
-        public ResponseEntity<ApiResponse<com.example.backend.dto.response.PageResponse<RegistrationResponse>>> getMyPendingPayments(
+        public ResponseEntity<ApiResponse<PageResponse<RegistrationResponse>>> getMyPendingPayments(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(defaultValue = "desc") String sort,
@@ -169,17 +176,17 @@ public class PaymentController {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 log.info("Lấy danh sách đơn hàng đang chờ thanh toán (PENDING) cho user: {}", email);
 
-                org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort)
-                                ? org.springframework.data.domain.Sort.Direction.ASC
-                                : org.springframework.data.domain.Sort.Direction.DESC;
-                org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page,
+                Direction direction = "asc".equalsIgnoreCase(sort)
+                                ? Direction.ASC
+                                : Direction.DESC;
+                Pageable pageable = PageRequest.of(page,
                                 size,
-                                org.springframework.data.domain.Sort.by(direction, "createdAt"));
+                                Sort.by(direction, "createdAt"));
 
-                org.springframework.data.domain.Page<Payment> pendingPaymentsPage = paymentRepository
+                Page<Payment> pendingPaymentsPage = paymentRepository
                                 .findPendingPaymentsWithSearch(email, PaymentStatus.PENDING, search, pageable);
 
-                org.springframework.data.domain.Page<RegistrationResponse> dataPage = pendingPaymentsPage
+                Page<RegistrationResponse> dataPage = pendingPaymentsPage
                                 .map(payment -> {
                                         Registration registration = payment.getRegistration();
                                         return RegistrationResponse.builder()
@@ -199,7 +206,7 @@ public class PaymentController {
                                                         .build();
                                 });
 
-                com.example.backend.dto.response.PageResponse<RegistrationResponse> pageResponse = com.example.backend.dto.response.PageResponse
+                PageResponse<RegistrationResponse> pageResponse = PageResponse
                                 .<RegistrationResponse>builder()
                                 .currentPage(dataPage.getNumber())
                                 .totalPages(dataPage.getTotalPages())
@@ -209,7 +216,7 @@ public class PaymentController {
                                 .build();
 
                 return ResponseEntity
-                                .ok(ApiResponse.<com.example.backend.dto.response.PageResponse<RegistrationResponse>>builder()
+                                .ok(ApiResponse.<PageResponse<RegistrationResponse>>builder()
                                                 .status(ApiResponse.Status.builder().code(200)
                                                                 .message("Lấy danh sách các khoản chờ thanh toán thành công")
                                                                 .build())

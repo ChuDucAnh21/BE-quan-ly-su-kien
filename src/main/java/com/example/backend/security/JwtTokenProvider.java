@@ -4,6 +4,7 @@ import com.example.backend.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import java.util.Date;
 
 @Component // Đánh dấu lớp này là một Component để Spring quản lý và tiêm vào các nơi khác
            // (như SecurityConfig)
+@Data
 @Slf4j // Hỗ trợ ghi log các lỗi liên quan đến Token
 public class JwtTokenProvider {
 

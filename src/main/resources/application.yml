@@ -35,6 +35,16 @@ spring:
           starttls:
             enable: true
 
+  # OpenAI API
+  ai:
+    openai:
+      api-key: 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
+      base-url: https://openrouter.ai/api
+      chat:
+        options:
+          model: openrouter/free
+          temperature: 0.4
+
 server:
   port: 8080
 
@@ -43,7 +53,7 @@ app:
   jwt:
     # Key này phải cực kỳ bảo mật (Base64 JWT Secret có độ dài tối thiểu 256bit)
     secret: VmVyeVNlY3JldEtleUZvckV2ZW50TWFuYWdlbWVudEFwcGxpY2F0aW9uSHMyNTZTaWduYXR1cmUyMDI0
-    expiration: 3600000 # 1 phút (Access Token)
+    expiration: 86400000 # 24 giờ (Access Token)
     refresh-expiration: 2592000000 # 30 ngày (Refresh Token)
   google:
     client-id: "596490033528-oa192astnfgc18ipmhbkn06qj71r4idq.apps.googleusercontent.com"

@@ -1,11 +1,13 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.request.ForgotPasswordRequest;
+import com.example.backend.dto.request.GoogleLoginRequest;
 import com.example.backend.dto.request.LoginRequest;
 import com.example.backend.dto.request.RegisterRequest;
 import com.example.backend.dto.request.ResetPasswordRequest;
 import com.example.backend.dto.response.ApiResponse;
 import com.example.backend.dto.response.LoginResponse;
+import com.example.backend.dto.response.UserProfileResponse;
 import com.example.backend.service.AuthService;
 import com.example.backend.service.PasswordResetService;
 import jakarta.servlet.http.Cookie;
@@ -17,10 +19,11 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
 
-@RestController // Đánh dấu đây là lớp Controller xử lý các Request HTTP và trả về dữ liệu
-                // (thường là JSON)
-@RequestMapping("/api/v1/auth") // Định nghĩa đường dẫn gốc cho các API trong này là /api/v1/auth
-@RequiredArgsConstructor
+@RestController // Đánh dấu đây là lớp Controller xử lý các Request HTTP và trả về dữ liệu thuần
+                // JSON
+@RequestMapping("/api/v1/auth") // Định nghĩa đường dẫn gốc cho các API trong file này là /api/v1/auth
+@RequiredArgsConstructor // Tự động tạo Constructor tiêm Bean (Dependency Injection) cho các trường
+                         // `final`
 public class AuthController {
 
         private final AuthService authService;
@@ -42,16 +45,26 @@ public class AuthController {
 
         // 2. API Đăng nhập hệ thống
         @PostMapping("/login")
-        public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request,
+        public ApiResponse<UserProfileResponse> login(@RequestBody @Valid LoginRequest request,
                         HttpServletResponse response) {
                 LoginResponse loginResponse = authService.login(request);
 
-                // --- CƠ CHẾ BẢO MẬT COOKIE ---
-                // Lưu Access Token vào Cookie để tăng tính bảo mật (Chống tấn công XSS)
+                // --- CƠ CHẾ BẢO MẬT COOKIE CHỐNG HACK ---
+                // Lưu Access Token vào Cookie thay vì trả về LocalStorage để tăng tính bảo mật
                 Cookie accessCookie = new Cookie("access_token", loginResponse.getAccessToken());
-                accessCookie.setHttpOnly(true); // Ngăn không cho mã Javascript bên ngoài đọc được Cookie này
-                accessCookie.setSecure(true); // Chỉ gửi Cookie qua giao thức HTTPS bảo mật
-                accessCookie.setPath("/"); // Áp dụng cho toàn bộ các API
+
+                // Set HttpOnly = true: Rất quan trọng! Ngăn chặn hacker dùng mã Javascript độc
+                // hại (XSS)
+                // chạy trên trình duyệt để đánh cắp Token của người dùng.
+                accessCookie.setHttpOnly(true);
+
+                // Set Secure = true: Cookie chỉ được gửi đi nếu trình duyệt dùng HTTPS (bảo mật
+                // dữ liệu đường truyền)
+                accessCookie.setSecure(true);
+
+                // Path = "/": Cookie này sẽ tự động được trình duyệt đính kèm vào MỌI request
+                // gọi lên Backend
+                accessCookie.setPath("/");
                 accessCookie.setMaxAge(24 * 60 * 60); // Thời gian sống của Cookie chứa access_token(24h)
 
                 // Lưu Refresh Token vào một Cookie riêng (Thời gian sống lâu hơn: 30 ngày)
@@ -59,24 +72,26 @@ public class AuthController {
                 refreshCookie.setHttpOnly(true);
                 refreshCookie.setSecure(true);
                 refreshCookie.setPath("/api/v1/auth/refresh"); // Chỉ gửi Cookie này khi gọi API làm mới Token
-                refreshCookie.setMaxAge(30 * 24 * 60 * 60); // Thời gian sống của Cookie chứa refresh_token(30 ngày)
+                refreshCookie.setMaxAge(30 * 24 * 60 * 60); // Thời gian sống của Cookie chứa refresh_token(30
+                                                            // ngày)
 
                 // Thêm các Cookie này vào phản hồi trả về cho trình duyệt để khi có request
                 // trình duyệt sẽ tự động gửi kèm với api
                 response.addCookie(accessCookie);
                 response.addCookie(refreshCookie);
 
-                return ApiResponse.<LoginResponse>builder()
+                return ApiResponse.<UserProfileResponse>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .message("Login successful")
                                                 .build())
-                                .data(loginResponse)
+                                .data(loginResponse.getUser())
                                 .build();
         }
 
         // 2.5 API Đăng nhập bằng Google
         @PostMapping("/google-login")
-        public ApiResponse<LoginResponse> googleLogin(@RequestBody @Valid com.example.backend.dto.request.GoogleLoginRequest request,
+        public ApiResponse<UserProfileResponse> googleLogin(
+                        @RequestBody @Valid GoogleLoginRequest request,
                         HttpServletResponse response) {
                 LoginResponse loginResponse = authService.googleLogin(request);
 
@@ -96,11 +111,11 @@ public class AuthController {
                 response.addCookie(accessCookie);
                 response.addCookie(refreshCookie);
 
-                return ApiResponse.<LoginResponse>builder()
+                return ApiResponse.<UserProfileResponse>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .message("Google Login successful")
                                                 .build())
-                                .data(loginResponse)
+                                .data(loginResponse.getUser())
                                 .build();
         }
 
@@ -133,6 +148,10 @@ public class AuthController {
         }
 
         // 4. API Làm mới Access Token (Refresh Token)
+        // Khi Access Token (thời hạn ngắn 24h) bị hết hạn, Frontend sẽ gọi API này một
+        // cách thầm lặng.
+        // Trình duyệt sẽ tự động đính kèm Refresh Cookie (sống 30 ngày) vào request này
+        // nhờ Path = "/api/v1/auth/refresh".
         @PostMapping("/refresh")
         public ApiResponse<Void> refreshToken(
                         @CookieValue(name = "refresh_token", required = false) String refreshToken,

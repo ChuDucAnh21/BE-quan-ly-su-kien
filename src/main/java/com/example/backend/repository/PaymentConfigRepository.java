@@ -2,6 +2,9 @@ package com.example.backend.repository;
 
 import com.example.backend.entity.PaymentConfig;
 import com.example.backend.entity.User;
+
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,5 +14,5 @@ public interface PaymentConfigRepository extends JpaRepository<PaymentConfig, Lo
     boolean existsByUserAndIsActiveTrue(User user);
 
     // Tìm cấu hình payment của 1 User
-    java.util.Optional<PaymentConfig> findByUserId(Long userId);
+    Optional<PaymentConfig> findByUserId(Long userId);
 }

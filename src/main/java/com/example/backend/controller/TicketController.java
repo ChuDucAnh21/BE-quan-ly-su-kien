@@ -4,14 +4,23 @@ import com.example.backend.dto.request.BatchCheckInRequest;
 import com.example.backend.dto.request.CheckInRequest;
 import com.example.backend.dto.response.ApiResponse;
 import com.example.backend.dto.response.BatchCheckInResponse;
+import com.example.backend.dto.response.CheckInLogResponse;
 import com.example.backend.dto.response.PageResponse;
 import com.example.backend.dto.response.TicketResponse;
+import com.example.backend.enums.CheckInMethod;
+import com.example.backend.enums.TicketStatus;
 import com.example.backend.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +44,8 @@ public class TicketController {
                         @RequestParam(required = false) com.example.backend.enums.TicketStatus status) {
 
                 Pageable pageable = PageRequest.of(page, size);
-                Page<TicketResponse> ticketPage = ticketService.getTicketsCustomerByEventId(eventId, search, status, pageable);
+                Page<TicketResponse> ticketPage = ticketService.getTicketsCustomerByEventId(eventId, search, status,
+                                pageable);
 
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
                                 .currentPage(ticketPage.getNumber())
@@ -59,9 +69,9 @@ public class TicketController {
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(defaultValue = "desc") String sort,
-                        @RequestParam(required = false) com.example.backend.enums.TicketStatus status) {
-                org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? org.springframework.data.domain.Sort.Direction.ASC : org.springframework.data.domain.Sort.Direction.DESC;
-                Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by(direction, "createdAt"));
+                        @RequestParam(required = false) TicketStatus status) {
+                Direction direction = "asc".equalsIgnoreCase(sort) ? Direction.ASC : Direction.DESC;
+                Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
                 Page<TicketResponse> dataPage = ticketService.getMyTickets(status, pageable);
                 PageResponse<TicketResponse> pageResponse = PageResponse.<TicketResponse>builder()
                                 .currentPage(dataPage.getNumber())
@@ -81,18 +91,18 @@ public class TicketController {
         // Lấy lịch sử Check-in của Sự kiện
         @GetMapping("/events/{eventId}/checkin-history")
         @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'STAFF')")
-        public ApiResponse<PageResponse<com.example.backend.dto.response.CheckInLogResponse>> getCheckInHistory(
+        public ApiResponse<PageResponse<CheckInLogResponse>> getCheckInHistory(
                         @PathVariable("eventId") Long eventId,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(required = false) String search,
-                        @RequestParam(required = false) com.example.backend.enums.CheckInMethod method,
-                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fromDate,
-                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime toDate) {
+                        @RequestParam(required = false) CheckInMethod method,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate) {
                 Pageable pageable = PageRequest.of(page, size);
-                Page<com.example.backend.dto.response.CheckInLogResponse> dataPage = ticketService
+                Page<CheckInLogResponse> dataPage = ticketService
                                 .getCheckInHistoryByEventId(eventId, search, method, fromDate, toDate, pageable);
-                PageResponse<com.example.backend.dto.response.CheckInLogResponse> pageResponse = PageResponse.<com.example.backend.dto.response.CheckInLogResponse>builder()
+                PageResponse<CheckInLogResponse> pageResponse = PageResponse.<CheckInLogResponse>builder()
                                 .currentPage(dataPage.getNumber())
                                 .totalPages(dataPage.getTotalPages())
                                 .pageSize(dataPage.getSize())
@@ -100,7 +110,7 @@ public class TicketController {
                                 .data(dataPage.getContent())
                                 .build();
 
-                return ApiResponse.<PageResponse<com.example.backend.dto.response.CheckInLogResponse>>builder()
+                return ApiResponse.<PageResponse<CheckInLogResponse>>builder()
                                 .status(ApiResponse.Status.builder().code(200)
                                                 .message("Lấy lịch sử Check-in thành công")
                                                 .build())

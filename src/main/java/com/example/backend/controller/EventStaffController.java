@@ -6,6 +6,11 @@ import com.example.backend.dto.response.StaffResponse;
 import com.example.backend.enums.UserStatus;
 import com.example.backend.service.EventStaffService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -31,15 +36,15 @@ public class EventStaffController {
                         @RequestParam(required = false) String search,
                         @RequestParam(required = false) UserStatus status) {
 
-                org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sort)
-                                ? org.springframework.data.domain.Sort.Direction.ASC
-                                : org.springframework.data.domain.Sort.Direction.DESC;
-                org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page,
-                                size, org.springframework.data.domain.Sort.by(direction, "createdAt"));
+                Direction direction = "asc".equalsIgnoreCase(sort)
+                                ? Direction.ASC
+                                : Direction.DESC;
+                Pageable pageable = PageRequest.of(page,
+                                size, Sort.by(direction, "createdAt"));
 
-                com.example.backend.dto.response.PageResponse<StaffResponse> data = eventStaffService
+                PageResponse<StaffResponse> data = eventStaffService
                                 .getStaffsByEventId(eventId, search, status, pageable);
-                ApiResponse<com.example.backend.dto.response.PageResponse<StaffResponse>> response = ApiResponse.<com.example.backend.dto.response.PageResponse<StaffResponse>>builder()
+                ApiResponse<PageResponse<StaffResponse>> response = ApiResponse.<PageResponse<StaffResponse>>builder()
                                 .status(ApiResponse.Status.builder()
                                                 .code(200)
                                                 .message("Lấy danh sách nhân viên của sự kiện thành công")

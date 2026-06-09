@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,7 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
         private final UserRepository userRepository;
 
         @Override
-        @org.springframework.transaction.annotation.Transactional(readOnly = true)
+        @Transactional(readOnly = true)
         public PageResponse<PaymentTransactionResponse> getEventPayments(Long eventId, String keyword,
                         PaymentStatus status, LocalDate from, LocalDate to, int page, int size) {
 
