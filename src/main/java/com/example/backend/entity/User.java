@@ -1,5 +1,6 @@
 package com.example.backend.entity;
 
+import com.example.backend.enums.AuthProvider;
 import com.example.backend.enums.Gender;
 import com.example.backend.enums.Role;
 import com.example.backend.enums.UserStatus;
@@ -53,7 +54,7 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider")
     @Builder.Default
-    private com.example.backend.enums.AuthProvider authProvider = com.example.backend.enums.AuthProvider.LOCAL; // Nguồn đăng nhập
+    private AuthProvider authProvider = AuthProvider.LOCAL; // Nguồn đăng nhập
 
     @Column(name = "provider_id")
     private String providerId; // ID từ Google

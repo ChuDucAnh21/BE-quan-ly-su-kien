@@ -30,7 +30,7 @@ public class MailService {
                         "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n" +
                         "Mã khôi phục của bạn là:\n\n" +
                         "   " + token + "\n\n" +
-                        "Mã này sẽ hết hạn sau 15 phút.\n\n" +
+                        "Mã này sẽ hết hạn sau 5 phút.\n\n" +
                         "Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.\n\n" +
                         "Trân trọng,\nĐội ngũ Event Management");
 

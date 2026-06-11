@@ -17,50 +17,50 @@ import java.time.LocalDateTime;
 public class Event extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Tự động tăng khi tạo mới
     private Long id;
 
     // Người tổ chức sự kiện (Liên kết tới bảng User)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY) // Nhiều sự kiện có thể thuộc về 1 người tổ chức
+    @JoinColumn(name = "organizer_id", nullable = false) // Khóa ngoại tham chiếu đến User
     private User organizer;
 
-    private String title; // Tên sự kiện
+    private String title;
 
-    private String category; // Danh mục (Công nghệ, Ca nhạc...)
+    private String category;
 
     @Column(name = "short_description")
-    private String shortDescription; // Mô tả ngắn
+    private String shortDescription;
 
     @Column(columnDefinition = "TEXT")
-    private String description; // Mô tả chi tiết (TEXT để chứa được nhiều ký tự)
+    private String description;
 
     @Column(name = "banner_url")
-    private String bannerUrl; // Ảnh bìa sự kiện
+    private String bannerUrl;
 
     @Column(name = "start_time")
-    private LocalDateTime startTime; // Thời gian bắt đầu sự kiện
+    private LocalDateTime startTime;
 
     @Column(name = "end_time")
-    private LocalDateTime endTime; // Thời gian kết thúc sự kiện
+    private LocalDateTime endTime;
 
     @Column(name = "registration_start_time")
-    private LocalDateTime registrationStartTime; // Thời gian mở bán vé
+    private LocalDateTime registrationStartTime;
 
     @Column(name = "registration_end_time")
-    private LocalDateTime registrationEndTime; // Thời gian đóng bán vé
+    private LocalDateTime registrationEndTime;
 
-    private String location; // Địa điểm tổ chức
+    private String location;
 
-    private Integer capacity; // Sức chứa tối đa (số lượng vé)
+    private Integer capacity;
 
     @Column(name = "ticket_price")
-    private BigDecimal ticketPrice; // Giá vé (Dùng BigDecimal để tính toán tiền tệ chính xác)
+    private BigDecimal ticketPrice;
 
     @Column(name = "sold_tickets", nullable = false, columnDefinition = "INT DEFAULT 0")
     @Builder.Default
-    private Integer soldTickets = 0; // Số vé đã bán (Được tự động tăng khi khách đăng ký)
+    private Integer soldTickets = 0;
 
-    @Enumerated(EnumType.STRING)
-    private EventStatus status; // Trạng thái sự kiện (DRAFT, PUBLISHED, CANCELLED...)
+    @Enumerated(EnumType.STRING) // Lưu trạng thái dưới dạng chuỗi (ví dụ: "PUBLISHED")
+    private EventStatus status;
 }

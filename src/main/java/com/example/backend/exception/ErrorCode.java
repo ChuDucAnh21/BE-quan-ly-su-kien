@@ -5,17 +5,17 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
-        // Danh sách các mã lỗi định danh dùng chung cho toàn bộ hệ thống
+        // Danh sách các mã lỗi định danh dùng chung cho toàn bộ hệ thống ()
         // Cấu trúc: Tên_Lỗi(Mã_Số, Thông_Báo, Trạng_Thái_HTTP)
-
+        // các ErrorCode này là do ta tự định nghĩa ra
         UNCATEGORIZED_EXCEPTION(500, "Lỗi hệ thống không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
         INVALID_KEY(400, "Từ khóa thông báo không hợp lệ", HttpStatus.BAD_REQUEST),
         USER_EXISTED(400, "Người dùng đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST),
         USER_NOT_FOUND(404, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
         INVALID_PASSWORD(400, "Mật khẩu không chính xác", HttpStatus.BAD_REQUEST),
-        UNAUTHENTICATED(401, "Nguoi dung chua xac thuc", HttpStatus.UNAUTHORIZED),
+        UNAUTHENTICATED(401, "Người dùng chưa được xác thực", HttpStatus.UNAUTHORIZED),
         ACCESS_DENIED(403, "Không có quyền truy cập", HttpStatus.FORBIDDEN),
-        NO_CAN_BLOCK_ADMIN_ACCOUNT(400, "Bạn không thể khóa tài khoản ADMIN", HttpStatus.BAD_REQUEST),
+        NO_CAN_BLOCK_ADMIN_ACCOUNT(400, "Tài khoản ADMIN không thể bị khóa", HttpStatus.BAD_REQUEST),
 
         // Lỗi liên quan đến Sự kiện (Event Phase 5)
         EVENT_NOT_FOUND(404, "Không tìm thấy sự kiện", HttpStatus.NOT_FOUND),

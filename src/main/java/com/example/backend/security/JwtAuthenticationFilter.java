@@ -19,11 +19,11 @@ import java.util.Arrays;
 
 @Component // Biến lớp này thành một Bean để Spring Security có thể sử dụng tiêm vào
            // các nơi khác
-@RequiredArgsConstructor
-@Slf4j // Để in log lỗi
+@RequiredArgsConstructor // tự động sinh Constructor chứa field final và @NonNull
+@Slf4j // Để tự động tạo đối tượng logger.
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // OncePerRequestFilter: Đảm bảo bộ lọc này chỉ chạy đúng 1 lần cho mỗi Request
-    // gửi lên
+    // gửi lên từ client
 
     private final JwtTokenProvider tokenProvider; // Công cụ giải mã và kiểm tra Token
     private final CustomUserDetailsService customUserDetailsService; // Công cụ lấy thông tin User từ DB
@@ -62,12 +62,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
 
-                // Gắn thêm chi tiết về Request (như địa chỉ IP) vào đối tượng xác thực
+                // Gắn thêm thông tin của request vào đối tượng xác thực (địa chỉ IP và các
+                // thông tin khác)
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // 7. QUAN TRỌNG: Lưu thông tin xác thực vào SecurityContextHolder
-                // Kể từ dòng này, Spring Security sẽ coi như User này đã được xác thực và
-                // có quyền đi vào trong các controller được bảo vệ
+                // Lưu thông tin xác thực vào SecurityContextHolder để Spring Security biết user
+                // này đã được xác thực
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {

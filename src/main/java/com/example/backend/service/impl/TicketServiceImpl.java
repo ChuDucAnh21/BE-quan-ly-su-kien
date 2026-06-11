@@ -14,8 +14,11 @@ import com.example.backend.enums.CheckInMethod;
 import com.example.backend.enums.TicketStatus;
 import com.example.backend.exception.AppException;
 import com.example.backend.exception.ErrorCode;
+import com.example.backend.repository.CheckInLogRepository;
 import com.example.backend.repository.EventRepository;
+import com.example.backend.repository.EventStaffAssignmentRepository;
 import com.example.backend.repository.TicketRepository;
+import com.example.backend.repository.UserRepository;
 import com.example.backend.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,21 +43,21 @@ public class TicketServiceImpl implements TicketService {
 
         private final TicketRepository ticketRepository;
         private final EventRepository eventRepository;
-        private final com.example.backend.repository.EventStaffAssignmentRepository staffAssignmentRepository;
-        private final com.example.backend.repository.UserRepository userRepository;
-        private final com.example.backend.repository.CheckInLogRepository checkInLogRepository;
+        private final EventStaffAssignmentRepository staffAssignmentRepository;
+        private final UserRepository userRepository;
+        private final CheckInLogRepository checkInLogRepository;
 
         // Tự tiêm chính mình (Proxy) để có thể gọi hàm @Transactional nội bộ mà không
         // mất tính độc lập (REQUIRES_NEW)
-        @org.springframework.context.annotation.Lazy
-        @org.springframework.beans.factory.annotation.Autowired
+        @Lazy
+        @Autowired
         private TicketService self;
 
         @Override
         @Transactional(readOnly = true)
-        // Lấy danh sách vé của khách hàng theo id sự kiện
+        // Lấy danh sách vé của khách hàng (danh sách người tham dự) theo id sự kiện
         public Page<TicketResponse> getTicketsCustomerByEventId(Long eventId, String searchKeyword,
-                        com.example.backend.enums.TicketStatus status, Pageable pageable) {
+                        TicketStatus status, Pageable pageable) {
                 // 1. Kiểm tra quyền sở hữu sự kiện
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
@@ -158,6 +163,7 @@ public class TicketServiceImpl implements TicketService {
                 CheckInLog checkInLog = CheckInLog.builder()
                                 .ticket(ticket)
                                 .checkedInBy(staffUser)
+                                .checkInAt(LocalDateTime.now())
                                 .method(CheckInMethod.QR) // Quét QR trực tiếp Online
                                 .build();
                 checkInLogRepository.save(checkInLog);
@@ -170,6 +176,7 @@ public class TicketServiceImpl implements TicketService {
                                 .eventId(ticket.getRegistration().getEvent().getId())
                                 .eventTitle(ticket.getRegistration().getEvent().getTitle())
                                 .ticketPrice(ticket.getRegistration().getEvent().getTicketPrice())
+                                .registrationCode(ticket.getRegistration().getRegistrationCode())
                                 .userId(buyer.getId())
                                 .userEmail(buyer.getEmail())
                                 .userFullName(buyer.getFullName())
@@ -262,6 +269,7 @@ public class TicketServiceImpl implements TicketService {
                 CheckInLog checkInLog = CheckInLog.builder()
                                 .ticket(ticket)
                                 .checkedInBy(staffUser)
+                                .checkInAt(LocalDateTime.now())
                                 .method(CheckInMethod.MANUAL) // Đánh dấu là Check-in bằng tay / Offline Sync
                                 .build();
                 checkInLogRepository.save(checkInLog);
@@ -274,6 +282,7 @@ public class TicketServiceImpl implements TicketService {
                                 .eventId(eventId)
                                 .eventTitle(ticket.getRegistration().getEvent().getTitle())
                                 .ticketPrice(ticket.getRegistration().getEvent().getTicketPrice())
+                                .registrationCode(ticket.getRegistration().getRegistrationCode())
                                 .userId(buyer.getId())
                                 .userEmail(buyer.getEmail())
                                 .userFullName(buyer.getFullName())
@@ -287,7 +296,7 @@ public class TicketServiceImpl implements TicketService {
 
         @Override
         @Transactional(readOnly = true)
-        public Page<TicketResponse> getMyTickets(com.example.backend.enums.TicketStatus status, Pageable pageable) {
+        public Page<TicketResponse> getMyTickets(TicketStatus status, Pageable pageable) {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 log.info("Khách hàng đang truy vấn danh sách vé cá nhân: {}", email);
 
@@ -321,9 +330,9 @@ public class TicketServiceImpl implements TicketService {
 
         @Override
         @Transactional(readOnly = true)
-        public Page<com.example.backend.dto.response.CheckInLogResponse> getCheckInHistoryByEventId(Long eventId,
-                        String search, com.example.backend.enums.CheckInMethod method, java.time.LocalDateTime fromDate,
-                        java.time.LocalDateTime toDate, Pageable pageable) {
+        public Page<CheckInLogResponse> getCheckInHistoryByEventId(Long eventId,
+                        String search, CheckInMethod method, LocalDateTime fromDate,
+                        LocalDateTime toDate, Pageable pageable) {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Event event = eventRepository.findById(eventId)
                                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));

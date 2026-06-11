@@ -149,7 +149,8 @@ public class EventServiceImpl implements EventService {
     // Helper: Chuyển đổi Entity sang DTO, nhận thêm Map đếm vé đã tính sẵn để tránh
     // N+1
     private EventResponse mapToEventResponse(Event event, Map<Long, Long> ticketsSoldMap) {
-        long ticketsSold = ticketsSoldMap.getOrDefault(event.getId(), 0L);
+        long ticketsSold = ticketsSoldMap.getOrDefault(event.getId(), 0L); // lấy số vé đã bán nếu có trong map, không
+                                                                           // có thì mặc định là 0
 
         return EventResponse.builder()
                 .id(event.getId())
@@ -224,8 +225,7 @@ public class EventServiceImpl implements EventService {
         boolean hasCategories = (finalCategories != null);
 
         Page<Event> eventPage = eventRepository.searchEvents(finalKeyword, hasCategories, finalCategories, finalStatus,
-                organizerId,
-                startTime, endTime, minPrice, maxPrice, isFree, pageable);
+                organizerId, startTime, endTime, minPrice, maxPrice, isFree, pageable);
 
         List<Long> eventIds = eventPage.getContent().stream()
                 .map(Event::getId).collect(Collectors.toList());
@@ -484,8 +484,8 @@ public class EventServiceImpl implements EventService {
         } else {
             // Xóa vật lý khi chưa có ai mua vé thành công
             // 1. Xóa toàn bộ Staff Assignments
-            List<EventStaffAssignment> assignments = eventStaffAssignmentRepository
-                    .findByEventId(eventId);
+            List<EventStaffAssignment> assignments = eventStaffAssignmentRepository.findByEventId(eventId);
+
             eventStaffAssignmentRepository.deleteAll(assignments);
 
             // 2. Xóa toàn bộ Registration rác (PENDING_PAYMENT, CANCELLED)
@@ -514,7 +514,7 @@ public class EventServiceImpl implements EventService {
 
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOrganizer = currentUser.getRole() == Role.ORGANIZER;
-        boolean isSelf = currentUser.getId().equals(staffId);
+        boolean isSelf = currentUser.getId().equals(staffId); // nhân viên xem được các event được gán cho chính mình
 
         // Staff chỉ xem được lịch của chính mình, Admin và Organizer xem được của bất
         // kỳ ai

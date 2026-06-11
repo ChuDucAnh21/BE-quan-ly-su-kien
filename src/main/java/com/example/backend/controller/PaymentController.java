@@ -17,6 +17,7 @@ import com.example.backend.repository.PaymentConfigRepository;
 import com.example.backend.repository.PaymentRepository;
 import com.example.backend.repository.RegistrationRepository;
 import com.example.backend.repository.TicketRepository;
+import com.example.backend.util.HashUtil;
 import com.example.backend.dto.response.RegistrationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +96,9 @@ public class PaymentController {
                         // Lấy thông tin thanh toán từ SDK PayOS v2
                         PaymentLink paymentLinkData = null;
                         try {
-                                paymentLinkData = payOS.paymentRequests().get(orderCode);
+                                paymentLinkData = payOS.paymentRequests().get(orderCode); // Nó sẽ gửi request lên PayOS
+                                                                                          // để lấy thông tin của đơn
+                                                                                          // hàng có mã orderCode.
                         } catch (Exception ex) {
                                 log.error("Không kết nối được tới PayOS hoặc đơn không tồn tại", ex);
                                 throw new RuntimeException(
@@ -114,7 +117,7 @@ public class PaymentController {
                                 registrationRepository.save(registration);
 
                                 String rawQrCode = UUID.randomUUID().toString();
-                                String hashedQrCode = com.example.backend.util.HashUtil.sha256(rawQrCode);
+                                String hashedQrCode = HashUtil.sha256(rawQrCode);
                                 Ticket ticket = Ticket.builder()
                                                 .registration(registration)
                                                 .qrCode(rawQrCode)

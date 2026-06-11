@@ -41,7 +41,7 @@ public class RegistrationController {
                 return ResponseEntity.status(201).body(response);
         }
 
-        // 2. Hủy đăng ký vé (Chỉ áp dụng cho Vé Miễn Phí)
+        // 2. Hủy đăng ký vé (Chỉ áp dụng cho Vé Miễn Phí hoặc vé chưa thanh toán)
         @PostMapping("/{registrationId}/cancel")
         @PreAuthorize("hasRole('USER') or hasRole('ORGANIZER') or hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<Void>> cancelRegistration(@PathVariable Long registrationId) {

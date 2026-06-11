@@ -89,6 +89,7 @@ public class UserService {
     public void softDeleteMyAccount(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        System.out.println(user.getRole());
 
         // Kiểm tra nếu là ADMIN thì ném lỗi
         if (user.getRole() == Role.ADMIN) {

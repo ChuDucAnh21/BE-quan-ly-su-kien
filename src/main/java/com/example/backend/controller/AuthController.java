@@ -8,6 +8,7 @@ import com.example.backend.dto.request.ResetPasswordRequest;
 import com.example.backend.dto.response.ApiResponse;
 import com.example.backend.dto.response.LoginResponse;
 import com.example.backend.dto.response.UserProfileResponse;
+import com.example.backend.security.JwtTokenProvider;
 import com.example.backend.service.AuthService;
 import com.example.backend.service.PasswordResetService;
 import jakarta.servlet.http.Cookie;
@@ -28,6 +29,15 @@ public class AuthController {
 
         private final AuthService authService;
         private final PasswordResetService passwordResetService;
+        private final JwtTokenProvider jwtTokenProvider;
+
+        private int getAccessTokenExpiration() {
+                return (int) (jwtTokenProvider.getJwtExpirationMs() / 1000);
+        }
+
+        private int getRefreshTokenExpiration() {
+                return (int) (jwtTokenProvider.getJwtRefreshExpirationMs() / 1000);
+        }
 
         // 1. API Đăng ký tài khoản (Public)
         @PostMapping("/register") // Phương thức POST: Dùng để tạo mới dữ liệu
@@ -38,7 +48,7 @@ public class AuthController {
                 authService.register(request);
                 return ApiResponse.<Void>builder()
                                 .status(ApiResponse.Status.builder()
-                                                .message("User registered successfully")
+                                                .message("Đăng ký tài khoản thành công")
                                                 .build())
                                 .build();
         }
@@ -54,8 +64,8 @@ public class AuthController {
                 Cookie accessCookie = new Cookie("access_token", loginResponse.getAccessToken());
 
                 // Set HttpOnly = true: Rất quan trọng! Ngăn chặn hacker dùng mã Javascript độc
-                // hại (XSS)
-                // chạy trên trình duyệt để đánh cắp Token của người dùng.
+                // hại (XSS) chạy trên trình duyệt để đánh cắp Token của người dùng.
+                // Cookie sẽ không được truy cập bởi JavaScript ở phía client
                 accessCookie.setHttpOnly(true);
 
                 // Set Secure = true: Cookie chỉ được gửi đi nếu trình duyệt dùng HTTPS (bảo mật
@@ -65,24 +75,25 @@ public class AuthController {
                 // Path = "/": Cookie này sẽ tự động được trình duyệt đính kèm vào MỌI request
                 // gọi lên Backend
                 accessCookie.setPath("/");
-                accessCookie.setMaxAge(24 * 60 * 60); // Thời gian sống của Cookie chứa access_token(24h)
+                accessCookie.setMaxAge(getAccessTokenExpiration()); // Thời gian sống của Cookie chứa access_token(24h)
 
                 // Lưu Refresh Token vào một Cookie riêng (Thời gian sống lâu hơn: 30 ngày)
                 Cookie refreshCookie = new Cookie("refresh_token", loginResponse.getRefreshToken());
                 refreshCookie.setHttpOnly(true);
                 refreshCookie.setSecure(true);
-                refreshCookie.setPath("/api/v1/auth/refresh"); // Chỉ gửi Cookie này khi gọi API làm mới Token
-                refreshCookie.setMaxAge(30 * 24 * 60 * 60); // Thời gian sống của Cookie chứa refresh_token(30
-                                                            // ngày)
+                refreshCookie.setPath("/api/v1/auth/refresh"); // Chỉ gửi Cookie này khi gọi API này để làm mới
+                                                               // access_token
+                refreshCookie.setMaxAge(getRefreshTokenExpiration()); // Thời gian sống của Cookie chứa refresh_token(30
+                // ngày)
 
-                // Thêm các Cookie này vào phản hồi trả về cho trình duyệt để khi có request
-                // trình duyệt sẽ tự động gửi kèm với api
+                // Thêm các Cookie này vào phản hồi trả về cho trình duyệt để lưu trữ vào cookie
+                // của trình duyệt
                 response.addCookie(accessCookie);
                 response.addCookie(refreshCookie);
 
                 return ApiResponse.<UserProfileResponse>builder()
                                 .status(ApiResponse.Status.builder()
-                                                .message("Login successful")
+                                                .message("Đăng nhập thành công")
                                                 .build())
                                 .data(loginResponse.getUser())
                                 .build();
@@ -100,20 +111,20 @@ public class AuthController {
                 accessCookie.setHttpOnly(true);
                 accessCookie.setSecure(true);
                 accessCookie.setPath("/");
-                accessCookie.setMaxAge(24 * 60 * 60);
+                accessCookie.setMaxAge(getAccessTokenExpiration());
 
                 Cookie refreshCookie = new Cookie("refresh_token", loginResponse.getRefreshToken());
                 refreshCookie.setHttpOnly(true);
                 refreshCookie.setSecure(true);
                 refreshCookie.setPath("/api/v1/auth/refresh");
-                refreshCookie.setMaxAge(30 * 24 * 60 * 60);
+                refreshCookie.setMaxAge(getRefreshTokenExpiration());
 
                 response.addCookie(accessCookie);
                 response.addCookie(refreshCookie);
 
                 return ApiResponse.<UserProfileResponse>builder()
                                 .status(ApiResponse.Status.builder()
-                                                .message("Google Login successful")
+                                                .message("Đăng nhập Google thành công")
                                                 .build())
                                 .data(loginResponse.getUser())
                                 .build();
@@ -174,7 +185,7 @@ public class AuthController {
                 accessCookie.setHttpOnly(true);
                 accessCookie.setSecure(true);
                 accessCookie.setPath("/");
-                accessCookie.setMaxAge(24 * 60 * 60); // 24h
+                accessCookie.setMaxAge(getAccessTokenExpiration()); // 24h
 
                 response.addCookie(accessCookie);
 

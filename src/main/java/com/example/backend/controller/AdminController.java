@@ -66,7 +66,8 @@ public class AdminController {
                         @RequestParam(defaultValue = "desc") String sort) {
 
                 // Security check & Role forcing: Organizer chỉ được phép xem list STAFF
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication(); // lấy thông tin user từ
+                                                                                              // security context
                 if (auth != null && auth.getAuthorities().stream()
                                 .anyMatch(a -> a.getAuthority().equals("ROLE_ORGANIZER"))) {
                         role = Role.STAFF; // Ép buộc Organizer chỉ được xem danh sách STAFF

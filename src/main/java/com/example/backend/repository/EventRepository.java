@@ -23,7 +23,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
        // nhiều luồng truy cập cùng lúc
        @Lock(LockModeType.PESSIMISTIC_WRITE)
        @Query("SELECT e FROM Event e WHERE e.id = :id")
-       Optional<Event> findByIdWithLock(@Param("id") Long id);
+       Optional<Event> findByIdWithLock(@Param("id") Long id); 
 
        // Lấy sự kiện theo ID sự kiện và bắt buộc phải thuộc về đúng Organizer đó
        Optional<Event> findByIdAndOrganizer(Long id, User organizer);

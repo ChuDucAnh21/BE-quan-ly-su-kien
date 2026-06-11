@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.dto.request.LoginRequest;
 import com.example.backend.dto.request.RegisterRequest;
 import com.example.backend.entity.User;
+import com.example.backend.enums.AuthProvider;
 import com.example.backend.enums.Role;
 import com.example.backend.enums.UserStatus;
 import com.example.backend.exception.AppException;
@@ -66,10 +67,6 @@ public class AuthService {
                                 .fullName(request.getFullName())
                                 .email(request.getEmail())
                                 .phone(request.getPhone())
-                                // BẢO MẬT TUYỆT ĐỐI: Mật khẩu phải được "băm" (hash) bằng BCrypt trước khi chạm
-                                // vào Database.
-                                // Kể cả khi hacker hay DBA truy cập vào Database cũng không thể biết mật khẩu
-                                // thật là gì.
                                 .password(passwordEncoder.encode(request.getPassword()))
                                 .avatarUrl(defaultAvatarUrl)
                                 .role(Role.USER) // Quyền mặc định cho thành viên đăng ký mới
@@ -169,11 +166,14 @@ public class AuthService {
                         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(),
                                         new GsonFactory())
                                         .setAudience(Collections.singletonList(googleClientId))
-                                        .build();
+                                        .build(); // tạo trình xác thực, mục đích xác thực token từ Google
 
-                        GoogleIdToken idToken = verifier.verify(request.getIdToken());
+                        GoogleIdToken idToken = verifier.verify(request.getIdToken()); // xác thức idToken có hợp lệ hay
+                                                                                       // không
                         if (idToken != null) {
-                                Payload payload = idToken.getPayload();
+                                Payload payload = idToken.getPayload(); // thông tin người dùng Google trả về
+                                                                        // (email,name, pictureUrl, googleId)
+
                                 String email = payload.getEmail();
                                 String name = (String) payload.get("name");
                                 String pictureUrl = (String) payload.get("picture");
@@ -189,7 +189,7 @@ public class AuthService {
                                                         .avatarUrl(pictureUrl)
                                                         .role(Role.USER)
                                                         .status(UserStatus.ACTIVE)
-                                                        .authProvider(com.example.backend.enums.AuthProvider.GOOGLE)
+                                                        .authProvider(AuthProvider.GOOGLE)
                                                         .providerId(googleId)
                                                         .build();
                                         user = userRepository.save(user);
@@ -203,7 +203,7 @@ public class AuthService {
                                         // Cập nhật lại provider Id cho chắc chắn
                                         if (user.getProviderId() == null) {
                                                 user.setProviderId(googleId);
-                                                user.setAuthProvider(com.example.backend.enums.AuthProvider.GOOGLE);
+                                                user.setAuthProvider(AuthProvider.GOOGLE);
                                         }
                                         userRepository.save(user);
                                 }

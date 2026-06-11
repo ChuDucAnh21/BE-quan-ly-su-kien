@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -63,7 +64,7 @@ public class SecurityConfig {
         http
                 // Kích hoạt tích hợp CORS cho Spring Security (BẮT BUỘC ĐỂ KHÔNG BỊ BLOCK
                 // OPTIONS REQUEST)
-                .cors(org.springframework.security.config.Customizer.withDefaults())
+                .cors(Customizer.withDefaults())
                 // Tắt CSRF vì chúng ta dùng JWT (Stateless), không dùng Session
                 .csrf(AbstractHttpConfigurer::disable)
 

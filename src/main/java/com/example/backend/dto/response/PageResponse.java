@@ -7,10 +7,13 @@ import java.util.List;
 
 /**
  * @Data: Lombok tự động sinh Getter, Setter, toString... cho class này
- * @Builder: Cho phép khởi tạo đối tượng nhanh bằng cú pháp PageResponse.builder()...build()
- * <T>: Cú pháp Đa hình (Generic) của Java. 
- * Kí tự T đại diện cho bất kỳ kiểu dữ liệu nào (Ví dụ: Danh sách User, Danh sách Event...)
- * Giúp class này có thể dùng chung cho mọi api cần phân trang mà không phải viết lại code.
+ * @Builder: Cho phép khởi tạo đối tượng nhanh bằng cú pháp
+ *           PageResponse.builder()...build()
+ *           <T>: Cú pháp Đa hình (Generic) của Java.
+ *           Kí tự T đại diện cho bất kỳ kiểu dữ liệu nào (Ví dụ: Danh sách
+ *           User, Danh sách Event...)
+ *           Giúp class này có thể dùng chung cho mọi api cần phân trang mà
+ *           không phải viết lại code.
  */
 @Data
 @Builder

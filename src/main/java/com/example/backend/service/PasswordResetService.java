@@ -28,7 +28,7 @@ public class PasswordResetService {
     private final MailService mailService; // Dùng để gửi email chứa mã khôi phục cho người dùng
     private final PasswordEncoder passwordEncoder; // Dùng để mã hóa mật khẩu mới của người dùng
 
-    private static final int EXPIRY_MINUTES = 15; // Quy định mã khôi phục chỉ có hiệu lực trong 15 phút
+    private static final int EXPIRY_MINUTES = 5; // Quy định mã khôi phục chỉ có hiệu lực trong 5 phút
 
     // BƯỚC 1: Xử lý yêu cầu Quên mật khẩu (Sinh mã và gửi Email)
     @Transactional
@@ -48,9 +48,7 @@ public class PasswordResetService {
         PasswordResetToken resetToken = PasswordResetToken.builder()
                 .token(token)
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusMinutes(EXPIRY_MINUTES)) // +15 phút so với thời điểm hiện tại nên
-                                                                             // LocalDateTime.now().plusMinutes(EXPIRY_MINUTES)
-                                                                             // = 2026-04-01 10:02:44
+                .expiryDate(LocalDateTime.now().plusMinutes(EXPIRY_MINUTES)) // +5 phút so với thời điểm hiện tại
                 .build();
 
         tokenRepository.save(resetToken);
@@ -81,7 +79,8 @@ public class PasswordResetService {
 
         // 3. Nếu mọi thứ hợp lệ, tiến hành cập nhật mật khẩu mới cho User
         User user = resetToken.getUser();
-        user.setPassword(passwordEncoder.encode(request.getNewPassword())); // Nhớ mã hóa mật khẩu trước khi lưu!
+        user.setPassword(passwordEncoder.encode(request.getNewPassword())); // Nhớ mã hóa mật khẩu trước khi lưu! bằng
+                                                                            // thuật toán băm
         userRepository.save(user);
 
         // 4. Xóa mã này sau khi đã sử dụng xong (Mã chỉ dùng 1 lần duy nhất)

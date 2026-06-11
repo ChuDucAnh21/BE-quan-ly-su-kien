@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -105,9 +106,9 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         // 4. Khóa User (UniqueConstraint): 1 User chỉ được mua 1 vé cho 1 Event
-        java.util.Optional<Registration> optReg = registrationRepository.findByEventIdAndUserId(eventId,
+        Optional<Registration> optReg = registrationRepository.findByEventIdAndUserId(eventId,
                 currentUser.getId());
-        if (optReg.isPresent()) {
+        if (optReg.isPresent()) { // nếu có thì kiểm tra
             Registration existingReg = optReg.get();
             if (existingReg.getStatus() == RegistrationStatus.CANCELLED) {
                 // Nếu đã hủy trước đó -> Xóa sạch lịch sử để tạo mới
@@ -294,9 +295,9 @@ public class RegistrationServiceImpl implements RegistrationService {
             throw new AppException(ErrorCode.CANNOT_CANCEL_PAID_TICKET);
         }
 
+        // Nếu đã quá giờ bắt đầu, KHÔNG cho hủy để tránh "ăn cắp suất vé"
         if (LocalDateTime.now().isAfter(event.getStartTime())) {
-            throw new AppException(ErrorCode.EVENT_NOT_STARTED); // Tái chế lại mã lỗi này mang ý "Sự kiện ngoại
-                                                                 // tuyến/khóa đăng ký"
+            throw new AppException(ErrorCode.EVENT_NOT_STARTED);
         }
 
         // 1. Chuyển trạng thái Đăng ký tham gia về CANCELLED

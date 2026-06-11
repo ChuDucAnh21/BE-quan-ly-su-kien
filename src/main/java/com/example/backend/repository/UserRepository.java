@@ -66,20 +66,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
          * Đếm số lượng User mới đăng ký theo từng ngày, phân loại theo Role.
          * Dùng cho biểu đồ Đường (Line Chart) - Tăng trưởng người dùng.
          * Kết quả trả về dạng: [{ date: "2024-05-01", role: "USER", count: 5 }, ...]
-         * @param startDate  Ngày bắt đầu lọc (LocalDateTime)
-         * @param endDate    Ngày kết thúc lọc (LocalDateTime)
+         * CAST(u.createdAt AS date): Chuyển đổi kiểu dữ liệu của createdAt sang date
+         * (chỉ lấy ngày, bỏ giờ, phút, giây)
+         * GROUP BY CAST(u.createdAt AS date), u.role: Nhóm kết quả theo ngày và role
+         * ORDER BY CAST(u.createdAt AS date): Sắp xếp kết quả theo ngày
+         * 
+         * @param startDate Ngày bắt đầu lọc (LocalDateTime)
+         * @param endDate   Ngày kết thúc lọc (LocalDateTime)
          */
         @Query("SELECT CAST(u.createdAt AS date) as date, u.role as role, COUNT(u) as count " +
-                "FROM User u " +
-                "WHERE u.createdAt BETWEEN :startDate AND :endDate " +
-                "GROUP BY CAST(u.createdAt AS date), u.role " +
-                "ORDER BY CAST(u.createdAt AS date)")
+                        "FROM User u " +
+                        "WHERE u.createdAt BETWEEN :startDate AND :endDate " +
+                        "GROUP BY CAST(u.createdAt AS date), u.role " +
+                        "ORDER BY CAST(u.createdAt AS date)")
         List<Object[]> countByDateAndRole(@Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
         /** Đếm số User theo Role trong khoảng thời gian */
         @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.createdAt BETWEEN :startDate AND :endDate")
         long countByRoleInRange(@Param("role") Role role,
-                                @Param("startDate") LocalDateTime startDate,
-                                @Param("endDate") LocalDateTime endDate);
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 }

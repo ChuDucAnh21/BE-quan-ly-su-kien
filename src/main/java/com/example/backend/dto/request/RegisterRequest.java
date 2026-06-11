@@ -10,7 +10,12 @@ public class RegisterRequest {
     // Luôn bắt đầu bằng DTO để nhận dữ liệu từ Client gửi lên.
     // Các Annotation ở trên đầu mỗi trường dùng để kiểm tra tính đúng đắn của dữ
     // liệu ngay lập tức.
-
+    // Ví dụ:
+    // @NotBlank: Kiểm tra không được để trống
+    // @Pattern: Kiểm tra định dạng dữ liệu
+    // @Size: Kiểm tra độ dài dữ liệu
+    // @Valid: Kích hoạt việc kiểm tra định dạng dữ liệu
+    // @RequestBody: Chuyển dữ liệu từ JSON gửi lên thành đối tượng Java
     @NotBlank(message = "Họ tên không được để trống")
     private String fullName;
 

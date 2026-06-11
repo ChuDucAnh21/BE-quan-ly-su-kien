@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.UUID;
 
+// Khi có lỗi xảy ra các lỗi sẽ được tự động vào các hàm @ExceptionHandler tương
+// ứng
+// theo thứ tự từ trên xuống dưới.
+
 @ControllerAdvice // Đánh dấu lớp này là nơi tập trung xử lý toàn bộ exception của các Controller
 public class GlobalExceptionHandler {
 
@@ -38,7 +42,7 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<?>> handlingRuntimeException(RuntimeException exception) {
                 log.error("Exception: ", exception); // Ghi log lỗi vào server
                 ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION; // Mã lỗi 500 mặc định
-                ApiResponse<?> apiResponse = ApiResponse.builder()
+                ApiResponse<?> apiResponse = ApiResponse.builder() // ? là generic có thể trả về bất kì kiểu dữ liệu nào
                                 .status(buildStatus(
                                                 errorCode.getCode(),
                                                 errorCode.getMessage(),
@@ -89,6 +93,7 @@ public class GlobalExceptionHandler {
         }
 
         // 4. Xử lý lỗi validate dữ liệu đầu vào và lỗi ép kiểu (Binding Error)
+        // Các lỗi phát sinh từ việc sử dụng @valid
         @ExceptionHandler(value = { MethodArgumentNotValidException.class, BindException.class })
         public ResponseEntity<ApiResponse<?>> handlingValidation(Exception exception) {
                 FieldError fieldError = null;
@@ -152,7 +157,7 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(value = HttpMessageNotReadableException.class)
         public ResponseEntity<ApiResponse<?>> handlingHttpMessageNotReadable(
                         HttpMessageNotReadableException exception) {
-                String message = "Dữ liệu JSON không hợp lệ hoặc sai định dạng";
+                String message = "Dữ liệu gửi lên không hợp lệ hoặc sai định dạng";
                 ApiResponse<?> apiResponse = ApiResponse.builder()
                                 .status(buildStatus(
                                                 ErrorCode.INVALID_KEY.getCode(),

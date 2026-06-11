@@ -35,11 +35,12 @@ public class PaymentTimeoutScheduler {
      * - Trả lại vé cho hệ thống (SoldTickets - 1)
      */
 
-    // cứ 5 phút chạy 1 lần, các giao dịch đang PENDING quá 5 phút sẽ bị huỷ
+    // cứ 5 phút chạy 1 lần, các giao dịch đang PENDING quá 30 phút sẽ bị huỷ
+    // 5 phút = 300000 mili giây
     @Scheduled(fixedRate = 300000) // @Scheduled là annotation của Spring Boot để lên lịch cho một phương thức
     @Transactional
     public void cancelUnpaidOrders() {
-        LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(30); // Thời hạn 5 phút
+        LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(30); // Thời hạn 30 phút
 
         List<Payment> expiredPayments = paymentRepository.findByStatusAndCreatedAtBefore(
                 PaymentStatus.PENDING, timeoutThreshold);

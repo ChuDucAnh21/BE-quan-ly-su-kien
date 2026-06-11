@@ -17,8 +17,8 @@ public class WebhookController {
 
     private final WebhookService webhookService;
 
-    // Đón Webhook từ hệ thống PayOS trả về mỗi khi có giao dịch thành công / thất
-    // bại
+    // Tự động đón Webhook từ hệ thống PayOS trả về mỗi khi có giao dịch thành công
+    // hoặc thất bại
     @PostMapping("/webhook")
     public ObjectNode handlePayOSWebhook(@RequestBody ObjectNode payload) {
         log.info("Nhận được Webhook từ PayOS: {}", payload.toString());
