@@ -140,6 +140,8 @@ public class PaymentController {
                                 payment.setStatus(PaymentStatus.FAILED);
                                 paymentRepository.save(payment);
 
+                                log.error("ĐƠN HÀNG ĐỒNG BỘ ĐÃ HỦY Ở TRÊN PAYOS - TEST");
+
                                 registration.setStatus(RegistrationStatus.CANCELLED);
                                 registrationRepository.save(registration);
 

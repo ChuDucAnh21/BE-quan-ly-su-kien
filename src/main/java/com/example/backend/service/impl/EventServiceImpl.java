@@ -156,6 +156,7 @@ public class EventServiceImpl implements EventService {
                 .id(event.getId())
                 .organizerId(event.getOrganizer().getId())
                 .organizerName(event.getOrganizer().getFullName())
+                .organizerAvatar(event.getOrganizer().getAvatarUrl())
                 .title(event.getTitle())
                 .category(event.getCategory())
                 .shortDescription(event.getShortDescription())
@@ -482,7 +483,8 @@ public class EventServiceImpl implements EventService {
             log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé (Người thực hiện: {})",
                     eventId, currentUser.getId());
         } else {
-            // Xóa vật lý khi chưa có ai mua vé thành công
+            // Xóa vật lý khi chưa có ai mua vé thành công (chưa thanh toán hoặc đang chờ
+            // thanh toán)
             // 1. Xóa toàn bộ Staff Assignments
             List<EventStaffAssignment> assignments = eventStaffAssignmentRepository.findByEventId(eventId);
 

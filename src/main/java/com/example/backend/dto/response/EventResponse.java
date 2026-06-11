@@ -28,6 +28,7 @@ public class EventResponse {
     // Tên và ID của người tổ chức - dùng để hiển thị trên thẻ và trang chi tiết
     private String organizerName;
     private Long organizerId;
+    private String organizerAvatar;
 
     private String title;
     private String category;
