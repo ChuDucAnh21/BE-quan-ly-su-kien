@@ -13,6 +13,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
 import java.util.UUID;
 
 // Khi có lỗi xảy ra các lỗi sẽ được tự động vào các hàm @ExceptionHandler tương
@@ -164,6 +166,18 @@ public class GlobalExceptionHandler {
                                                 message,
                                                 "JSON_PARSE_ERROR"))
                                 .build();
+                return ResponseEntity.badRequest().body(apiResponse);
+        }
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceeded(
+                MaxUploadSizeExceededException ex) {
+                String message = "Kích thước ảnh vượt quá tối đa cho phép";
+                ApiResponse<?> apiResponse = ApiResponse.builder()
+                        .status(buildStatus(
+                                ErrorCode.INVALID_KEY.getCode(),
+                                message,
+                                "UPLOAD_IMG_ERROR"))
+                        .build();
                 return ResponseEntity.badRequest().body(apiResponse);
         }
 }

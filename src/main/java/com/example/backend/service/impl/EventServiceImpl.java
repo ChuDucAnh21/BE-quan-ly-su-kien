@@ -320,7 +320,7 @@ public class EventServiceImpl implements EventService {
                 bannerUrl = cloudinaryService.uploadImage(request.getBannerFile());
             } catch (Exception e) {
                 log.error("Lỗi khi tải ảnh bìa lên Cloudinary", e);
-                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+                throw new AppException(ErrorCode.UPLOAD_IMG_ERROR);
             }
         }
 
@@ -412,7 +412,7 @@ public class EventServiceImpl implements EventService {
                 event.setBannerUrl(newBannerUrl);
             } catch (Exception e) {
                 log.error("Lỗi khi tải ảnh bìa lên Cloudinary", e);
-                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+                throw new AppException(ErrorCode.UPLOAD_IMG_ERROR);
             }
         }
 

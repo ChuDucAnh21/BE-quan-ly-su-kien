@@ -22,6 +22,7 @@ public enum ErrorCode {
         TICKET_SOLD_OUT(400, "Sự kiện đã bán hết vé hoặc đang chờ thanh toán, hãy thử lại sau ít phút",
                         HttpStatus.BAD_REQUEST),
         ALREADY_REGISTERED(400, "Bạn đã đăng ký sự kiện này rồi", HttpStatus.BAD_REQUEST),
+        UPLOAD_IMG_ERROR(400, "Ảnh tải lên không hợp lệ", HttpStatus.BAD_REQUEST),
         CAPACITY_CANNOT_BE_LESS_THAN_SOLD(400, "Sức chứa tối đa không thể nhỏ hơn số vé đã bán",
                         HttpStatus.BAD_REQUEST),
         INVALID_TIME_RANGE(400, "Thời gian bắt đầu, kết thúc không hợp lệ", HttpStatus.BAD_REQUEST),
