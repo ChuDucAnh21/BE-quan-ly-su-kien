@@ -12,10 +12,12 @@ import com.example.backend.enums.EventStatus;
 import com.example.backend.enums.PaymentProvider;
 import com.example.backend.enums.PaymentStatus;
 import com.example.backend.enums.RegistrationStatus;
+import com.example.backend.enums.Role;
 import com.example.backend.enums.TicketStatus;
 import com.example.backend.exception.AppException;
 import com.example.backend.exception.ErrorCode;
 import com.example.backend.repository.EventRepository;
+import com.example.backend.repository.EventStaffAssignmentRepository;
 import com.example.backend.repository.PaymentConfigRepository;
 import com.example.backend.repository.PaymentRepository;
 import com.example.backend.repository.RegistrationRepository;
@@ -51,6 +53,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final UserRepository userRepository;
     private final PaymentConfigRepository paymentConfigRepository;
     private final TicketRepository ticketRepository;
+    private final EventStaffAssignmentRepository eventStaffAssignmentRepository;
 
     // URL callback của FE sau khi thanh toán PayOS, cấu hình trong
     // application.properties
@@ -84,6 +87,16 @@ public class RegistrationServiceImpl implements RegistrationService {
         // 2. Chặn các trạng thái không hợp lệ
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new AppException(ErrorCode.EVENT_NOT_STARTED);
+        }
+
+        // chặn nếu là staff đăng ký sự kiện được phân công
+        if (currentUser.getRole() == Role.STAFF) {
+            boolean isAssignedToThisEvent = eventStaffAssignmentRepository.existsByEventIdAndStaff_Email(
+                    eventId,
+                    currentUser.getEmail());
+            if (isAssignedToThisEvent) {
+                throw new AppException(ErrorCode.STAFF_CANNOT_REGISTER);
+            }
         }
 
         // 2. Chặn nếu sự kiện chưa tới giờ mở bán vé

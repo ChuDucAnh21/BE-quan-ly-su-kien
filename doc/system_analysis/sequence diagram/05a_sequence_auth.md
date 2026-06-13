@@ -96,18 +96,20 @@ sequenceDiagram
     HT->>DB: 8. Kiểm tra Email đã tồn tại trong hệ thống chưa
     alt Lần đầu đăng nhập
         DB-->>HT: 9a. Email chưa tồn tại
-        HT->>DB: 9b. Tạo tài khoản mới từ thông tin Google (Vai trò: USER)
+        HT->>DB: 9b. Tạo tài khoản mới (Vai trò: USER, authProvider: GOOGLE)
     else Đã có tài khoản
         DB-->>HT: 9. Email đã tồn tại
         HT->>HT: 10. Kiểm tra trạng thái tài khoản
         alt Tài khoản bị khóa
             HT-->>UI: 10a. Thông báo tài khoản bị khóa
             UI-->>Guest: 10b. Hiển thị lỗi
+        else Hợp lệ
+            HT->>DB: 10c. Hợp nhất tài khoản (Cập nhật authProvider=GOOGLE)
         end
     end
-    HT->>HT: 10. Tạo Token xác thực
-    HT-->>UI: 11. Trả về Token và thông tin tài khoản
-    UI-->>Guest: 12. Chuyển vào trang chính
+    HT->>HT: 11. Tạo Token xác thực
+    HT-->>UI: 12. Trả về Token và thông tin tài khoản
+    UI-->>Guest: 13. Chuyển vào trang chính
 ```
 
 ---
@@ -307,5 +309,31 @@ sequenceDiagram
         HT->>HT: 7. Xóa phiên đăng nhập hiện tại
         HT-->>UI: 8. Thông báo tài khoản đã bị khóa
         UI-->>User: 9. Chuyển về màn hình đăng nhập
+    end
+```
+
+---
+
+## UC10b – Xem hồ sơ công khai của người dùng khác
+
+```mermaid
+sequenceDiagram
+    actor Guest as Người dùng/Khách
+    participant UI as Giao diện
+    participant HT as Hệ thống
+    participant DB as Cơ sở dữ liệu
+
+    Guest->>UI: 1. Nhấn vào tên/avatar của người khác
+    UI->>HT: 2. Gọi API GET /users/info-user/{id}
+    HT->>DB: 3. Truy vấn User theo ID
+    alt Không tìm thấy User
+        DB-->>HT: 4a. Không tìm thấy (null)
+        HT-->>UI: 4b. Lỗi USER_NOT_FOUND
+        UI-->>Guest: 4c. Hiển thị lỗi không tồn tại
+    else Tìm thấy
+        DB-->>HT: 4. Trả về thực thể User
+        HT->>HT: 5. Lọc dữ liệu công khai (ẩn password, phone...)
+        HT-->>UI: 6. Trả về thông tin công khai (avatarUrl, fullName...)
+        UI-->>Guest: 7. Hiển thị hồ sơ công khai
     end
 ```

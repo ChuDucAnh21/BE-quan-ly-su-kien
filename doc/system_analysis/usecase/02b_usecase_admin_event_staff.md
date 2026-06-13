@@ -7,14 +7,14 @@
 | Trường | Nội dung |
 |--------|----------|
 | **Tên Use Case** | Xem danh sách người dùng (Phân trang, Tìm kiếm, Lọc) |
-| **Tác nhân** | Admin |
-| **Mục đích** | Cho phép Admin xem và quản lý toàn bộ tài khoản trong hệ thống |
+| **Tác nhân** | Admin, Organizer |
+| **Mục đích** | Cho phép Admin xem và quản lý toàn bộ tài khoản trong hệ thống (Organizer chỉ xem được STAFF) |
 | **Mức độ ưu tiên** | Cao |
-| **Điều kiện kích hoạt** | Admin truy cập trang "Quản lý người dùng" |
-| **Điều kiện tiên quyết** | Đã đăng nhập với Role = ADMIN |
+| **Điều kiện kích hoạt** | Admin/Organizer truy cập trang "Quản lý người dùng/Staff" |
+| **Điều kiện tiên quyết** | Đã đăng nhập với Role = ADMIN hoặc ORGANIZER |
 | **Điều kiện thất bại** | Hệ thống gặp lỗi truy vấn CSDL |
 | **Điều kiện thành công** | Danh sách người dùng được trả về có phân trang, kèm thông tin: currentPage, totalPages, totalElements |
-| **Luồng sự kiện chính** | 1. Admin truy cập trang quản lý người dùng. 2. Frontend gọi GET /admin/users với tham số tùy chọn (page, size, search, role, status, sort). 3. Hệ thống truy vấn CSDL có phân trang và lọc theo điều kiện. 4. Hệ thống trả về danh sách User (id, email, fullName, phone, avatarUrl, role, status, createdAt) |
+| **Luồng sự kiện chính** | 1. Admin truy cập trang quản lý người dùng. 2. Frontend gọi GET /admin/get-all-users với tham số tùy chọn (page, size, search, role, status, sort). 3. Hệ thống kiểm tra quyền, nếu là Organizer thì ép buộc `role=STAFF`. 4. Hệ thống truy vấn CSDL có phân trang và lọc theo điều kiện. 5. Hệ thống trả về danh sách User |
 | **Luồng sự kiện thay thế** | 2a. Admin nhập từ khóa tìm kiếm (search) → Hệ thống lọc theo email, họ tên, SĐT. 2b. Admin chọn lọc theo role (ADMIN/ORGANIZER/STAFF/USER) → Hệ thống chỉ trả về user có role tương ứng. 2c. Admin chọn lọc theo status (ACTIVE/LOCKED) → Hệ thống lọc theo trạng thái |
 | **Luồng sự kiện ngoại lệ** | 2d. Role không phải ADMIN → Hệ thống báo lỗi 403 Forbidden |
 
@@ -35,6 +35,24 @@
 | **Luồng sự kiện chính** | 1. Admin xem danh sách người dùng (UC11). 2. Admin nhấn nút "Khóa" hoặc "Mở khóa" bên cạnh tài khoản cần thay đổi. 3. Frontend gửi PUT /admin/users/{id}/status với body {status: "LOCKED" hoặc "ACTIVE"}. 4. Hệ thống kiểm tra tài khoản đích không phải chính Admin đang thao tác. 5. Hệ thống cập nhật trạng thái trong CSDL. 6. Hệ thống trả về thông báo "Cập nhật trạng thái người dùng thành công" |
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | 4a. Admin cố tự khóa chính mình → Hệ thống báo lỗi CANNOT_MODIFY_YOURSELF (400) |
+
+---
+
+## UC12b – Xóa tài khoản vĩnh viễn
+
+| Trường | Nội dung |
+|--------|----------|
+| **Tên Use Case** | Xóa tài khoản vĩnh viễn (Hard Delete) |
+| **Tác nhân** | Admin |
+| **Mục đích** | Cho phép Admin (Super Admin) xóa hoàn toàn dữ liệu tài khoản ra khỏi hệ thống |
+| **Mức độ ưu tiên** | Trung bình |
+| **Điều kiện kích hoạt** | Admin chọn "Xóa vĩnh viễn" một tài khoản trong danh sách |
+| **Điều kiện tiên quyết** | Đã đăng nhập với Role = ADMIN. |
+| **Điều kiện thất bại** | Xóa không thành công (Ví dụ: do ràng buộc khóa ngoại nếu user đã có giao dịch) |
+| **Điều kiện thành công** | Bản ghi User bị xóa khỏi CSDL |
+| **Luồng sự kiện chính** | 1. Admin chọn tài khoản cần xóa. 2. Hệ thống cảnh báo mất dữ liệu. 3. Admin xác nhận. 4. Frontend gọi DELETE /admin/users/{id}/delete. 5. Hệ thống thực hiện Hard Delete trong CSDL. 6. Trả về thông báo thành công |
+| **Luồng sự kiện thay thế** | 3a. Admin hủy bỏ → Không làm gì cả |
+| **Luồng sự kiện ngoại lệ** | 5a. Lỗi khóa ngoại (User đã mua vé hoặc tổ chức sự kiện) → Hệ thống có thể báo lỗi hoặc cần các luồng dọn dẹp phụ trợ trước khi xóa |
 
 ---
 
@@ -144,7 +162,7 @@
 | **Điều kiện tiên quyết** | Đã đăng nhập với Role = ORGANIZER |
 | **Điều kiện thất bại** | Sự kiện không được tạo. Hệ thống hiển thị lỗi validation |
 | **Điều kiện thành công** | Sự kiện mới được lưu vào CSDL với status = DRAFT. Ảnh banner (nếu có) được upload lên Cloudinary |
-| **Luồng sự kiện chính** | 1. Organizer nhấn "Tạo sự kiện mới". 2. Organizer nhập: title, category, shortDescription, description, capacity (≥ 1), ticketPrice (≥ 0), startTime, endTime, location. 3. Organizer chọn file ảnh banner (tùy chọn). 4. Organizer nhấn "Tạo". 5. Frontend gửi POST /events (multipart/form-data). 6. Hệ thống validate dữ liệu. 7. Hệ thống upload banner lên Cloudinary (nếu có). 8. Hệ thống lưu Event với status=DRAFT, soldTickets=0. 9. Hệ thống trả về thông tin sự kiện vừa tạo |
+| **Luồng sự kiện chính** | 1. Organizer nhấn "Tạo sự kiện mới". 2. Organizer nhập: title, category, shortDescription, description, capacity (≥ 1), ticketPrice (≥ 0), startTime, endTime, location, VÀ danh sách lịch trình (schedules - tùy chọn). 3. Organizer chọn file ảnh banner (tùy chọn). 4. Organizer nhấn "Tạo". 5. Frontend gửi POST /events (multipart/form-data). 6. Hệ thống validate dữ liệu. 7. Hệ thống upload banner lên Cloudinary (nếu có). 8. Hệ thống lưu Event với status=DRAFT, soldTickets=0, và lưu đồng loạt các bản ghi EventSchedule. 9. Hệ thống trả về thông tin sự kiện vừa tạo |
 | **Luồng sự kiện thay thế** | 3a. Organizer không chọn ảnh → Sự kiện được tạo không có bannerUrl |
 | **Luồng sự kiện ngoại lệ** | 6a. Thiếu trường bắt buộc → Hệ thống báo lỗi VALIDATION_ERROR. 6b. endTime ≤ startTime → Hệ thống báo lỗi INVALID_TIME_RANGE |
 
@@ -162,7 +180,7 @@
 | **Điều kiện tiên quyết** | Đã đăng nhập với Role = ORGANIZER. Phải là người tạo ra sự kiện đó |
 | **Điều kiện thất bại** | Thông tin không được cập nhật |
 | **Điều kiện thành công** | Thông tin sự kiện được cập nhật trong CSDL |
-| **Luồng sự kiện chính** | 1. Organizer chỉnh sửa thông tin sự kiện trên form. 2. Organizer nhấn "Lưu". 3. Frontend gửi PUT /events/{id} (multipart/form-data). 4. Hệ thống kiểm tra Organizer hiện tại là chủ sự kiện. 5. Hệ thống kiểm tra capacity mới ≥ soldTickets. 6. Hệ thống cập nhật CSDL. 7. Hệ thống trả về thông tin đã cập nhật |
+| **Luồng sự kiện chính** | 1. Organizer chỉnh sửa thông tin sự kiện và danh sách lịch trình con trên form. 2. Organizer nhấn "Lưu". 3. Frontend gửi PUT /events/{id} (multipart/form-data). 4. Hệ thống kiểm tra Organizer hiện tại là chủ sự kiện. 5. Hệ thống kiểm tra capacity mới ≥ soldTickets. 6. Hệ thống cập nhật CSDL sự kiện, đồng thời tự động đồng bộ (Xóa cũ, Thêm mới, Sửa) mảng lịch trình con. 7. Hệ thống trả về thông tin đã cập nhật |
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | 4a. Không phải chủ sự kiện → Hệ thống báo lỗi ACCESS_DENIED (403). 5a. capacity < soldTickets → Hệ thống báo lỗi CAPACITY_CANNOT_BE_LESS_THAN_SOLD (400) |
 

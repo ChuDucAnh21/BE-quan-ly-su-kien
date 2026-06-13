@@ -43,6 +43,12 @@ classDiagram
         OTHER
     }
 
+    class NguonDangNhap {
+        <<enumeration>>
+        LOCAL
+        GOOGLE
+    }
+
     class TrangThaiSuKien {
         <<enumeration>>
         DRAFT
@@ -103,6 +109,8 @@ classDiagram
         + gioiTinh : GioiTinh
         + ngaySinh : LocalDate
         + diaChi : String
+        + nguonDangNhap : NguonDangNhap
+        + maNguonDangNhap : String
         --
         + dangKyTaiKhoan(hoTen, email, matKhau, soDienThoai) void
         + dangNhap(email, matKhau) String
@@ -125,6 +133,7 @@ classDiagram
         + khoaTaiKhoan(id) void
         + moKhoaTaiKhoan(id) void
         + phanQuyenVaiTro(id, vaiTroMoi) void
+        + xoaTaiKhoanVinhVien(id) void
         + xemThongKeTongQuan() Object
         + kiemTraKhongTuThayDoiChinhMinh(id) void
     }
@@ -145,8 +154,8 @@ classDiagram
         + soVeDaBan : Integer
         + trangThai : TrangThaiSuKien
         --
-        + taoSuKienMoi(thongTin, anhBia) SuKien
-        + capNhatSuKien(id, thongTin) SuKien
+        + taoSuKienMoi(thongTin, anhBia, danhSachLichTrinh) SuKien
+        + capNhatSuKien(id, thongTin, danhSachLichTrinh) SuKien
         + xoaSuKien(id) void
         + doiTrangThai(id, trangThaiMoi) void
         + xemDanhSachSuKien(tuKhoa, danhMuc, trangThai) List
@@ -167,10 +176,6 @@ classDiagram
         + thoiGianKetThuc : LocalDateTime
         + moTa : Text
         --
-        + themNhieuLichTrinh(suKienId, danhSach) List
-        + capNhatNhieuLichTrinh(suKienId, danhSach) List
-        + xoaMotLichTrinh(suKienId, lichTrinhId) void
-        + xoaToanBoLichTrinh(suKienId) void
         + xemDanhSachLichTrinh(suKienId) List
         + kiemTraThoiGianHopLe(batDau, ketThuc, suKien) Boolean
     }
@@ -252,7 +257,6 @@ classDiagram
         + nhanVien : NguoiDung
         + nguoiPhanCong : NguoiDung
         --
-        + xemDanhSachNhanVienHeThong() List
         + xemNhanVienSuKien(suKienId) List
         + dongBoPhanCong(suKienId, danhSachId) List
         + xoaNhanVienKhoiSuKien(suKienId, nhanVienId) void
@@ -288,6 +292,14 @@ classDiagram
         + kiemTraDaHetHan() Boolean
     }
 
+    class TroLyAoAI {
+        <<service>>
+        --
+        + tuVanChung(cauHoi) String
+        + traCuuSuKienTuDong(tuKhoa) List
+        + traCuuLichTrinhChiTiet(tenSuKien) List
+    }
+
     %% ============================================================
     %% KẾ THỪA
     %% ============================================================
@@ -308,6 +320,7 @@ classDiagram
     NguoiDung       ..> VaiTro               : sử dụng
     NguoiDung       ..> TrangThaiTaiKhoan    : sử dụng
     NguoiDung       ..> GioiTinh             : sử dụng
+    NguoiDung       ..> NguonDangNhap        : sử dụng
     SuKien          ..> TrangThaiSuKien      : sử dụng
     DonDangKy       ..> TrangThaiDangKy      : sử dụng
     ThanhToan       ..> TrangThaiThanhToan   : sử dụng
@@ -345,7 +358,7 @@ classDiagram
 | **SuKien**            | CRUD sự kiện     | `taoSuKienMoi()`, `capNhatSuKien()`, `xoaSuKien()`, `doiTrangThai()`                            |
 | **SuKien**            | Tra cứu          | `xemDanhSachSuKien()`, `xemChiTietSuKien()`, `xemThongKeSuKien()`                               |
 | **SuKien**            | Nghiệp vụ        | `kiemTraConCho()`, `kiemTraConHanDangKy()`, `giaoCho_TangSoVe()`, `nhaoCho_GiamSoVe()`          |
-| **LichTrinhSuKien**   | Quản lý timeline | `themNhieuLichTrinh()`, `capNhatNhieuLichTrinh()`, `xoaMotLichTrinh()`, `xoaToanBoLichTrinh()`  |
+| **LichTrinhSuKien**   | Quản lý timeline | `xemDanhSachLichTrinh()`, `kiemTraThoiGianHopLe()`  |
 | **DonDangKy**         | Đăng ký          | `dangKyThamGia()`, `huyDangKy()`, `xacNhanDangKy()`, `kiemTraDaDangKy()`                        |
 | **ThanhToan**         | Thanh toán       | `taoLienKetThanhToan()`, `xuLyWebhookPayOS()`, `dongBoTrangThaiDonHang()`, `huyDonHangHetHan()` |
 | **VeDienTu**          | Vé QR            | `phatHanhVe()`, `huyVe()`, `xemVeCaNhan()`, `xemVeSuKien()`, `danhDauDaSuDung()`                |
@@ -353,6 +366,7 @@ classDiagram
 | **PhanCongNhanVien**  | Phân công        | `dongBoPhanCong()`, `xoaNhanVienKhoiSuKien()`, `xemNhanVienSuKien()`                            |
 | **CauHinhThanhToan**  | PayOS            | `luuCauHinh()`, `capNhatCauHinh()`, `kiemTraDaCauHinh()`, `layCauHinhHopLe()`                   |
 | **MaKhoiPhucMatKhau** | Token MK         | `taoMaMoi()`, `xacThucMa()`, `xoaMaKhoiPhuc()`, `kiemTraDaHetHan()`                             |
+| **TroLyAoAI**         | Chatbot AI       | `tuVanChung()`, `traCuuSuKienTuDong()`, `traCuuLichTrinhChiTiet()`                              |
 
 ---
 
@@ -363,6 +377,7 @@ classDiagram
 | `Role`               | **Vai trò**                 | ADMIN, ORGANIZER, STAFF, USER                           |
 | `UserStatus`         | **Trạng thái tài khoản**    | ACTIVE (hoạt động), LOCKED (bị khóa)                    |
 | `Gender`             | **Giới tính**               | MALE (nam), FEMALE (nữ), OTHER (khác)                   |
+| `AuthProvider`       | **Nguồn đăng nhập**         | LOCAL (hệ thống), GOOGLE (Google OAuth2)                |
 | `EventStatus`        | **Trạng thái sự kiện**      | DRAFT, PUBLISHED, CLOSED, CANCELLED, COMPLETED          |
 | `RegistrationStatus` | **Trạng thái đăng ký**      | PENDING_PAYMENT, CONFIRMED, CHECKED_IN, CANCELLED       |
 | `PaymentStatus`      | **Trạng thái thanh toán**   | PENDING, SUCCESS, FAILED, CANCELLED                     |

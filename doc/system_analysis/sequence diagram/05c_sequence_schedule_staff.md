@@ -21,133 +21,10 @@ sequenceDiagram
 
 ---
 
-## UC21 – Tạo lịch trình con hàng loạt (Organizer)
-
-```mermaid
-sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Quản lý Lịch trình
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Org->>UI: 1. Nhấn "Thêm lịch trình", nhập thông tin nhiều hoạt động
-    Org->>UI: 2. Nhấn "Lưu tất cả"
-    UI->>HT: 3. Gửi danh sách lịch trình mới (kèm Token Organizer)
-    HT->>HT: 4. Kiểm tra người gửi có phải chủ sự kiện không
-    alt Không phải chủ sự kiện
-        HT-->>UI: 5a. Từ chối - không có quyền
-        UI-->>Org: 5b. Thông báo không có quyền
-    else Kiểm tra thời gian từng lịch trình
-        HT->>HT: 5. Kiểm tra thời gian bắt đầu/kết thúc mỗi hoạt động nằm trong khung giờ của sự kiện cha
-        alt Có lịch trình vượt khung thời gian
-            HT-->>UI: 6a. Thông báo thời gian vượt quá khung sự kiện
-            UI-->>Org: 6b. Hiển thị lỗi cụ thể
-        else Tất cả hợp lệ
-            HT->>DB: 6. Lưu tất cả lịch trình vào cơ sở dữ liệu
-            DB-->>HT: 7. Lưu thành công
-            HT-->>UI: 8. Trả về danh sách lịch trình vừa tạo
-            UI-->>Org: 9. Hiển thị timeline đã cập nhật
-        end
-    end
-```
-
----
-
-## UC22 – Cập nhật lịch trình con hàng loạt (Organizer)
-
-```mermaid
-sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Quản lý Lịch trình
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Org->>UI: 1. Chỉnh sửa thông tin các hoạt động trong timeline
-    Org->>UI: 2. Nhấn "Cập nhật"
-    UI->>HT: 3. Gửi danh sách lịch trình đã chỉnh sửa (kèm mã ID từng lịch trình)
-    HT->>HT: 4. Kiểm tra quyền chủ sự kiện
-    alt Không phải chủ sự kiện
-        HT-->>UI: 5a. Từ chối truy cập
-    else Kiểm tra từng lịch trình
-        loop Mỗi lịch trình trong danh sách
-            HT->>DB: 5. Tìm lịch trình theo mã ID
-            alt ID không tồn tại
-                DB-->>HT: 5a. Không tìm thấy
-                HT->>HT: Ghi nhận lỗi
-            else Thời gian vượt khung sự kiện
-                HT-->>UI: 5b. Thông báo thời gian không hợp lệ
-            else Hợp lệ
-                HT->>DB: 6. Cập nhật thông tin lịch trình
-            end
-        end
-        DB-->>HT: 7. Lưu thành công
-        HT-->>UI: 8. Trả về danh sách đã cập nhật
-        UI-->>Org: 9. Hiển thị timeline mới
-    end
-```
-
----
-
-## UC23 – Xóa toàn bộ lịch trình (Organizer)
-
-```mermaid
-sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Quản lý Lịch trình
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Org->>UI: 1. Nhấn "Xóa tất cả lịch trình"
-    UI-->>Org: 2. Hộp thoại xác nhận
-    alt Nhấn "Hủy"
-        Org->>UI: 3a. Nhấn "Hủy"
-        UI-->>Org: 3b. Đóng hộp thoại
-    else Xác nhận xóa
-        Org->>UI: 3. Xác nhận xóa tất cả
-        UI->>HT: 4. Gửi yêu cầu xóa toàn bộ lịch trình (kèm Token)
-        HT->>HT: 5. Kiểm tra quyền chủ sự kiện
-        alt Không có quyền
-            HT-->>UI: 6a. Từ chối truy cập
-            UI-->>Org: 6b. Thông báo không có quyền
-        else Có quyền
-            HT->>DB: 6. Xóa tất cả lịch trình thuộc sự kiện
-            DB-->>HT: 7. Xóa thành công
-            HT-->>UI: 8. Thông báo thành công
-            UI-->>Org: 9. Timeline trống rỗng
-        end
-    end
-```
-
----
-
-## UC24 – Xóa một lịch trình con (Organizer)
-
-```mermaid
-sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Quản lý Lịch trình
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Org->>UI: 1. Nhấn nút "Xóa" bên cạnh một hoạt động
-    UI-->>Org: 2. Hộp thoại xác nhận
-    alt Nhấn "Hủy"
-        Org->>UI: 3a. Nhấn "Hủy"
-        UI-->>Org: 3b. Giữ nguyên
-    else Xác nhận xóa
-        Org->>UI: 3. Xác nhận xóa
-        UI->>HT: 4. Gửi yêu cầu xóa lịch trình cụ thể (kèm Token)
-        HT->>HT: 5. Kiểm tra quyền chủ sự kiện
-        alt Không có quyền
-            HT-->>UI: 6a. Từ chối truy cập
-        else Có quyền
-            HT->>DB: 6. Xóa lịch trình theo mã
-            DB-->>HT: 7. Xóa thành công
-            HT-->>UI: 8. Thông báo xóa thành công
-            UI-->>Org: 9. Cập nhật lại timeline
-        end
-    end
-```
+> **[LƯU Ý QUAN TRỌNG VỀ KIẾN TRÚC MỚI]**
+> Kể từ phiên bản V2, các biểu đồ tuần tự cho các chức năng Tạo, Sửa, Xóa lịch trình con độc lập (UC21, UC22, UC23, UC24) **đã bị loại bỏ**.
+> Các thao tác này đã được tích hợp đồng bộ thành một mảng `schedules` và được xử lý chung trong luồng Tạo/Cập nhật Sự kiện (Xem UC16, UC17 ở phần B).
+> Chỉ còn giữ lại biểu đồ UC20 làm API lấy lịch trình riêng lẻ phục vụ hiển thị.
 
 ---
 
@@ -161,17 +38,18 @@ sequenceDiagram
     participant DB as Cơ sở dữ liệu
 
     User->>UI: 1. Truy cập trang danh sách nhân viên
-    UI->>HT: 2. Yêu cầu danh sách nhân viên (kèm Token)
+    UI->>HT: 2. Gọi API GET /admin/get-all-users?role=STAFF
     HT->>HT: 3. Kiểm tra quyền (Admin hoặc Organizer)
     alt Không có quyền
         HT-->>UI: 4a. Từ chối truy cập
         UI-->>User: 4b. Thông báo không có quyền
-    else Có quyền
-        HT->>DB: 4. Truy vấn tất cả tài khoản có vai trò STAFF và đang ACTIVE
-        DB-->>HT: 5. Trả về danh sách nhân viên (Họ tên, Email, SĐT, Ảnh đại diện)
-        HT-->>UI: 6. Trả về danh sách
-        UI-->>User: 7. Hiển thị danh sách nhân viên để phân công
+    else Có quyền (Organizer)
+        HT->>HT: 4c. Ép buộc lọc theo role = STAFF
     end
+    HT->>DB: 5. Truy vấn danh sách người dùng phân trang
+    DB-->>HT: 6. Trả về danh sách nhân viên
+    HT-->>UI: 7. Trả về danh sách
+    UI-->>User: 8. Hiển thị danh sách nhân viên để phân công
 ```
 
 ---

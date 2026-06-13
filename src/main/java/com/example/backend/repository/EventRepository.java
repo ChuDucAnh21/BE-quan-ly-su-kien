@@ -170,5 +170,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
        @Query("SELECT DISTINCT e.category FROM Event e WHERE e.status = :status AND e.category IS NOT NULL")
        List<String> findDistinctCategoryByStatus(@Param("status") EventStatus status);
 
+       // Mới thêm cho Chatbot nâng cao
+       List<Event> findTop5ByDescriptionContainingIgnoreCase(String keyword);
+
+       List<Event> findTop5ByStatusOrderBySoldTicketsDesc(EventStatus status);
+
+       long countByStatus(EventStatus status);
+
+       List<Event> findTop5ByStatus(EventStatus status);
+
 
 }

@@ -2,17 +2,18 @@
 # TÁC NHÂN VÀ TỔNG QUAN HỆ THỐNG
 
 **Dự án:** Hệ thống Quản lý Sự kiện & Check-in QR (Event Management & QR Check-in System)
-**Công nghệ Backend:** Java 21, Spring Boot 3.x, MySQL, PayOS SDK v2
+**Công nghệ Backend:** Java 21, Spring Boot 3.x, MySQL, PayOS SDK v2, Spring AI (Tích hợp model Google Gemma qua OpenRouter)
 
 ---
 
 ## I. MÔ TẢ BÀI TOÁN
 
 Xây dựng hệ thống quản lý sự kiện trực tuyến cho phép:
-- Người tổ chức (Organizer) tạo và quản lý sự kiện, thiết lập giá vé, theo dõi doanh thu.
-- Người dùng (User) duyệt, đăng ký và thanh toán vé tham gia sự kiện trực tuyến qua cổng PayOS.
-- Nhân viên (Staff) được phân công soát vé tại cổng bằng mã QR hoặc thủ công, hỗ trợ chế độ Offline.
-- Quản trị viên (Admin) quản lý toàn bộ người dùng, phân quyền và giám sát hệ thống.
+- Người tổ chức (Organizer) tạo và quản lý sự kiện, thiết lập giá vé, theo dõi doanh thu thông qua Dashboard phân tích.
+- Người dùng (User) duyệt, đăng ký và thanh toán vé tham gia sự kiện trực tuyến qua cổng PayOS, đăng nhập nhanh qua Google OAuth2.
+- Trợ lý ảo AI (Chatbot) tư vấn trực tiếp cho khách hàng về chi tiết sự kiện, lịch trình và ban tổ chức.
+- Nhân viên (Staff) được phân công soát vé tại cổng bằng mã QR hoặc thủ công, hỗ trợ chế độ Offline (Batch Sync).
+- Quản trị viên (Admin) quản lý toàn bộ người dùng, phân quyền và giám sát hệ thống qua Dashboard.
 
 ---
 
@@ -34,13 +35,20 @@ Xây dựng hệ thống quản lý sự kiện trực tuyến cho phép:
 ### Nhóm 1: Xác thực & Bảo mật
 | Mã | Chức năng | Tác nhân |
 |----|-----------|----------|
-| UC01 | Đăng ký tài khoản | Guest |
-| UC02 | Đăng nhập | Guest |
-| UC02a | Đăng ký / Đăng nhập bằng Google | Guest |
+| UC01 | Đăng ký tài khoản hệ thống | Guest |
+| UC02 | Đăng nhập tài khoản hệ thống | Guest |
+| UC02a | Đăng nhập một chạm bằng Google (OAuth2) | Guest |
 | UC03 | Đăng xuất | User, Staff, Organizer, Admin |
-| UC04 | Quên mật khẩu (Gửi email) | Guest |
+| UC04 | Quên mật khẩu (Gửi email token) | Guest |
 | UC05 | Đặt lại mật khẩu | Guest |
 | UC06 | Đổi mật khẩu | User, Staff, Organizer, Admin |
+
+### Nhóm 1.5: Tư vấn tự động (AI Chatbot)
+| Mã | Chức năng | Tác nhân |
+|----|-----------|----------|
+| UC_AI1 | Trò chuyện trực tiếp với Trợ lý ảo | Guest, User |
+| UC_AI2 | AI tự động tra cứu danh sách sự kiện | Hệ thống AI |
+| UC_AI3 | AI tự động tra cứu lịch trình/Ban tổ chức | Hệ thống AI |
 
 ### Nhóm 2: Quản lý Hồ sơ cá nhân
 | Mã | Chức năng | Tác nhân |

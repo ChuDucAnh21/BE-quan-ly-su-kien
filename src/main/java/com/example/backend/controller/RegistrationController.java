@@ -24,7 +24,7 @@ public class RegistrationController {
         // Đăng ký tham gia Sự kiện
         // Lưu ý: Mọi User đã Đăng nhập đều có quyền Đăng ký mua vé
         @PostMapping
-        @PreAuthorize("hasRole('USER') or hasRole('ORGANIZER') or hasRole('ADMIN')")
+        @PreAuthorize("hasRole('USER') or hasRole('ORGANIZER') or hasRole('ADMIN') or hasRole('STAFF')")
         public ResponseEntity<ApiResponse<RegistrationResponse>> registerEvent(
                         @Valid @RequestBody RegistrationRequest request) {
 
@@ -43,7 +43,7 @@ public class RegistrationController {
 
         // 2. Hủy đăng ký vé (Chỉ áp dụng cho Vé Miễn Phí hoặc vé chưa thanh toán)
         @PostMapping("/{registrationId}/cancel")
-        @PreAuthorize("hasRole('USER') or hasRole('ORGANIZER') or hasRole('ADMIN')")
+        @PreAuthorize("hasRole('USER') or hasRole('ORGANIZER') or hasRole('ADMIN') or hasRole('STAFF')")
         public ResponseEntity<ApiResponse<Void>> cancelRegistration(@PathVariable Long registrationId) {
                 registrationService.cancelRegistration(registrationId);
 

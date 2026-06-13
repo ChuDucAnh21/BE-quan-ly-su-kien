@@ -1,4 +1,5 @@
 # BIỂU ĐỒ PHÂN RÃ THỰC THỂ (ENTITY DECOMPOSITION DIAGRAM)
+
 **Hệ thống Quản lý Sự kiện & Check-in QR**
 
 ---
@@ -35,7 +36,7 @@ graph TD
     CAU_HINH_THANH_TOAN([CAU_HINH_THANH_TOAN])
 
     VE_DIEN_TU([VE_DIEN_TU])
-    NHAT_KY_SOATVE([NHAT_KY_SOATVE])
+    NHAT_KY_SOAT_VE([NHAT_KY_SOAT_VE])
 
     %% ============================
     %% KẾT NỐI Level 0 → Level 1
@@ -60,7 +61,7 @@ graph TD
     RegPay  --> CAU_HINH_THANH_TOAN
 
     Ops     --> VE_DIEN_TU
-    Ops     --> NHAT_KY_SOATVE
+    Ops     --> NHAT_KY_SOAT_VE
 
     %% ============================
     %% STYLING
@@ -81,7 +82,7 @@ graph TD
     style THANH_TOAN          fill:#fff,stroke:#333,stroke-width:1px
     style CAU_HINH_THANH_TOAN fill:#fff,stroke:#333,stroke-width:1px
     style VE_DIEN_TU          fill:#fff,stroke:#333,stroke-width:1px
-    style NHAT_KY_SOATVE      fill:#fff,stroke:#333,stroke-width:1px
+    style NHAT_KY_SOAT_VE     fill:#fff,stroke:#333,stroke-width:1px
 ```
 
 **Chú thích ký hiệu:**
@@ -97,41 +98,43 @@ graph TD
 ## II. MÔ TẢ CHI TIẾT TỪNG CẤP ĐỘ PHÂN RÃ
 
 ### LEVEL 0 — Hệ thống tổng quát
+
 Toàn bộ nghiệp vụ của đề tài nằm trong một hệ thống duy nhất: **Quản lý Sự kiện & Check-in QR**.
 
 ---
 
 ### LEVEL 1 — Nhóm chức năng nghiệp vụ (Subject Areas)
 
-| STT | Nhóm chức năng | Mô tả |
-|---|---|---|
-| 1 | **QUẢN LÝ TÀI KHOẢN & BẢO MẬT** | Xử lý định danh người dùng, xác thực, phân quyền và khôi phục mật khẩu |
-| 2 | **QUẢN LÝ NỘI DUNG SỰ KIỆN** | Tạo, cập nhật sự kiện, lịch trình hoạt động và phân công nhân sự |
-| 3 | **QUẢN LÝ ĐĂNG KÝ & TÀI CHÍNH** | Xử lý đơn đăng ký tham gia và luồng thanh toán qua PayOS |
-| 4 | **QUẢN LÝ VẬN HÀNH & SOÁT VÉ** | Phát hành vé QR và ghi nhận lịch sử soát vé tại cổng sự kiện |
+| STT | Nhóm chức năng                  | Mô tả                                                                  |
+| --- | ------------------------------- | ---------------------------------------------------------------------- |
+| 1   | **QUẢN LÝ TÀI KHOẢN & BẢO MẬT** | Xử lý định danh người dùng, xác thực, phân quyền và khôi phục mật khẩu |
+| 2   | **QUẢN LÝ NỘI DUNG SỰ KIỆN**    | Tạo, cập nhật sự kiện, lịch trình hoạt động và phân công nhân sự       |
+| 3   | **QUẢN LÝ ĐĂNG KÝ & TÀI CHÍNH** | Xử lý đơn đăng ký tham gia và luồng thanh toán qua PayOS               |
+| 4   | **QUẢN LÝ VẬN HÀNH & SOÁT VÉ**  | Phát hành vé QR và ghi nhận lịch sử soát vé tại cổng sự kiện           |
 
 ---
 
 ### LEVEL 2 — Thực thể dữ liệu (Entities)
 
-| Nhóm (Level 1) | Thực thể (Level 2) | Tên bảng trong ERD | Vai trò |
-|---|---|---|---|
-| Tài khoản | **NGUOI_DUNG** | `NGUOI_DUNG` | Lưu thông tin định danh, vai trò (Admin/Organizer/Staff/User) và trạng thái tài khoản |
-| | **MA_KHOI_PHUC** | `MA_KHOI_PHUC` | Lưu token UUID có thời hạn 15 phút dùng một lần để đặt lại mật khẩu |
-| Sự kiện | **SU_KIEN** | `SU_KIEN` | Thực thể trung tâm — chứa toàn bộ thông tin mô tả một sự kiện |
-| | **LICH_TRINH** | `LICH_TRINH` | Danh sách các mốc thời gian hoạt động (Timeline) của sự kiện |
-| | **PHAN_CONG_NHAN_VIEN** | `PHAN_CONG_NHAN_VIEN` | Bảng cầu nối giữa `SU_KIEN` và `NGUOI_DUNG` (Staff) |
-| Đăng ký & Tài chính | **DON_DANG_KY** | `DON_DANG_KY` | Ghi nhận yêu cầu tham gia của người dùng (ràng buộc 1 user/1 sự kiện) |
-| | **THANH_TOAN** | `THANH_TOAN` | Lịch sử giao dịch qua cổng PayOS gắn với từng đơn đăng ký |
-| | **CAU_HINH_THANH_TOAN** | `CAU_HINH_THANH_TOAN` | API Key/Checksum của Organizer để kết nối với cổng PayOS |
-| Vận hành | **VE_DIEN_TU** | `VE_DIEN_TU` | Vé QR được phát hành sau thanh toán thành công, dùng để soát vé |
-| | **NHAT_KY_SOATVE** | `NHAT_KY_SOATVE` | Lịch sử ghi nhận mỗi lần quét mã tại cổng (ai soát, khi nào, bằng gì) |
+| Nhóm (Level 1)      | Thực thể (Level 2)      | Tên bảng trong ERD    | Vai trò                                                                                 |
+| ------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------- |
+| Tài khoản           | **NGUOI_DUNG**          | `NGUOI_DUNG`          | Lưu thông tin định danh, vai trò, trạng thái và nguồn đăng nhập (LOCAL / GOOGLE OAuth2) |
+|                     | **MA_KHOI_PHUC**        | `MA_KHOI_PHUC`        | Lưu token UUID có thời hạn 15 phút dùng một lần để đặt lại mật khẩu                     |
+| Sự kiện             | **SU_KIEN**             | `SU_KIEN`             | Thực thể trung tâm — chứa toàn bộ thông tin mô tả một sự kiện                           |
+|                     | **LICH_TRINH**          | `LICH_TRINH`          | Danh sách các mốc thời gian hoạt động (Timeline) của sự kiện                            |
+|                     | **PHAN_CONG_NHAN_VIEN** | `PHAN_CONG_NHAN_VIEN` | Bảng cầu nối giữa `SU_KIEN` và `NGUOI_DUNG` (Staff)                                     |
+| Đăng ký & Tài chính | **DON_DANG_KY**         | `DON_DANG_KY`         | Ghi nhận yêu cầu tham gia của người dùng (ràng buộc 1 user/1 sự kiện)                   |
+|                     | **THANH_TOAN**          | `THANH_TOAN`          | Lịch sử giao dịch qua cổng PayOS gắn với từng đơn đăng ký                               |
+|                     | **CAU_HINH_THANH_TOAN** | `CAU_HINH_THANH_TOAN` | API Key/Checksum của Organizer để kết nối với cổng PayOS                                |
+| Vận hành            | **VE_DIEN_TU**          | `VE_DIEN_TU`          | Vé QR được phát hành sau thanh toán thành công, dùng để soát vé                         |
+|                     | **NHAT_KY_SOATVE**      | `NHAT_KY_SOATVE`      | Lịch sử ghi nhận mỗi lần quét mã tại cổng (ai soát, khi nào, bằng gì)                   |
 
 ---
 
 ## III. KẾT LUẬN
 
 Quá trình phân rã từ **1 hệ thống → 4 nhóm chức năng → 10 thực thể dữ liệu** đảm bảo:
-- **Tính đầy đủ:** Bao phủ toàn bộ tính năng từ xác thực đến check-in.
+
+- **Tính đầy đủ:** Bao phủ toàn bộ tính năng từ xác thực, check-in, thanh toán đến phân tích báo cáo.
 - **Tính nhất quán:** Tên thực thể đồng nhất 100% với biểu đồ ERD.
-- **Tính sẵn sàng:** Các thực thể Level 2 là nền tảng trực tiếp để thiết kế các bảng vật lý trong Cơ sở dữ liệu.
+- **Tính sẵn sàng:** Các thực thể Level 2 là nền tảng trực tiếp để thiết kế các bảng vật lý trong Cơ sở dữ liệu. Đồng thời là nguồn dữ liệu đầu vào cho Trợ lý ảo AI (Chatbot) và Báo cáo tổng quan (Dashboard) truy vấn.

@@ -6,23 +6,24 @@
 
 ```mermaid
 sequenceDiagram
-    actor Admin as Quản trị viên
+    actor Admin as Admin / Organizer
     participant UI as Màn hình Quản lý Người dùng
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    Admin->>UI: 1. Truy cập trang "Quản lý người dùng"
-    UI->>HT: 2. Yêu cầu danh sách người dùng (kèm Token Admin)
-    HT->>HT: 3. Xác thực quyền Admin
-    alt Không có quyền Admin
+    Admin->>UI: 1. Truy cập trang "Quản lý người dùng/Staff"
+    UI->>HT: 2. Yêu cầu danh sách người dùng (kèm Token)
+    HT->>HT: 3. Kiểm tra quyền (Admin hoặc Organizer)
+    alt Không có quyền
         HT-->>UI: 4a. Từ chối truy cập (403)
         UI-->>Admin: 4b. Thông báo không có quyền
-    else Có quyền Admin
-        HT->>DB: 4. Truy vấn danh sách người dùng (có phân trang, lọc theo vai trò / trạng thái / từ khóa)
-        DB-->>HT: 5. Trả về danh sách người dùng
-        HT-->>UI: 6. Trả về dữ liệu có phân trang
-        UI-->>Admin: 7. Hiển thị bảng danh sách người dùng
+    else Có quyền (Organizer)
+        HT->>HT: 4c. Ép buộc tham số role = STAFF
     end
+    HT->>DB: 4. Truy vấn danh sách người dùng (có phân trang, lọc theo điều kiện)
+    DB-->>HT: 5. Trả về danh sách người dùng
+    HT-->>UI: 6. Trả về dữ liệu có phân trang
+    UI-->>Admin: 7. Hiển thị bảng danh sách
 
     note over Admin,UI: Admin có thể lọc theo:<br/>Vai trò (ADMIN/ORGANIZER/STAFF/USER)<br/>Trạng thái (ACTIVE/LOCKED)<br/>Từ khóa tìm kiếm
 ```
@@ -49,6 +50,32 @@ sequenceDiagram
         DB-->>HT: 5. Lưu thành công
         HT-->>UI: 6. Cập nhật trạng thái thành công
         UI-->>Admin: 7. Cập nhật lại trạng thái trong bảng danh sách
+    end
+```
+
+---
+
+## UC12b – Xóa tài khoản vĩnh viễn (Admin)
+
+```mermaid
+sequenceDiagram
+    actor Admin as Quản trị viên (Super Admin)
+    participant UI as Màn hình Quản lý Người dùng
+    participant HT as Hệ thống
+    participant DB as Cơ sở dữ liệu
+
+    Admin->>UI: 1. Chọn "Xóa vĩnh viễn" tài khoản
+    UI-->>Admin: 2. Hiển thị cảnh báo mất dữ liệu
+    Admin->>UI: 3. Xác nhận xóa
+    UI->>HT: 4. Gửi yêu cầu xóa Hard Delete (kèm Token)
+    HT->>DB: 5. Thực thi Hard Delete khỏi CSDL
+    alt Có ràng buộc khóa ngoại (User đã mua vé/tổ chức SK)
+        DB-->>HT: 6a. Lỗi khóa ngoại (Foreign Key Constraint)
+        HT-->>UI: 6b. Báo lỗi không thể xóa
+    else Thành công
+        DB-->>HT: 6. Đã xóa bản ghi
+        HT-->>UI: 7. Trả về thành công
+        UI-->>Admin: 8. Cập nhật lại danh sách
     end
 ```
 
@@ -185,22 +212,22 @@ sequenceDiagram
     participant Cloud as Cloudinary (Lưu ảnh)
     participant DB as Cơ sở dữ liệu
 
-    Org->>UI: 1. Điền thông tin sự kiện (Tên, Danh mục, Mô tả, Sức chứa, Giá vé, Thời gian, Địa điểm)
+    Org->>UI: 1. Điền thông tin sự kiện VÀ danh sách lịch trình con (schedules)
     Org->>UI: 2. Chọn ảnh banner (tùy chọn)
     Org->>UI: 3. Nhấn "Tạo sự kiện"
-    UI->>HT: 4. Gửi thông tin sự kiện (kèm Token Organizer)
-    HT->>HT: 5. Kiểm tra dữ liệu (Sức chứa ≥ 1, Giá vé ≥ 0, Thời gian kết thúc > bắt đầu)
+    UI->>HT: 4. Gửi payload sự kiện (kèm mảng lịch trình và Token)
+    HT->>HT: 5. Kiểm tra dữ liệu validate (Sức chứa, Giá vé, Thời gian)
     alt Thông tin không hợp lệ
         HT-->>UI: 6a. Thông báo lỗi validate
         UI-->>Org: 6b. Hiển thị lỗi
     else Có ảnh banner
-        HT->>Cloud: 6. Tải ảnh lên dịch vụ lưu trữ đám mây
+        HT->>Cloud: 6. Tải ảnh lên Cloudinary
         Cloud-->>HT: 7. Trả về đường dẫn ảnh
     end
-    HT->>DB: 8. Lưu sự kiện mới (Trạng thái: DRAFT, Vé đã bán: 0, Người tạo: Organizer hiện tại)
+    HT->>DB: 8. Lưu Event (DRAFT, soldTickets=0) và đồng loạt lưu mảng EventSchedule
     DB-->>HT: 9. Lưu thành công
-    HT-->>UI: 10. Trả về thông tin sự kiện vừa tạo
-    UI-->>Org: 11. Thông báo tạo thành công, chuyển đến trang sự kiện
+    HT-->>UI: 10. Trả về thông tin sự kiện và lịch trình vừa tạo
+    UI-->>Org: 11. Chuyển đến trang sự kiện
 ```
 
 ---
@@ -214,18 +241,18 @@ sequenceDiagram
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    Org->>UI: 1. Chỉnh sửa thông tin sự kiện trên form
+    Org->>UI: 1. Chỉnh sửa thông tin sự kiện VÀ danh sách lịch trình con
     Org->>UI: 2. Nhấn "Lưu thay đổi"
-    UI->>HT: 3. Gửi thông tin đã chỉnh sửa (kèm Token)
+    UI->>HT: 3. Gửi payload sự kiện (kèm mảng lịch trình và Token)
     HT->>DB: 4. Tìm sự kiện theo mã
     HT->>HT: 5. Kiểm tra người gửi có phải chủ sự kiện không
     alt Không phải chủ sự kiện
-        HT-->>UI: 6a. Từ chối - không có quyền chỉnh sửa
-        UI-->>Org: 6b. Thông báo không có quyền
+        HT-->>UI: 6a. Từ chối truy cập
+        UI-->>Org: 6b. Thông báo lỗi
     else Sức chứa mới nhỏ hơn số vé đã bán
-        HT-->>UI: 6c. Sức chứa không được nhỏ hơn số vé đã bán
+        HT-->>UI: 6c. Báo lỗi sức chứa
     else Hợp lệ
-        HT->>DB: 6. Cập nhật thông tin sự kiện
+        HT->>DB: 6. Cập nhật Event và đồng bộ mảng EventSchedule (Xóa cũ, Thêm mới, Sửa)
         DB-->>HT: 7. Lưu thành công
         HT-->>UI: 8. Trả về thông tin đã cập nhật
         UI-->>Org: 9. Hiển thị thông tin sự kiện mới

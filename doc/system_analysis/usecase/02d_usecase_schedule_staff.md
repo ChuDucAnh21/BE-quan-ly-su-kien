@@ -18,77 +18,12 @@
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | Không có |
 
----
-
-## UC21 – Tạo lịch trình con (Batch)
-
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | Tạo mới nhiều lịch trình con cùng lúc (Batch Create) |
-| **Tác nhân** | Organizer |
-| **Mục đích** | Cho phép Organizer thêm nhiều hoạt động (timeline) vào sự kiện trong 1 lần gọi API |
-| **Mức độ ưu tiên** | Trung bình |
-| **Điều kiện kích hoạt** | Organizer nhấn "Thêm lịch trình" và nhập thông tin nhiều hoạt động |
-| **Điều kiện tiên quyết** | Đã đăng nhập. Organizer là chủ sự kiện |
-| **Điều kiện thất bại** | Lịch trình không được tạo. Hệ thống báo lỗi |
-| **Điều kiện thành công** | Các bản ghi EventSchedule được tạo trong CSDL |
-| **Luồng sự kiện chính** | 1. Organizer nhập thông tin nhiều hoạt động (title, startTime, endTime, description). 2. Organizer nhấn "Lưu". 3. Frontend gửi POST /events/{eventId}/schedules với body là Array JSON. 4. Hệ thống kiểm tra quyền sở hữu sự kiện. 5. Hệ thống kiểm tra mỗi schedule có startTime và endTime nằm trong khung thời gian của sự kiện cha. 6. Hệ thống lưu các bản ghi vào CSDL. 7. Hệ thống trả về danh sách lịch trình đã tạo |
-| **Luồng sự kiện thay thế** | Không có |
-| **Luồng sự kiện ngoại lệ** | 4a. Không phải chủ sự kiện → ACCESS_DENIED (403). 5a. Thời gian vượt khung sự kiện → TIME_OUT_OF_EVENT_BOUNDS (400) |
-
----
-
-## UC22 – Cập nhật lịch trình con (Batch)
-
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | Cập nhật lịch trình con theo ID (Batch Update) |
-| **Tác nhân** | Organizer |
-| **Mục đích** | Cho phép Organizer sửa đổi thông tin nhiều hoạt động trong sự kiện |
-| **Mức độ ưu tiên** | Trung bình |
-| **Điều kiện kích hoạt** | Organizer chỉnh sửa lịch trình trên giao diện và nhấn "Cập nhật" |
-| **Điều kiện tiên quyết** | Đã đăng nhập. Organizer là chủ sự kiện. Các schedule có id tồn tại |
-| **Điều kiện thất bại** | Lịch trình không được cập nhật |
-| **Điều kiện thành công** | Thông tin các schedule được cập nhật trong CSDL |
-| **Luồng sự kiện chính** | 1. Organizer chỉnh sửa thông tin lịch trình. 2. Organizer nhấn "Cập nhật". 3. Frontend gửi PUT /events/{eventId}/schedules với body là Array JSON (mỗi phần tử phải có trường id). 4. Hệ thống kiểm tra quyền. 5. Hệ thống tìm schedule theo id. 6. Hệ thống kiểm tra thời gian nằm trong khung sự kiện. 7. Hệ thống cập nhật title, startTime, endTime, description. 8. Hệ thống trả về danh sách đã cập nhật |
-| **Luồng sự kiện thay thế** | Không có |
-| **Luồng sự kiện ngoại lệ** | 5a. ID không tồn tại → SCHEDULE_NOT_FOUND (400). 6a. Thời gian vượt khung → TIME_OUT_OF_EVENT_BOUNDS (400) |
-
----
-
-## UC23 – Xóa toàn bộ lịch trình
-
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | Xóa toàn bộ lịch trình con của sự kiện |
-| **Tác nhân** | Organizer |
-| **Mục đích** | Cho phép Organizer xóa sạch tất cả hoạt động trong timeline sự kiện |
-| **Mức độ ưu tiên** | Thấp |
-| **Điều kiện kích hoạt** | Organizer nhấn "Xóa tất cả lịch trình" |
-| **Điều kiện tiên quyết** | Đã đăng nhập. Organizer là chủ sự kiện |
-| **Điều kiện thất bại** | Hệ thống gặp lỗi CSDL |
-| **Điều kiện thành công** | Tất cả bản ghi EventSchedule thuộc sự kiện bị xóa khỏi CSDL |
-| **Luồng sự kiện chính** | 1. Organizer nhấn "Xóa tất cả lịch trình". 2. Hệ thống hiển thị xác nhận. 3. Organizer xác nhận. 4. Frontend gửi DELETE /events/{eventId}/schedules. 5. Hệ thống kiểm tra quyền. 6. Hệ thống xóa tất cả schedule của sự kiện. 7. Hệ thống trả về thành công |
-| **Luồng sự kiện thay thế** | 3a. Organizer nhấn "Hủy" → Không xóa |
-| **Luồng sự kiện ngoại lệ** | 5a. Không phải chủ sự kiện → ACCESS_DENIED (403) |
-
----
-
-## UC24 – Xóa một lịch trình con
-
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | Xóa một lịch trình con theo ID |
-| **Tác nhân** | Organizer |
-| **Mục đích** | Cho phép Organizer xóa một hoạt động cụ thể trong timeline |
-| **Mức độ ưu tiên** | Thấp |
-| **Điều kiện kích hoạt** | Organizer nhấn nút "Xóa" bên cạnh một lịch trình con |
-| **Điều kiện tiên quyết** | Đã đăng nhập. Organizer là chủ sự kiện. Schedule tồn tại |
-| **Điều kiện thất bại** | Schedule không bị xóa |
-| **Điều kiện thành công** | Bản ghi EventSchedule bị xóa khỏi CSDL |
-| **Luồng sự kiện chính** | 1. Organizer nhấn "Xóa" bên cạnh schedule. 2. Hệ thống xác nhận. 3. Frontend gửi DELETE /events/{eventId}/schedules/{scheduleId}. 4. Hệ thống kiểm tra quyền. 5. Hệ thống xóa schedule. 6. Hệ thống trả về "Xóa lịch trình con thành công" |
-| **Luồng sự kiện thay thế** | 2a. Organizer nhấn "Hủy" → Không xóa |
-| **Luồng sự kiện ngoại lệ** | 4a. Không phải chủ sự kiện → ACCESS_DENIED (403) |
+> **[LƯU Ý QUAN TRỌNG VỀ KIẾN TRÚC MỚI]**
+> Kể từ phiên bản V2, các chức năng Tạo (Create), Sửa (Update), Xóa (Delete) lịch trình con độc lập **đã bị loại bỏ**.
+> Thay vào đó, Lịch trình con được **tích hợp trực tiếp** thành một mảng dữ liệu (Array `schedules`) bên trong form Tạo/Sửa Sự kiện (UC16 và UC17). 
+> Khi Organizer Lưu sự kiện, hệ thống Backend sẽ tự động quét mảng này để Thêm mới, Cập nhật, hoặc Xoá bỏ các lịch trình cũ nhằm tối ưu hóa UX (chỉ cần nhấn Lưu 1 lần duy nhất).
+>
+> UC20 (Xem lịch trình riêng lẻ) vẫn được giữ lại làm dự phòng.
 
 ---
 
@@ -104,7 +39,7 @@
 | **Điều kiện tiên quyết** | Đã đăng nhập với Role = ADMIN hoặc ORGANIZER |
 | **Điều kiện thất bại** | Hệ thống gặp lỗi truy vấn CSDL |
 | **Điều kiện thành công** | Danh sách nhân viên role=STAFF, status=ACTIVE được trả về |
-| **Luồng sự kiện chính** | 1. Người dùng truy cập trang quản lý Staff. 2. Frontend gọi GET /users/staffs. 3. Hệ thống truy vấn User có role=STAFF và status=ACTIVE. 4. Hệ thống trả về danh sách (id, fullName, email, phone, avatarUrl) |
+| **Luồng sự kiện chính** | 1. Người dùng truy cập trang quản lý Staff. 2. Frontend gọi GET /admin/get-all-users?role=STAFF. 3. Hệ thống kiểm tra quyền, nếu là Organizer thì ép buộc `role=STAFF`. 4. Hệ thống truy vấn danh sách (id, fullName, email, phone, avatarUrl). 5. Hệ thống trả về danh sách phân trang |
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | 2a. Role không phải ADMIN/ORGANIZER → 403 Forbidden |
 

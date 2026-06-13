@@ -46,8 +46,11 @@ public enum ErrorCode {
         INVALID_STAFF_ROLE(400, "Một hoặc nhiều người dùng không có quyền STAFF, hoặc tài khoản đã bị khóa",
                         HttpStatus.BAD_REQUEST),
         STAFF_NOT_ASSIGNED(404, "Nhân viên này chưa được phân công vào sự kiện", HttpStatus.NOT_FOUND),
+        STAFF_CANNOT_REGISTER(403, "Nhân viên không thể đăng ký sự kiện được phân công", HttpStatus.FORBIDDEN),
 
         // Lỗi liên quan đến Thanh toán và Đăng ký (Phase 7)
+        PAYMENT_CONFIG_INVALID(400, "Cổng thanh toán không tồn tại, hãy thử lại",
+                        HttpStatus.BAD_REQUEST),
         PAYMENT_CONFIG_NOT_FOUND(404, "Org/Admin chưa thiết lập Cổng Thanh Toán PayOS", HttpStatus.NOT_FOUND),
         PAYMENT_NOT_FOUND(404, "Không tìm thấy giao dịch thanh toán", HttpStatus.NOT_FOUND),
         REGISTRATION_NOT_FOUND(404, "Không tìm thấy thông tin đăng ký", HttpStatus.NOT_FOUND),

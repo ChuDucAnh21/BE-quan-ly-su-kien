@@ -73,6 +73,19 @@ record CheckTicketRequest(Long eventId) {}
 record TicketStatusResponse(String eventName, String eventStatus, int capacity, int soldTickets, int remainingTickets, String ticketPrice, String message) {}
 
 
+// 12. Tìm sự kiện theo trạng thái (PUBLISHED, CLOSED, COMPLETED, v.v.)
+record EventsByStatusRequest(String status) {}
+
+// 13. Tìm sự kiện bằng từ khóa nằm trong Nội dung / Mô tả
+record DescriptionKeywordSearchRequest(String keyword) {}
+
+// 14. Sự kiện bán chạy nhất (Top Selling)
+record TopSellingEventsRequest() {}
+
+// 15. Đếm số lượng sự kiện theo trạng thái
+record CountEventsByStatusRequest(String status) {}
+record CountEventsResponse(long count, String message) {}
+
 @Configuration
 public class ChatbotConfig {
 
@@ -352,6 +365,82 @@ public class ChatbotConfig {
                 e.getTicketPrice().toString() + " VND",
                 "Đã kiểm tra tình trạng vé thành công."
             );
+        };
+    }
+
+    // --- TOOL 12: TÌM SỰ KIỆN THEO TRẠNG THÁI ---
+    @Bean
+    @Description("Tìm kiếm danh sách sự kiện theo trạng thái (PUBLISHED: đang mở bán/đăng ký, COMPLETED: đã kết thúc, CLOSED: đã đóng đăng ký/đang diễn ra, CANCELLED: đã hủy).")
+    public Function<EventsByStatusRequest, EventSearchResponse> getEventsByStatusFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: getEventsByStatusFunction với trạng thái: " + request.status());
+            EventStatus status;
+            try {
+                status = EventStatus.valueOf(request.status().toUpperCase());
+            } catch (Exception e) {
+                return new EventSearchResponse(List.of(), "Trạng thái không hợp lệ. Các trạng thái hỗ trợ: PUBLISHED, CLOSED, COMPLETED, CANCELLED.");
+            }
+            List<Event> events = eventRepository.findTop5ByStatus(status);
+            if (events.isEmpty()) {
+                return new EventSearchResponse(List.of(), "Không có sự kiện nào đang ở trạng thái: " + status.name());
+            }
+            List<EventSummary> summaries = events.stream()
+                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                .collect(Collectors.toList());
+            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện ở trạng thái " + status.name());
+        };
+    }
+
+    // --- TOOL 13: TÌM SỰ KIỆN QUA TỪ KHÓA MÔ TẢ (Câu quan trọng, Highlights) ---
+    @Bean
+    @Description("Tìm kiếm các sự kiện mà trong phần nội dung chi tiết hoặc mô tả có chứa từ khóa được cung cấp (dùng để tìm các câu quan trọng, điểm nổi bật của sự kiện).")
+    public Function<DescriptionKeywordSearchRequest, EventSearchResponse> searchEventsByDescriptionKeywordFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: searchEventsByDescriptionKeywordFunction với từ khóa: " + request.keyword());
+            // Tìm kiếm trong Description nhưng ưu tiên các sự kiện đang mở bán
+            List<Event> events = eventRepository.findTop5ByDescriptionContainingIgnoreCase(request.keyword());
+            if (events.isEmpty()) {
+                return new EventSearchResponse(List.of(), "Không tìm thấy sự kiện nào có nội dung chứa từ khóa: " + request.keyword());
+            }
+            List<EventSummary> summaries = events.stream()
+                .filter(e -> e.getStatus() == EventStatus.PUBLISHED || e.getStatus() == EventStatus.CLOSED)
+                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                .collect(Collectors.toList());
+            return new EventSearchResponse(summaries, "Tìm thấy các sự kiện có nhắc đến từ khóa này.");
+        };
+    }
+
+    // --- TOOL 14: SỰ KIỆN BÁN CHẠY NHẤT (HOT EVENTS) ---
+    @Bean
+    @Description("Lấy danh sách top 5 sự kiện Hot nhất, bán chạy nhất (số lượng vé bán ra cao nhất) hiện đang mở bán trên hệ thống.")
+    public Function<TopSellingEventsRequest, EventSearchResponse> getTopSellingEventsFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: getTopSellingEventsFunction");
+            List<Event> events = eventRepository.findTop5ByStatusOrderBySoldTicketsDesc(EventStatus.PUBLISHED);
+            if (events.isEmpty()) {
+                return new EventSearchResponse(List.of(), "Hệ thống hiện chưa có sự kiện mở bán nào.");
+            }
+            List<EventSummary> summaries = events.stream()
+                .map(e -> new EventSummary(e.getId(), e.getTitle() + " (Đã bán: " + e.getSoldTickets() + " vé)", e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                .collect(Collectors.toList());
+            return new EventSearchResponse(summaries, "Top sự kiện bán chạy nhất hệ thống.");
+        };
+    }
+
+    // --- TOOL 15: ĐẾM SỐ LƯỢNG SỰ KIỆN THEO TRẠNG THÁI ---
+    @Bean
+    @Description("Đếm tổng số lượng sự kiện hiện có trên hệ thống theo một trạng thái (ví dụ muốn biết có bao nhiêu sự kiện đang mở bán, bao nhiêu đã kết thúc).")
+    public Function<CountEventsByStatusRequest, CountEventsResponse> countEventsByStatusFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: countEventsByStatusFunction với trạng thái: " + request.status());
+            EventStatus status;
+            try {
+                status = EventStatus.valueOf(request.status().toUpperCase());
+            } catch (Exception e) {
+                return new CountEventsResponse(0, "Trạng thái không hợp lệ. Các trạng thái: PUBLISHED, CLOSED, COMPLETED, CANCELLED.");
+            }
+            long count = eventRepository.countByStatus(status);
+            return new CountEventsResponse(count, "Hệ thống có tổng cộng " + count + " sự kiện ở trạng thái " + status.name());
         };
     }
 }

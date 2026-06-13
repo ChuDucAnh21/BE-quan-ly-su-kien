@@ -121,14 +121,14 @@ sequenceDiagram
     else Xác nhận hủy
         User->>UI: 3. Xác nhận hủy
         UI->>HT: 4. Gửi yêu cầu hủy vé (kèm Token)
-        HT->>DB: 5. Tìm đơn đăng ký và kiểm tra giá vé
-        alt Vé sự kiện có phí
-            DB-->>HT: 6a. Sự kiện có ticketPrice > 0
+        HT->>DB: 5. Tìm đơn đăng ký và kiểm tra trạng thái
+        alt Vé có phí và đã thanh toán (CONFIRMED)
+            DB-->>HT: 6a. ticketType = PAID và status != PENDING_PAYMENT
             HT-->>UI: 6b. Không được hủy vé đã thanh toán
-            UI-->>User: 6c. Thông báo lỗi
-        else Vé miễn phí
+            UI-->>User: 6c. Thông báo lỗi (REGISTRATION_CANNOT_BE_CANCELLED)
+        else Vé miễn phí hoặc Vé có phí nhưng chưa thanh toán
             HT->>DB: 6. Chuyển đơn đăng ký → CANCELLED
-            HT->>DB: 7. Chuyển vé → INVALID
+            HT->>DB: 7. Chuyển vé (nếu có) → INVALID
             HT->>DB: 8. Giảm số vé đã bán (nhả lại chỗ)
             DB-->>HT: 9. Lưu thành công
             HT-->>UI: 10. Hủy vé thành công
@@ -376,13 +376,13 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant SCH as Bộ lên lịch tự động (Chạy mỗi 1 phút)
+    participant SCH as Bộ lên lịch tự động (Chạy mỗi 5 phút)
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    note over SCH: Tự kích hoạt mỗi 60 giây
+    note over SCH: Tự kích hoạt mỗi 5 phút (300.000 ms)
     SCH->>HT: 1. Kích hoạt tác vụ dọn dẹp đơn hàng quá hạn
-    HT->>DB: 2. Tìm tất cả đơn hàng PENDING đã tạo quá 5 phút
+    HT->>DB: 2. Tìm tất cả đơn hàng PENDING đã tạo quá 30 phút
     alt Không có đơn nào hết hạn
         DB-->>HT: 3a. Danh sách rỗng
         HT->>HT: 3b. Kết thúc sớm, không thực hiện gì

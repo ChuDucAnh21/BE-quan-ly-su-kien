@@ -35,6 +35,8 @@ erDiagram
         VARCHAR     GioiTinh                "Giới tính: MALE/FEMALE/OTHER"
         DATE        NgaySinh                "Ngày sinh"
         VARCHAR     DiaChi                  "Địa chỉ"
+        VARCHAR     NguonDangNhap           "Nguồn: LOCAL / GOOGLE"
+        VARCHAR     MaNguonDangNhap         "ID trả về từ Google (nếu có)"
         DATETIME    NgayTao                 "Ngày tạo tài khoản"
         DATETIME    NgayCapNhat             "Ngày cập nhật gần nhất"
     }
@@ -147,7 +149,7 @@ erDiagram
 
 | STT | Tên bảng (Backend) | Tên tiếng Việt | Mô tả chức năng |
 |---|---|---|---|
-| 1 | `users` | **Người dùng** | Lưu thông tin tài khoản, mật khẩu (BCrypt) và vai trò trong hệ thống |
+| 1 | `users` | **Người dùng** | Lưu thông tin tài khoản, mật khẩu, vai trò và nguồn đăng nhập (LOCAL/GOOGLE OAuth2) |
 | 2 | `events` | **Sự kiện** | Thông tin sự kiện do Người tổ chức (Organizer) tạo ra |
 | 3 | `event_schedules` | **Lịch trình sự kiện** | Các hoạt động chi tiết trong timeline của một sự kiện |
 | 4 | `registrations` | **Đơn đăng ký** | Yêu cầu đăng ký tham gia của người dùng (ràng buộc: 1 user/1 sự kiện) |

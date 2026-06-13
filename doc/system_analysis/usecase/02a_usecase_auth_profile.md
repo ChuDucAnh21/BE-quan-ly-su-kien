@@ -51,7 +51,7 @@
 | **Điều kiện thất bại** | Google từ chối xác thực hoặc hệ thống gặp lỗi kết nối Google |
 | **Điều kiện thành công** | Người dùng được xác thực, nhận JWT Token. Nếu là lần đầu → tự động tạo tài khoản mới |
 | **Luồng sự kiện chính** | 1. Guest nhấn "Đăng nhập bằng Google". 2. Frontend redirect sang trang xác thực Google. 3. Guest chọn tài khoản Google và cấp quyền. 4. Google trả về Authorization Code cho Frontend. 5. Frontend gửi Authorization Code tới Backend (POST /auth/google). 6. Backend gọi Google API để đổi Code lấy thông tin người dùng (email, fullName, avatarUrl). 7. Backend kiểm tra email trong CSDL |
-| **Luồng sự kiện thay thế** | 7a. Email chưa tồn tại (Lần đầu): Backend tạo User mới (role=USER, status=ACTIVE, password=null hoặc random, avatar lấy từ Google). Sinh JWT Token. Trả về Token + thông tin User. 7b. Email đã tồn tại (Đăng nhập lại): Backend kiểm tra trạng thái ACTIVE. Sinh JWT Token. Trả về Token + thông tin User |
+| **Luồng sự kiện thay thế** | 7a. Email chưa tồn tại (Lần đầu): Backend tạo User mới (role=USER, status=ACTIVE, password=null, avatar lấy từ Google, authProvider=GOOGLE, providerId=GoogleID). Sinh JWT Token. Trả về Token + thông tin User. 7b. Email đã tồn tại (Đăng nhập lại hoặc Merge): Backend tự động hợp nhất tài khoản (cập nhật authProvider=GOOGLE và providerId), giữ nguyên các dữ liệu lịch sử. Sinh JWT Token. Trả về Token + thông tin User |
 | **Luồng sự kiện ngoại lệ** | 4a. Guest từ chối cấp quyền → Google trả về lỗi, Frontend hiển thị thông báo. 6a. Authorization Code không hợp lệ hoặc hết hạn → Backend báo lỗi INVALID_GOOGLE_TOKEN (401). 7b1. Tài khoản đang bị LOCKED → Backend báo lỗi USER_LOCKED |
 
 ---
@@ -140,7 +140,7 @@
 | **Điều kiện tiên quyết** | Người dùng đã đăng nhập (có Token hợp lệ) |
 | **Điều kiện thất bại** | Hệ thống gặp lỗi truy vấn CSDL |
 | **Điều kiện thành công** | Hệ thống trả về đầy đủ thông tin: id, email, fullName, phone, avatarUrl, role, status, gender, dateOfBirth, address, createdAt |
-| **Luồng sự kiện chính** | 1. Người dùng truy cập trang hồ sơ cá nhân. 2. Frontend gọi GET /users/me kèm JWT Token. 3. Hệ thống trích xuất email từ JWT. 4. Hệ thống truy vấn User từ CSDL theo email. 5. Hệ thống trả về JSON chứa thông tin cá nhân |
+| **Luồng sự kiện chính** | 1. Người dùng truy cập trang hồ sơ cá nhân. 2. Frontend gọi GET /users/profile kèm JWT Token. 3. Hệ thống trích xuất email từ JWT. 4. Hệ thống truy vấn User từ CSDL theo email. 5. Hệ thống trả về JSON chứa thông tin cá nhân |
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | 3a. Token hết hạn hoặc không hợp lệ → Hệ thống báo lỗi 401 Unauthorized |
 
@@ -158,7 +158,7 @@
 | **Điều kiện tiên quyết** | Người dùng đã đăng nhập |
 | **Điều kiện thất bại** | Thông tin không được cập nhật. Hệ thống hiển thị lỗi validation |
 | **Điều kiện thành công** | Thông tin cá nhân được cập nhật trong CSDL và trả về cho Frontend |
-| **Luồng sự kiện chính** | 1. Người dùng chỉnh sửa: fullName, phone (bắt buộc), gender, dateOfBirth, address (tùy chọn). 2. Người dùng nhấn "Lưu". 3. Hệ thống validate fullName không trống. 4. Hệ thống validate phone đúng chuẩn VN (0 hoặc +84 + 9 số). 5. Hệ thống validate gender phải là MALE, FEMALE hoặc OTHER (nếu có). 6. Hệ thống cập nhật thông tin trong CSDL. 7. Hệ thống trả về thông tin đã cập nhật |
+| **Luồng sự kiện chính** | 1. Người dùng chỉnh sửa: fullName, phone (bắt buộc), gender, dateOfBirth, address (tùy chọn). 2. Người dùng nhấn "Lưu". 3. Frontend gọi PUT /users/profile/update-info. 4. Hệ thống validate các thông tin và cập nhật CSDL. 5. Hệ thống trả về thông tin đã cập nhật |
 | **Luồng sự kiện thay thế** | 1a. Người dùng không điền gender, dateOfBirth, address → Hệ thống giữ nguyên giá trị cũ trong CSDL |
 | **Luồng sự kiện ngoại lệ** | 3a. fullName trống → Báo lỗi VALIDATION_ERROR. 4a. phone sai định dạng → Báo lỗi VALIDATION_ERROR |
 
@@ -176,7 +176,7 @@
 | **Điều kiện tiên quyết** | Người dùng đã đăng nhập. Dịch vụ Cloudinary đang hoạt động |
 | **Điều kiện thất bại** | Ảnh không được upload. Hệ thống giữ nguyên avatar cũ |
 | **Điều kiện thành công** | Ảnh được upload lên Cloudinary, URL mới được lưu vào trường avatarUrl trong CSDL |
-| **Luồng sự kiện chính** | 1. Người dùng nhấn "Đổi ảnh đại diện". 2. Người dùng chọn file ảnh (JPG/PNG). 3. Frontend gửi PUT /users/me/avatar (multipart/form-data). 4. Hệ thống upload file lên Cloudinary. 5. Cloudinary trả về URL ảnh. 6. Hệ thống cập nhật avatarUrl trong CSDL. 7. Hệ thống trả về thông tin User kèm URL mới |
+| **Luồng sự kiện chính** | 1. Người dùng nhấn "Đổi ảnh đại diện". 2. Người dùng chọn file ảnh (JPG/PNG). 3. Frontend gửi PUT /users/profile/update-avatar (multipart/form-data). 4. Hệ thống upload file lên Cloudinary. 5. Cloudinary trả về URL ảnh. 6. Hệ thống cập nhật avatarUrl trong CSDL. 7. Hệ thống trả về thông tin User kèm URL mới |
 | **Luồng sự kiện thay thế** | Không có |
 | **Luồng sự kiện ngoại lệ** | 4a. Cloudinary gặp lỗi kết nối → Hệ thống báo lỗi 500 UNCATEGORIZED_EXCEPTION |
 
@@ -194,6 +194,24 @@
 | **Điều kiện tiên quyết** | Người dùng đã đăng nhập |
 | **Điều kiện thất bại** | Hệ thống gặp lỗi cập nhật CSDL |
 | **Điều kiện thành công** | Trạng thái tài khoản chuyển thành LOCKED. Người dùng không thể đăng nhập lại cho đến khi Admin mở khóa |
-| **Luồng sự kiện chính** | 1. Người dùng nhấn "Xóa tài khoản". 2. Hệ thống hiển thị xác nhận "Bạn có chắc chắn?". 3. Người dùng xác nhận. 4. Frontend gọi DELETE /users/me. 5. Hệ thống đổi status = LOCKED trong CSDL (không xóa dữ liệu). 6. Hệ thống trả về "Account deleted/locked successfully". 7. Frontend đăng xuất và chuyển về trang đăng nhập |
+| **Luồng sự kiện chính** | 1. Người dùng nhấn "Khóa tài khoản". 2. Hệ thống hiển thị xác nhận "Bạn có chắc chắn?". 3. Người dùng xác nhận. 4. Frontend gọi DELETE /users/profile-block. 5. Hệ thống đổi status = LOCKED trong CSDL (không xóa dữ liệu). 6. Hệ thống trả về "Tài khoản đã được khóa thành công". 7. Frontend đăng xuất và chuyển về trang đăng nhập |
 | **Luồng sự kiện thay thế** | 3a. Người dùng nhấn "Hủy" → Hệ thống không thực hiện thay đổi, quay lại trang trước |
 | **Luồng sự kiện ngoại lệ** | Không có |
+
+---
+
+## UC10b – Xem hồ sơ công khai của người dùng khác
+
+| Trường | Nội dung |
+|--------|----------|
+| **Tên Use Case** | Xem hồ sơ công khai của người dùng khác |
+| **Tác nhân** | Guest, User, Staff, Organizer, Admin |
+| **Mục đích** | Cho phép xem thông tin cơ bản của một người dùng bất kỳ (Ví dụ: xem thông tin của Organizer tạo sự kiện) |
+| **Mức độ ưu tiên** | Trung bình |
+| **Điều kiện kích hoạt** | Người dùng nhấn vào tên hoặc avatar của một người dùng khác |
+| **Điều kiện tiên quyết** | Không yêu cầu đăng nhập đối với thông tin công khai |
+| **Điều kiện thất bại** | User không tồn tại (ID không hợp lệ) |
+| **Điều kiện thành công** | Trả về thông tin công khai (avatarUrl, fullName, email ẩn đi 1 phần...) |
+| **Luồng sự kiện chính** | 1. Người dùng nhấn vào tên tài khoản khác. 2. Frontend gọi GET /users/info-user/{id}. 3. Hệ thống truy vấn CSDL theo ID. 4. Trả về thông tin giới hạn (ẩn các thông tin nhạy cảm) |
+| **Luồng sự kiện thay thế** | Không có |
+| **Luồng sự kiện ngoại lệ** | 3a. Không tìm thấy ID → Hệ thống trả về lỗi USER_NOT_FOUND (404) |

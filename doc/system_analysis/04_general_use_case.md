@@ -1,4 +1,5 @@
 # BIEU DO USE CASE TONG QUAT HE THONG
+
 **Du an:** He thong Quan ly Su kien & Check-in QR
 
 ---
@@ -6,6 +7,7 @@
 ## I. SO DO USE CASE TONG QUAT
 
 > **Ghi chu:**
+>
 > - **Mui ten tam giac** ke thua: Actor cap duoi thua huong toan bo chuc nang cua Actor cap tren.
 > - **Duong ket noi**: Actor tham gia truc tiep vao Use Case do.
 > - **Mau sac goi**: Phan biet ro rang pham vi quyen han cua tung role.
@@ -31,7 +33,8 @@ flowchart LR
         P1(["Xem danh sach Su kien"])
         P2(["Xem chi tiet Su kien & Lich trinh"])
         P3(["Dang ky tai khoan"])
-        P4(["Dang nhap / Quen mat khau"])
+        P4(["Dang nhap thu cong / Google OAuth2"])
+        P5(["Tu van tu dong qua Chatbot AI"])
     end
 
     %% ========== [GOI 2] QUAN LY TAI KHOAN CA NHAN ==========
@@ -118,14 +121,14 @@ flowchart LR
 
 ## II. BANG PHAN QUYEN THEO NHOM CHUC NANG
 
-| Nhom chuc nang | Guest | User | Staff | Organizer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Truy cap cong khai** (Xem SK, Dang ky TK, Dang nhap) | YES | YES | YES | YES | YES |
-| **Quan ly Tai khoan** (Ho so, Doi MK) | - | YES | YES | YES | YES |
-| **Quan ly Ve & Thanh toan** (Mua ve, PayOS, Xem QR) | - | YES | - | YES | YES |
-| **Kiem soat Check-in** (Xem ve SK, Quet QR, Check-in thu cong) | - | - | YES | YES | YES |
-| **Quan ly Su kien** (Tao/Sua/Xoa/Lich trinh/PayOS Config) | - | - | - | YES | YES* |
-| **Quan ly Nhan vien** (Phan cong, Go Staff khoi SK) | - | - | - | YES | - |
-| **Quan tri He thong** (Nguoi dung, Khoa TK, Phan quyen, Thong ke) | - | - | - | - | YES |
+| Nhom chuc nang                                                            | Guest | User | Staff | Organizer | Admin |
+| ------------------------------------------------------------------------- | :---: | :--: | :---: | :-------: | :---: |
+| **Truy cap cong khai** (Xem SK, Dang ky TK, Dang nhap Google, Chatbot AI) |  YES  | YES  |  YES  |    YES    |  YES  |
+| **Quan ly Tai khoan** (Ho so, Doi MK)                                     |   -   | YES  |  YES  |    YES    |  YES  |
+| **Quan ly Ve & Thanh toan** (Mua ve, PayOS, Xem QR)                       |   -   | YES  |  YES  |    YES    |  YES  |
+| **Kiem soat Check-in** (Xem ve SK, Quet QR, Check-in thu cong)            |   -   |  -   |  YES  |    YES    |  YES  |
+| **Quan ly Su kien** (Tao/Sua/Xoa/Lich trinh/PayOS Config)                 |   -   |  -   |   -   |    YES    | YES\* |
+| **Quan ly Nhan vien** (Phan cong, Go Staff khoi SK)                       |   -   |  -   |   -   |    YES    |   -   |
+| **Quan tri He thong** (Nguoi dung, Khoa TK, Phan quyen, Thong ke)         |   -   |  -   |   -   |     -     |  YES  |
 
-> **(*) Admin** co the doi trang thai va xoa su kien (can thiep quan tri), nhung **khong** co quyen tao su kien moi.
+> **(\*) Admin** co the doi trang thai va xoa su kien (can thiep quan tri), nhung **khong** co quyen tao su kien moi.

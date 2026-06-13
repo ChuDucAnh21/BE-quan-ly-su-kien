@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 @RequiredArgsConstructor
@@ -100,13 +101,39 @@ public class AdminServiceImpl implements AdminService {
                 .build();
     }
 
-    // 6. Xóa tài khoản vĩnh viễn dành cho Super Admin
+    // 6. Xóa tài khoản vĩnh viễn dành cho Super Admin (Cơ chế Hybrid)
+    // KHÔNG DÙNG @Transactional ở đây để mỗi thao tác DB chạy một luồng độc lập,
+    // tránh việc Spring khóa (rollback-only) toàn bộ giao dịch khi gặp lỗi Khóa
+    // ngoại.
     @Override
     public void deleteAccountUser(Long idUser) {
-        User user = userRepository.findById(idUser)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        // Kiểm tra xem User có tồn tại không trước
+        userRepository.findById(idUser).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        userRepository.delete(user);
+        try {
+            // BƯỚC 1: Thử xóa cứng (Hard Delete) để dọn rác DB
+            // Hàm deleteById tự có Transaction riêng. Nếu dính khóa ngoại, chỉ Transaction
+            // của nó bị hủy!
+            userRepository.deleteById(idUser);
+        } catch (DataIntegrityViolationException e) {
+            // BƯỚC 2: Nếu văng lỗi khóa ngoại -> User này ĐÃ CÓ DỮ LIỆU (Vé, Sự kiện, Phân
+            // công)
+            // Phải fetch lại User mới từ DB để Hibernate không bị lỗi "deleted instance
+            // passed to merge"
+            User userToUpdate = userRepository.findById(idUser).get();
+
+            // Áp dụng cơ chế Ẩn danh hóa (Anonymization) + Xóa mềm (Soft Delete)
+            userToUpdate.setEmail("deleted_" + userToUpdate.getId() + "@domain.local");
+            userToUpdate.setFullName("Tài khoản đã xóa");
+            userToUpdate.setPhone("");
+            userToUpdate.setAddress("");
+            userToUpdate.setAvatarUrl("");
+            userToUpdate.setPassword(""); // Xóa password
+            userToUpdate.setProviderId(null);
+            userToUpdate.setStatus(UserStatus.LOCKED); // Khóa vĩnh viễn
+
+            userRepository.save(userToUpdate); // Lưu đè lại thông tin đã bị làm sạch
+        }
     }
 
     // Hàm chuyển đổi Model -> DTO (Tái sử dụng logic hiển thị)
