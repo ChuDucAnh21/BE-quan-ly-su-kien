@@ -382,3 +382,26 @@ sequenceDiagram
     end
     HT-->>SCH: 9. Hoàn thành chu kỳ, chờ đến lần tiếp theo
 ```
+
+## UC37:Xem lịch sử giao dịch cá nhân
+
+```mermaid
+sequenceDiagram
+    actor User as Người dùng
+    participant UI as Màn hình Lịch sử giao dịch
+    participant HT as Hệ thống
+    participant DB as Cơ sở dữ liệu
+
+    User->>UI: 1. Mở trang "Lịch sử giao dịch"
+    UI->>HT: 2. Gửi yêu cầu (kèm Token xác thực)
+    HT->>DB: 3. Tìm tất cả đơn hàng của User này
+    alt Không có dữ liệu
+        DB-->>HT: 4a. Trả về danh sách rỗng
+        HT-->>UI: 4b. Trả về danh sách rỗng
+        UI-->>User: 4c. Hiển thị thông báo: "Bạn chưa có giao dịch"
+    else Có dữ liệu
+        DB-->>HT: 4. Trả về danh sách đơn hàng (Trạng thái, Thời gian, Tổng tiền)
+        HT-->>UI: 5. Trả về JSON dữ liệu
+        UI-->>User: 6. Hiển thị danh sách giao dịch
+    end
+```
