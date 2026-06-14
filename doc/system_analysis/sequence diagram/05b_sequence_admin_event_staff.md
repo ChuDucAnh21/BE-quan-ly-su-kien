@@ -1,8 +1,8 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN B: QUẢN TRỊ HỆ THỐNG & SỰ KIỆN (UC11 – UC19)
+# BIỂU ĐỒ TUẦN TỰ - PHẦN B: QUẢN TRỊ HỆ THỐNG & SỰ KIỆN (UC10 – UC20)
 
 ---
 
-## UC11 – Xem danh sách người dùng (Admin)
+## UC10 – Xem danh sách người dùng (Admin)
 
 ```mermaid
 sequenceDiagram
@@ -30,7 +30,7 @@ sequenceDiagram
 
 ---
 
-## UC12 – Khóa / Mở khóa tài khoản (Admin)
+## UC11 – Khóa / Mở khóa tài khoản (Admin)
 
 ```mermaid
 sequenceDiagram
@@ -55,7 +55,7 @@ sequenceDiagram
 
 ---
 
-## UC12b – Xóa tài khoản vĩnh viễn (Admin)
+## UC12 – Xóa tài khoản vĩnh viễn (Admin)
 
 ```mermaid
 sequenceDiagram
@@ -106,7 +106,7 @@ sequenceDiagram
 
 ---
 
-## UC13a – Xem Dashboard thống kê tổng quan (Admin)
+## UC14 – Xem Dashboard thống kê tổng quan (Admin)
 
 ```mermaid
 sequenceDiagram
@@ -129,7 +129,7 @@ sequenceDiagram
 
 ---
 
-## UC13b – Xem thống kê chi tiết sự kiện (Admin / Organizer)
+## UC15 – Xem thống kê chi tiết sự kiện (Admin / Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -157,7 +157,7 @@ sequenceDiagram
 
 ---
 
-## UC14 – Xem danh sách sự kiện (Public)
+## UC16 – Xem danh sách sự kiện (Public)
 
 ```mermaid
 sequenceDiagram
@@ -177,7 +177,7 @@ sequenceDiagram
 
 ---
 
-## UC15 – Xem chi tiết sự kiện
+## UC17 – Xem chi tiết sự kiện
 
 ```mermaid
 sequenceDiagram
@@ -202,7 +202,7 @@ sequenceDiagram
 
 ---
 
-## UC16 – Tạo sự kiện mới (Organizer)
+## UC18 – Tạo sự kiện mới (Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -232,65 +232,39 @@ sequenceDiagram
 
 ---
 
-## UC17 – Cập nhật sự kiện (Organizer)
+## UC19 – Cập nhật thông tin & Trạng thái sự kiện
 
 ```mermaid
 sequenceDiagram
-    actor Org as Người tổ chức (chủ sự kiện)
-    participant UI as Màn hình Chỉnh sửa Sự kiện
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Org->>UI: 1. Chỉnh sửa thông tin sự kiện VÀ danh sách lịch trình con
-    Org->>UI: 2. Nhấn "Lưu thay đổi"
-    UI->>HT: 3. Gửi payload sự kiện (kèm mảng lịch trình và Token)
-    HT->>DB: 4. Tìm sự kiện theo mã
-    HT->>HT: 5. Kiểm tra người gửi có phải chủ sự kiện không
-    alt Không phải chủ sự kiện
-        HT-->>UI: 6a. Từ chối truy cập
-        UI-->>Org: 6b. Thông báo lỗi
-    else Sức chứa mới nhỏ hơn số vé đã bán
-        HT-->>UI: 6c. Báo lỗi sức chứa
-    else Hợp lệ
-        HT->>DB: 6. Cập nhật Event và đồng bộ mảng EventSchedule (Xóa cũ, Thêm mới, Sửa)
-        DB-->>HT: 7. Lưu thành công
-        HT-->>UI: 8. Trả về thông tin đã cập nhật
-        UI-->>Org: 9. Hiển thị thông tin sự kiện mới
-    end
-```
-
----
-
-## UC18 – Đổi trạng thái sự kiện (Organizer / Admin)
-
-```mermaid
-sequenceDiagram
-    actor User as Người tổ chức / Admin
+    actor Org as Người tổ chức / Admin
     participant UI as Màn hình Quản lý Sự kiện
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    User->>UI: 1. Chọn trạng thái mới (DRAFT → PUBLISHED / CLOSED / CANCELLED / COMPLETED)
-    UI->>HT: 2. Gửi yêu cầu đổi trạng thái (kèm Token)
-    HT->>DB: 3. Tìm sự kiện và thông tin người tổ chức
-    HT->>HT: 4. Kiểm tra quyền (Organizer là chủ sự kiện, hoặc Admin)
-    alt Chuyển sang PUBLISHED và sự kiện có phí
-        HT->>DB: 5. Kiểm tra cấu hình cổng thanh toán PayOS
+    Org->>UI: 1. Chỉnh sửa thông tin/lịch trình HOẶC đổi trạng thái
+    UI->>HT: 2. Gửi yêu cầu cập nhật (kèm Token)
+    HT->>DB: 3. Kiểm tra quyền (phải là chủ sự kiện hoặc Admin)
+    alt Lỗi quyền hoặc sức chứa không hợp lệ
+        HT-->>UI: 4a. Báo lỗi (403 Access Denied / 400 Bad Request)
+    else Cập nhật trạng thái thành PUBLISHED
+        HT->>DB: 4b. Kiểm tra cấu hình PayOS (nếu là sự kiện có phí)
         alt Chưa cấu hình PayOS
-            DB-->>HT: 5a. Chưa có cấu hình
-            HT-->>UI: 5b. Yêu cầu thiết lập PayOS trước khi công bố
-            UI-->>User: 5c. Chuyển đến trang cài đặt thanh toán
+            DB-->>HT: 5a. Lỗi chưa cấu hình
+            HT-->>UI: 5b. Báo lỗi yêu cầu thiết lập PayOS trước
+        else Đã cấu hình
+            HT->>DB: 5c. Cập nhật trạng thái sự kiện
         end
+    else Cập nhật thông tin hợp lệ
+        HT->>DB: 4. Cập nhật Event và đồng bộ mảng EventSchedule
     end
-    HT->>DB: 6. Cập nhật trạng thái sự kiện
-    DB-->>HT: 7. Lưu thành công
-    HT-->>UI: 8. Thông báo cập nhật trạng thái thành công
-    UI-->>User: 9. Hiển thị trạng thái mới
+    DB-->>HT: 6. Lưu thành công (nếu hợp lệ)
+    HT-->>UI: 7. Trả về thông báo/dữ liệu đã cập nhật
+    UI-->>Org: 8. Hiển thị thông tin/trạng thái mới
 ```
 
 ---
 
-## UC19 – Xóa sự kiện (Organizer / Admin)
+## UC20 – Xóa sự kiện (Organizer / Admin)
 
 ```mermaid
 sequenceDiagram

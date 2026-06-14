@@ -1,6 +1,7 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN A: XÁC THỰC & HỒ SƠ CÁ NHÂN (UC01 – UC10)
+# BIỂU ĐỒ TUẦN TỰ - PHẦN A: XÁC THỰC & HỒ SƠ CÁ NHÂN (UC01 – UC09)
 
 > **Quy ước ký hiệu:**
+>
 > - **Actor**: Người dùng thực hiện hành động
 > - **Màn hình**: Giao diện hiển thị với người dùng
 > - **Hệ thống**: Xử lý logic nghiệp vụ phía máy chủ
@@ -76,7 +77,7 @@ sequenceDiagram
 
 ---
 
-## UC02a – Đăng nhập bằng Google (OAuth 2.0)
+## UC03 – Đăng nhập bằng Google (OAuth 2.0)
 
 ```mermaid
 sequenceDiagram
@@ -114,7 +115,7 @@ sequenceDiagram
 
 ---
 
-## UC03 – Đăng xuất
+## UC04 – Đăng xuất
 
 ```mermaid
 sequenceDiagram
@@ -131,64 +132,40 @@ sequenceDiagram
 
 ---
 
-## UC04 – Quên mật khẩu
+## UC05 – Quên mật khẩu & Đặt lại mật khẩu
 
 ```mermaid
 sequenceDiagram
     actor Guest as Khách (Guest)
-    participant UI as Màn hình Quên mật khẩu
+    participant UI as Màn hình Khôi phục
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
     participant Mail as Dịch vụ Email
 
-    Guest->>UI: 1. Nhấn "Quên mật khẩu", nhập Email
-    UI->>HT: 2. Gửi yêu cầu khôi phục mật khẩu
-    HT->>DB: 3. Tìm tài khoản theo Email
-    note over HT: Dù Email có tồn tại hay không,<br/>hệ thống luôn trả về thành công<br/>(bảo mật, tránh dò quét Email)
-    HT->>DB: 4. Xóa mã khôi phục cũ (nếu có)
-    HT->>HT: 5. Tạo mã khôi phục ngẫu nhiên (UUID)
-    HT->>DB: 6. Lưu mã khôi phục (hết hạn sau 15 phút)
-    HT->>Mail: 7. Gửi Email chứa mã khôi phục
-    Mail-->>HT: 8. Gửi Email thành công
-    HT-->>UI: 9. Thông báo "Kiểm tra hộp thư Email"
-    UI-->>Guest: 10. Hiển thị hướng dẫn
-```
-
----
-
-## UC05 – Đặt lại mật khẩu
-
-```mermaid
-sequenceDiagram
-    actor Guest as Khách (Guest)
-    participant UI as Màn hình Đặt lại mật khẩu
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Guest->>UI: 1. Nhập mã khôi phục (từ Email) và mật khẩu mới
-    UI->>HT: 2. Gửi yêu cầu đặt lại mật khẩu
-    HT->>DB: 3. Tìm mã khôi phục trong hệ thống
-    alt Mã không tồn tại
-        DB-->>HT: 4a. Không tìm thấy
-        HT-->>UI: 4b. Thông báo mã không hợp lệ
-        UI-->>Guest: 4c. Hiển thị lỗi
-    else Mã đã hết hạn (quá 15 phút)
-        DB-->>HT: 4. Tìm thấy nhưng đã hết hạn
-        HT-->>UI: 5a. Thông báo mã đã hết hạn
-        UI-->>Guest: 5b. Yêu cầu gửi lại mã
-    else Mã hợp lệ
-        DB-->>HT: 4. Mã hợp lệ, trả về thông tin tài khoản
-        HT->>HT: 5. Mã hóa mật khẩu mới
-        HT->>DB: 6. Cập nhật mật khẩu mới vào tài khoản
-        HT->>DB: 7. Xóa mã khôi phục (chỉ dùng 1 lần)
-        HT-->>UI: 8. Đặt lại mật khẩu thành công
-        UI-->>Guest: 9. Chuyển về màn hình đăng nhập
+    Guest->>UI: 1. Nhập Email để nhận mã khôi phục
+    UI->>HT: 2. Gửi yêu cầu lấy mã khôi phục
+    HT->>DB: 3. Xóa mã cũ, sinh mã UUID mới, lưu kèm thời hạn 15 phút
+    note over HT: Dù Email có tồn tại hay không,<br/>hệ thống luôn báo thành công để bảo mật
+    HT->>Mail: 4. Gửi mã khôi phục qua email
+    Mail-->>Guest: 5. Nhận email chứa mã khôi phục
+    Guest->>UI: 6. Nhập mã khôi phục và mật khẩu mới
+    UI->>HT: 7. Gửi yêu cầu đặt lại mật khẩu
+    HT->>DB: 8. Kiểm tra mã hợp lệ và chưa hết hạn trong CSDL
+    alt Mã không hợp lệ hoặc hết hạn
+        DB-->>HT: 9a. Mã lỗi / hết hạn
+        HT-->>UI: 9b. Báo lỗi và yêu cầu gửi lại mã
+    else Hợp lệ
+        HT->>HT: 9. Mã hóa mật khẩu mới (BCrypt)
+        HT->>DB: 10. Cập nhật mật khẩu và xóa mã khôi phục
+        DB-->>HT: 11. Cập nhật thành công
+        HT-->>UI: 12. Báo đổi mật khẩu thành công
+        UI-->>Guest: 13. Chuyển về màn hình đăng nhập
     end
 ```
 
 ---
 
-## UC06 – Đổi mật khẩu (khi đã đăng nhập)
+## UC06 – Đổi mật khẩu
 
 ```mermaid
 sequenceDiagram
@@ -215,79 +192,72 @@ sequenceDiagram
 
 ---
 
-## UC07 – Xem hồ sơ cá nhân
+## UC07 – Xem thông tin cá nhân & Hồ sơ người dùng khác
 
 ```mermaid
 sequenceDiagram
     actor User as Người dùng
-    participant UI as Màn hình Hồ sơ
+    participant UI as Giao diện Hồ sơ
     participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    User->>UI: 1. Truy cập trang "Hồ sơ cá nhân"
-    UI->>HT: 2. Yêu cầu lấy thông tin (kèm Token)
-    HT->>HT: 3. Đọc danh tính từ Token
-    HT->>DB: 4. Truy vấn thông tin tài khoản
-    DB-->>HT: 5. Trả về thông tin (Họ tên, Email, SĐT, Ảnh, Vai trò, v.v.)
-    HT-->>UI: 6. Trả về dữ liệu hồ sơ
-    UI-->>User: 7. Hiển thị thông tin cá nhân
-```
-
----
-
-## UC08 – Cập nhật hồ sơ cá nhân
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Hồ sơ
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    User->>UI: 1. Chỉnh sửa Họ tên, SĐT, Giới tính, Ngày sinh, Địa chỉ
-    UI->>HT: 2. Gửi thông tin đã chỉnh sửa (kèm Token)
-    HT->>HT: 3. Kiểm tra Họ tên không trống, SĐT đúng chuẩn VN
-    alt Thông tin không hợp lệ
-        HT-->>UI: 4a. Thông báo lỗi cụ thể
-        UI-->>User: 4b. Hiển thị lỗi
-    else Hợp lệ
-        HT->>DB: 4. Cập nhật thông tin vào tài khoản
-        DB-->>HT: 5. Lưu thành công
-        HT-->>UI: 6. Trả về thông tin đã cập nhật
-        UI-->>User: 7. Hiển thị thông tin mới
+    User->>UI: 1. Truy cập trang cá nhân hoặc nhấn vào hồ sơ người khác
+    UI->>HT: 2. Gọi API GET /users/profile (cá nhân) hoặc /users/info-user/{id} (người khác)
+    HT->>DB: 3. Truy vấn tài khoản từ CSDL
+    alt Không tìm thấy tài khoản
+        DB-->>HT: 4a. Tài khoản không tồn tại
+        HT-->>UI: 4b. Báo lỗi 404 USER_NOT_FOUND
+    else Hồ sơ cá nhân
+        HT->>HT: 4. Xác thực Token hợp lệ
+        DB-->>HT: 5. Trả về toàn bộ thông tin chi tiết (Email, SĐT, Ngày sinh, v.v.)
+    else Hồ sơ người khác
+        DB-->>HT: 4. Trả về thực thể User
+        HT->>HT: 5. Lọc bỏ thông tin nhạy cảm (ẩn email, sđt, password...)
+        HT->>HT: 6. Chỉ giữ lại thông tin công khai (avatar, fullName...)
     end
+    HT-->>UI: 7. Trả về dữ liệu JSON hồ sơ
+    UI-->>User: 8. Hiển thị thông tin hồ sơ
 ```
 
 ---
 
-## UC09 – Upload ảnh đại diện
+## UC08 – Cập nhật thông tin cá nhân & Ảnh đại diện
 
 ```mermaid
 sequenceDiagram
     actor User as Người dùng
     participant UI as Màn hình Hồ sơ
     participant HT as Hệ thống
-    participant Cloud as Cloudinary (Lưu trữ ảnh)
+    participant Cloud as Cloudinary
     participant DB as Cơ sở dữ liệu
 
-    User->>UI: 1. Nhấn "Đổi ảnh đại diện", chọn file ảnh
-    UI->>HT: 2. Gửi file ảnh lên hệ thống (kèm Token)
-    HT->>Cloud: 3. Tải ảnh lên dịch vụ lưu trữ đám mây
-    alt Lỗi kết nối Cloudinary
-        Cloud-->>HT: 4a. Lỗi tải ảnh
-        HT-->>UI: 4b. Thông báo lỗi, giữ nguyên ảnh cũ
-    else Tải thành công
-        Cloud-->>HT: 4. Trả về đường dẫn ảnh mới
-        HT->>DB: 5. Cập nhật đường dẫn ảnh đại diện
-        DB-->>HT: 6. Lưu thành công
-        HT-->>UI: 7. Trả về thông tin tài khoản với ảnh mới
-        UI-->>User: 8. Hiển thị ảnh đại diện mới
+    User->>UI: 1. Chỉnh sửa thông tin text hoặc tải lên ảnh đại diện mới
+    UI->>HT: 2. Gọi API PUT thông tin text hoặc ảnh (kèm Token)
+    
+    alt Nếu cập nhật ảnh đại diện
+        HT->>Cloud: 3a. Tải tệp ảnh lên Cloudinary
+        alt Lỗi kết nối
+            Cloud-->>HT: 3b. Lỗi tải ảnh
+            HT-->>UI: 3c. Báo lỗi, giữ nguyên ảnh cũ
+        else Tải thành công
+            Cloud-->>HT: 3b. Trả về đường dẫn ảnh mới (URL)
+        end
+    else Nếu cập nhật thông tin text
+        HT->>HT: 3. Kiểm tra tính hợp lệ dữ liệu (Họ tên không rỗng, SĐT chuẩn)
+        alt Không hợp lệ
+            HT-->>UI: 3d. Thông báo lỗi nhập liệu
+        end
     end
+    
+    HT->>DB: 4. Cập nhật thông tin hoặc đường dẫn ảnh vào tài khoản
+    DB-->>HT: 5. Lưu thành công
+    HT-->>UI: 6. Trả về thông tin User đã cập nhật
+    UI-->>User: 7. Giao diện hiển thị thay đổi mới
 ```
 
 ---
 
-## UC10 – Tự khóa tài khoản
+## UC09 – Tự khóa / xóa tài khoản (Soft Delete)
 
 ```mermaid
 sequenceDiagram
@@ -309,31 +279,5 @@ sequenceDiagram
         HT->>HT: 7. Xóa phiên đăng nhập hiện tại
         HT-->>UI: 8. Thông báo tài khoản đã bị khóa
         UI-->>User: 9. Chuyển về màn hình đăng nhập
-    end
-```
-
----
-
-## UC10b – Xem hồ sơ công khai của người dùng khác
-
-```mermaid
-sequenceDiagram
-    actor Guest as Người dùng/Khách
-    participant UI as Giao diện
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Guest->>UI: 1. Nhấn vào tên/avatar của người khác
-    UI->>HT: 2. Gọi API GET /users/info-user/{id}
-    HT->>DB: 3. Truy vấn User theo ID
-    alt Không tìm thấy User
-        DB-->>HT: 4a. Không tìm thấy (null)
-        HT-->>UI: 4b. Lỗi USER_NOT_FOUND
-        UI-->>Guest: 4c. Hiển thị lỗi không tồn tại
-    else Tìm thấy
-        DB-->>HT: 4. Trả về thực thể User
-        HT->>HT: 5. Lọc dữ liệu công khai (ẩn password, phone...)
-        HT-->>UI: 6. Trả về thông tin công khai (avatarUrl, fullName...)
-        UI-->>Guest: 7. Hiển thị hồ sơ công khai
     end
 ```

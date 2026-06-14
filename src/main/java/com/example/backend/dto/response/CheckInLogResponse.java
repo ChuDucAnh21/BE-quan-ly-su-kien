@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class CheckInLogResponse {
     private Long id;
     private String hashedQrCode;
+    private Long customerId;
     private String customerEmail;
     private String customerFullName;
     private LocalDateTime checkedInAt;

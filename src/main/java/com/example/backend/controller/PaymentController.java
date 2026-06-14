@@ -1,47 +1,23 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.response.ApiResponse;
+import com.example.backend.dto.response.MyPaymentTransactionResponse;
 import com.example.backend.dto.response.PageResponse;
-import com.example.backend.entity.Event;
-import com.example.backend.entity.Payment;
-import com.example.backend.entity.PaymentConfig;
-import com.example.backend.entity.Registration;
-import com.example.backend.entity.Ticket;
-import com.example.backend.enums.PaymentStatus;
-import com.example.backend.enums.RegistrationStatus;
-import com.example.backend.enums.TicketStatus;
-import com.example.backend.exception.AppException;
-import com.example.backend.exception.ErrorCode;
-import com.example.backend.repository.EventRepository;
-import com.example.backend.repository.PaymentConfigRepository;
-import com.example.backend.repository.PaymentRepository;
-import com.example.backend.repository.RegistrationRepository;
-import com.example.backend.repository.TicketRepository;
-import com.example.backend.util.HashUtil;
 import com.example.backend.dto.response.RegistrationResponse;
+import com.example.backend.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.transaction.annotation.Transactional;
-import vn.payos.PayOS;
-import vn.payos.model.v2.paymentRequests.PaymentLink;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.example.backend.enums.PaymentStatus;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -49,126 +25,31 @@ import java.util.UUID;
 @Slf4j
 public class PaymentController {
 
-        private final PaymentRepository paymentRepository;
-        private final PaymentConfigRepository paymentConfigRepository;
-        private final RegistrationRepository registrationRepository;
-        private final TicketRepository ticketRepository;
-        private final EventRepository eventRepository;
+        private final PaymentService paymentService;
 
         // API kiểm tra trạng thái thanh toán và sinh vé khi người dùng reload lại trang
         @GetMapping("/sync/{orderCode}")
-        @Transactional
         public ResponseEntity<ApiResponse<String>> syncPaymentStatus(@PathVariable String orderCode) {
                 log.info("Chủ động đồng bộ trạng thái đơn hàng: {}", orderCode);
+                String result = paymentService.syncPaymentStatus(orderCode);
 
-                Payment payment = paymentRepository.findByOrderCode(orderCode).orElse(null);
-                if (payment == null) {
-                        throw new AppException(ErrorCode.PAYMENT_NOT_FOUND);
+                String message = "";
+                if ("ALREADY_PAID".equals(result)) {
+                        message = "Đơn hàng đã được thanh toán thành công từ trước.";
+                } else if ("PAID_AND_TICKET_CREATED".equals(result)) {
+                        message = "Kiểm tra thấy đơn hàng đã thanh toán. Đã sinh vé!";
+                } else if ("CANCELLED".equals(result) || "EXPIRED".equals(result)) {
+                        message = "Đơn hàng đã bị hủy hoặc hết hạn.";
+                } else if ("PENDING".equals(result)) {
+                        message = "Đơn hàng vẫn đang chờ thanh toán.";
+                } else {
+                        message = "Đơn hàng đã được xử lý từ trước (Hủy/Thất bại).";
                 }
 
-                if (payment.getStatus() == PaymentStatus.SUCCESS) {
-                        return ResponseEntity.ok(ApiResponse.<String>builder()
-                                        .status(ApiResponse.Status.builder().code(200)
-                                                        .message("Đơn hàng đã được thanh toán thành công từ trước.")
-                                                        .build())
-                                        .data("ALREADY_PAID")
-                                        .build());
-                } else if (payment.getStatus() != PaymentStatus.PENDING) {
-                        return ResponseEntity.ok(ApiResponse.<String>builder()
-                                        .status(ApiResponse.Status.builder().code(200)
-                                                        .message("Đơn hàng đã được xử lý từ trước (Hủy/Thất bại).")
-                                                        .build())
-                                        .data(payment.getStatus().name())
-                                        .build());
-                }
-
-                Registration registration = payment.getRegistration();
-                Event event = registration.getEvent();
-                PaymentConfig config = paymentConfigRepository.findByUserId(event.getOrganizer().getId()).orElse(null);
-
-                if (config == null || !config.getIsActive()) {
-                        throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-                }
-
-                PayOS payOS = new PayOS(config.getClientId(), config.getApiKey(), config.getChecksumKey());
-
-                try {
-                        // Lấy thông tin thanh toán từ SDK PayOS v2
-                        PaymentLink paymentLinkData = null;
-                        try {
-                                paymentLinkData = payOS.paymentRequests().get(orderCode); // Nó sẽ gửi request lên PayOS
-                                                                                          // để lấy thông tin của đơn
-                                                                                          // hàng có mã orderCode.
-                        } catch (Exception ex) {
-                                log.error("Không kết nối được tới PayOS hoặc đơn không tồn tại", ex);
-                                throw new RuntimeException(
-                                                "Không tìm thấy đơn hàng trên cổng PayOS: " + ex.getMessage());
-                        }
-
-                        // case 1 : thanh toán thành công nhưng chưa gọi webhook do sự cố mạng hoặc lỗi
-                        // server
-                        if (paymentLinkData != null && "PAID".equals(paymentLinkData.getStatus().name())) {
-                                // Thanh toán thành toán -> Xé vé
-                                payment.setStatus(PaymentStatus.SUCCESS);
-                                payment.setPaidAt(LocalDateTime.now());
-                                paymentRepository.save(payment);
-
-                                registration.setStatus(RegistrationStatus.CONFIRMED);
-                                registrationRepository.save(registration);
-
-                                String rawQrCode = UUID.randomUUID().toString();
-                                String hashedQrCode = HashUtil.sha256(rawQrCode);
-                                Ticket ticket = Ticket.builder()
-                                                .registration(registration)
-                                                .qrCode(rawQrCode)
-                                                .hashedQrCode(hashedQrCode)
-                                                .issuedAt(LocalDateTime.now())
-                                                .status(TicketStatus.ACTIVE)
-                                                .build();
-                                ticketRepository.save(ticket);
-
-                                return ResponseEntity.ok(ApiResponse.<String>builder()
-                                                .status(ApiResponse.Status.builder().code(200)
-                                                                .message("Kiểm tra thấy đơn hàng đã thanh toán. Đã sinh vé!")
-                                                                .build())
-                                                .data("PAID_AND_TICKET_CREATED")
-                                                .build());
-                        }
-                        // case 2 : thanh toán thất bại do người dùng hủy hoặc hết hạn
-                        else if (paymentLinkData != null && ("CANCELLED".equals(paymentLinkData.getStatus().name())
-                                        || "EXPIRED".equals(paymentLinkData.getStatus().name()))) {
-                                payment.setStatus(PaymentStatus.FAILED);
-                                paymentRepository.save(payment);
-
-                                log.error("ĐƠN HÀNG ĐỒNG BỘ ĐÃ HỦY Ở TRÊN PAYOS - TEST");
-
-                                registration.setStatus(RegistrationStatus.CANCELLED);
-                                registrationRepository.save(registration);
-
-                                if (event.getSoldTickets() > 0) {
-                                        event.setSoldTickets(event.getSoldTickets() - 1);
-                                        eventRepository.save(event);
-                                }
-
-                                return ResponseEntity.ok(ApiResponse.<String>builder()
-                                                .status(ApiResponse.Status.builder().code(200)
-                                                                .message("Đơn hàng đã bị hủy hoặc hết hạn.")
-                                                                .build())
-                                                .data(paymentLinkData.getStatus().name())
-                                                .build());
-                        } else {
-                                return ResponseEntity.ok(ApiResponse.<String>builder()
-                                                .status(ApiResponse.Status.builder().code(200)
-                                                                .message("Đơn hàng vẫn đang chờ thanh toán.")
-                                                                .build())
-                                                .data("PENDING")
-                                                .build());
-                        }
-
-                } catch (Exception e) {
-                        log.error("Lỗi khi gọi API PayOS để đồng bộ đơn hàng {}", orderCode, e);
-                        throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-                }
+                return ResponseEntity.ok(ApiResponse.<String>builder()
+                                .status(ApiResponse.Status.builder().code(200).message(message).build())
+                                .data(result)
+                                .build());
         }
 
         @GetMapping("/my-tickets-pending")
@@ -178,47 +59,9 @@ public class PaymentController {
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(defaultValue = "desc") String sort,
                         @RequestParam(required = false) String search) {
-                String email = SecurityContextHolder.getContext().getAuthentication().getName();
-                log.info("Lấy danh sách đơn hàng đang chờ thanh toán (PENDING) cho user: {}", email);
-
-                Direction direction = "asc".equalsIgnoreCase(sort)
-                                ? Direction.ASC
-                                : Direction.DESC;
-                Pageable pageable = PageRequest.of(page,
-                                size,
-                                Sort.by(direction, "createdAt"));
-
-                Page<Payment> pendingPaymentsPage = paymentRepository
-                                .findPendingPaymentsWithSearch(email, PaymentStatus.PENDING, search, pageable);
-
-                Page<RegistrationResponse> dataPage = pendingPaymentsPage
-                                .map(payment -> {
-                                        Registration registration = payment.getRegistration();
-                                        return RegistrationResponse.builder()
-                                                        .registrationId(registration.getId())
-                                                        .eventId(registration.getEvent().getId())
-                                                        .eventName(registration.getEvent().getTitle())
-                                                        .eventPrice(registration.getEvent().getTicketPrice())
-                                                        .eventImage(registration.getEvent().getBannerUrl())
-                                                        .eventStartTime(registration.getEvent().getStartTime())
-                                                        .userId(registration.getUser().getId())
-                                                        .registrationCode(registration.getRegistrationCode())
-                                                        .status(registration.getStatus().name())
-                                                        .createdAt(registration.getCreatedAt())
-                                                        .checkoutUrl(payment.getCheckoutUrl())
-                                                        .orderCode(payment.getOrderCode())
-                                                        .amount(payment.getAmount())
-                                                        .build();
-                                });
-
-                PageResponse<RegistrationResponse> pageResponse = PageResponse
-                                .<RegistrationResponse>builder()
-                                .currentPage(dataPage.getNumber())
-                                .totalPages(dataPage.getTotalPages())
-                                .pageSize(dataPage.getSize())
-                                .totalElements(dataPage.getTotalElements())
-                                .data(dataPage.getContent())
-                                .build();
+                
+                log.info("Lấy danh sách đơn hàng đang chờ thanh toán (PENDING)");
+                PageResponse<RegistrationResponse> pageResponse = paymentService.getMyPendingPayments(page, size, sort, search);
 
                 return ResponseEntity
                                 .ok(ApiResponse.<PageResponse<RegistrationResponse>>builder()
@@ -227,5 +70,25 @@ public class PaymentController {
                                                                 .build())
                                                 .data(pageResponse)
                                                 .build());
+        }
+
+        @GetMapping("/my-payment-history")
+        @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN', 'STAFF')")
+        public ResponseEntity<ApiResponse<PageResponse<MyPaymentTransactionResponse>>> getMyPaymentHistory(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "desc") String sort,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(required = false) PaymentStatus status,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+                
+                log.info("Lấy lịch sử giao dịch cá nhân");
+                PageResponse<MyPaymentTransactionResponse> pageResponse = paymentService.getMyPaymentHistory(page, size, sort, search, status, startDate, endDate);
+
+                return ResponseEntity.ok(ApiResponse.<PageResponse<MyPaymentTransactionResponse>>builder()
+                                .status(ApiResponse.Status.builder().code(200).message("Lấy lịch sử giao dịch thành công").build())
+                                .data(pageResponse)
+                                .build());
         }
 }

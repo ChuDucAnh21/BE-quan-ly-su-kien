@@ -32,6 +32,23 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                         @Param("search") String search,
                         Pageable pageable);
 
+        @Query("SELECT p FROM Payment p " +
+               "WHERE p.registration.user.email = :email " +
+               "AND (:status IS NULL OR p.status = :status) " +
+               "AND (CAST(:startDate AS timestamp) IS NULL OR p.createdAt >= :startDate) " +
+               "AND (CAST(:endDate AS timestamp) IS NULL OR p.createdAt <= :endDate) " +
+               "AND (:keyword IS NULL OR " +
+               "LOWER(p.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+               "LOWER(p.registration.event.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+               "LOWER(p.registration.registrationCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+        Page<Payment> findMyPaymentHistory(
+                        @Param("email") String email,
+                        @Param("keyword") String keyword,
+                        @Param("status") PaymentStatus status,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
+
         // Kỹ thuật PESSIMISTIC_WRITE (Khóa bi quan): Khi một request (Webhook PayOS)
         // gọi hàm này,
         // dòng dữ liệu Payment này sẽ bị khóa chặt lại ở tầng Database.

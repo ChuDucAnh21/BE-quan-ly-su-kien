@@ -1,8 +1,8 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN E: TRỢ LÝ ẢO AI CHATBOT (UC41 – UC43)
+# BIỂU ĐỒ TUẦN TỰ - PHẦN F: TRỢ LÝ ẢO AI CHATBOT & BÁO CÁO (UC37 – UC40)
 
 ---
 
-## UC41 – Trò chuyện và tư vấn chung (AI Chat)
+## UC38 – Trò chuyện và tư vấn chung (AI Chat)
 
 ```mermaid
 sequenceDiagram
@@ -28,68 +28,76 @@ sequenceDiagram
 
 ---
 
-## UC42 – Tra cứu và gợi ý sự kiện tự động (Function Calling)
+## UC39 – Xem danh sách sự kiện được phân công (Dành cho Staff)
 
 ```mermaid
 sequenceDiagram
-    actor User as Người dùng
-    participant UI as Giao diện Chatbot
-    participant HT as Hệ thống (Spring AI)
-    participant LLM as API OpenRouter (LLM)
+    actor Staff as Nhân viên soát vé
+    participant UI as Màn hình Sự kiện được phân công
+    participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    User->>UI: 1. Gõ câu hỏi: "Sắp tới có sự kiện âm nhạc nào không?"
-    UI->>HT: 2. Gửi yêu cầu tìm kiếm
-    HT->>LLM: 3. Gửi câu hỏi lên LLM kèm khai báo các Tool (@Tool)
-    LLM-->>HT: 4. LLM nhận diện Function Calling, yêu cầu gọi hàm `searchEventsTool("âm nhạc")`
-    HT->>DB: 5. Hàm Java thực thi truy vấn tìm kiếm sự kiện theo từ khóa
-    alt Không tìm thấy sự kiện
-        DB-->>HT: 6a. Trả về mảng rỗng
-        HT->>LLM: 6b. Trả lại kết quả mảng rỗng cho LLM
-        LLM-->>HT: 6c. LLM sinh câu trả lời: "Chưa có sự kiện nào..."
-    else Tìm thấy sự kiện
-        DB-->>HT: 6. Trả về danh sách sự kiện (id, title, time, price)
-        HT->>LLM: 7. Trả lại mảng dữ liệu cho LLM phân tích
-        LLM-->>HT: 8. LLM tổng hợp thành câu trả lời tự nhiên
+    Staff->>UI: 1. Truy cập mục "Công việc của tôi"
+    UI->>HT: 2. Gửi yêu cầu lấy danh sách sự kiện (kèm Token)
+    HT->>HT: 3. Kiểm tra User ID hiện tại có khớp với tham số yêu cầu không
+    alt ID không khớp
+        HT-->>UI: 4a. Báo lỗi truy cập trái phép
+        UI-->>Staff: 4b. Thông báo không được phép xem lịch của người khác
+    else Hợp lệ
+        HT->>DB: 4. Truy vấn các sự kiện trong bảng phân công
+        DB-->>HT: 5. Trả về thông tin sự kiện (chưa kết thúc)
+        HT-->>UI: 6. Trả về danh sách sự kiện tóm tắt
+        UI-->>Staff: 7. Hiển thị danh sách sự kiện để chuẩn bị làm việc
     end
-    HT-->>UI: 9. Trả kết quả về Frontend
-    UI-->>User: 10. Chatbot gợi ý danh sách sự kiện
 ```
 
 ---
 
-## UC43 – Tra cứu lịch trình chi tiết sự kiện (Function Calling)
+## UC40 – Xem danh sách giao dịch thanh toán của sự kiện
 
 ```mermaid
 sequenceDiagram
-    actor User as Người dùng
-    participant UI as Giao diện Chatbot
-    participant HT as Hệ thống (Spring AI)
-    participant LLM as API OpenRouter (LLM)
+    actor Org as Admin / Organizer
+    participant UI as Màn hình Giao dịch thanh toán
+    participant HT as Hệ thống
     participant DB as Cơ sở dữ liệu
 
-    User->>UI: 1. Gõ câu hỏi: "Lịch trình sự kiện T-Rex Concert?"
-    UI->>HT: 2. Gửi yêu cầu tra cứu
-    HT->>LLM: 3. Gửi câu hỏi lên LLM kèm cấu hình Tool
-    LLM-->>HT: 4. LLM yêu cầu gọi hàm `getEventScheduleTool("T-Rex Concert")`
-    HT->>DB: 5. Tìm kiếm ID sự kiện dựa trên tên
-    alt Không tìm thấy sự kiện
-        DB-->>HT: 6a. Không có kết quả
-        HT->>LLM: 6b. Báo không tìm thấy
-        LLM-->>HT: 6c. LLM trả lời "Không tìm thấy sự kiện này."
-    else Tìm thấy sự kiện
-        DB-->>HT: 6. Trả về ID sự kiện
-        HT->>DB: 7. Truy vấn bảng EventSchedule theo ID sự kiện
-        alt Sự kiện chưa có lịch trình
-            DB-->>HT: 8a. Danh sách rỗng
-            HT->>LLM: 8b. Trả lại kết quả rỗng cho LLM
-            LLM-->>HT: 8c. LLM sinh câu "Chưa có lịch trình chi tiết."
-        else Có lịch trình
-            DB-->>HT: 8. Trả về mảng các hoạt động và thời gian
-            HT->>LLM: 9. Đưa dữ liệu thô cho LLM
-            LLM-->>HT: 10. LLM trình bày thành văn bản dễ đọc
-        end
+    Org->>UI: 1. Truy cập tab "Giao dịch thanh toán" của sự kiện
+    UI->>HT: 2. Gửi yêu cầu danh sách thanh toán (kèm Token)
+    HT->>DB: 3. Kiểm tra quyền truy cập (Admin hoặc Organizer của sự kiện)
+    alt Không có quyền
+        DB-->>HT: 4a. Không có quyền
+        HT-->>UI: 4b. Từ chối truy cập (403)
+        UI-->>Org: 4c. Báo lỗi không có quyền
+    else Có quyền
+        HT->>DB: 4. Truy vấn các đơn hàng Payment thuộc eventId
+        DB-->>HT: 5. Trả về danh sách đơn hàng (Trạng thái, số tiền, ngày tạo)
+        HT-->>UI: 6. Trả về dữ liệu kèm tổng doanh thu
+        UI-->>Org: 7. Hiển thị danh sách giao dịch
     end
-    HT-->>UI: 11. Trả về Frontend
-    UI-->>User: 12. Hiển thị lịch trình cho người dùng
+```
+
+---
+
+## UC41 – Xem lịch sử điểm danh (Check-in) của sự kiện
+
+```mermaid
+sequenceDiagram
+    actor Org as Admin / Organizer
+    participant UI as Màn hình Lịch sử Check-in
+    participant HT as Hệ thống
+    participant DB as Cơ sở dữ liệu
+
+    Org->>UI: 1. Truy cập tab "Lịch sử Check-in" của sự kiện
+    UI->>HT: 2. Gửi yêu cầu lịch sử soát vé (kèm Token)
+    HT->>DB: 3. Kiểm tra quyền truy cập
+    alt Không có quyền
+        DB-->>HT: 4a. Từ chối
+        HT-->>UI: 4b. Báo lỗi 403
+    else Có quyền
+        HT->>DB: 4. Truy vấn bảng CheckInLog theo eventId
+        DB-->>HT: 5. Trả về danh sách (Tên khách, Nhân viên soát, Thời gian)
+        HT-->>UI: 6. Trả về dữ liệu
+        UI-->>Org: 7. Hiển thị nhật ký soát vé
+    end
 ```

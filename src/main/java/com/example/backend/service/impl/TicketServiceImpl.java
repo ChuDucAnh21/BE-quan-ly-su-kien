@@ -361,6 +361,7 @@ public class TicketServiceImpl implements TicketService {
                 return logs.map(log -> CheckInLogResponse.builder()
                                 .id(log.getId())
                                 .hashedQrCode(log.getTicket().getHashedQrCode())
+                                .customerId(log.getTicket().getRegistration().getUser().getId())
                                 .customerEmail(log.getTicket().getRegistration().getUser().getEmail())
                                 .customerFullName(log.getTicket().getRegistration().getUser().getFullName())
                                 .checkedInAt(log.getCreatedAt())

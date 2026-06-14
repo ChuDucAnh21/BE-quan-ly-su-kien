@@ -50,6 +50,9 @@ public class EventResponse {
 
     private EventStatus status; // DRAFT | PUBLISHED | CANCELLED
 
+    // Trạng thái thời gian thực của sự kiện (ONGOING, COMING_SOON_SALE, ON_SALE, UPCOMING, ENDED)
+    private String ongoingStatus;
+
     // Số lượng vé đã bán thực tế (trạng thái CONFIRMED + CHECKED_IN)
     // Frontend dùng để tính "Còn X vé trống"
     private Long ticketsSold;

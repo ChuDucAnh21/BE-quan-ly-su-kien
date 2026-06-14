@@ -1,34 +1,14 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN C: LỊCH TRÌNH & PHÂN CÔNG NHÂN VIÊN (UC20 – UC28)
-
----
-
-## UC20 – Xem lịch trình sự kiện
-
-```mermaid
-sequenceDiagram
-    actor Anyone as Bất kỳ ai
-    participant UI as Màn hình Chi tiết Sự kiện
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Anyone->>UI: 1. Xem trang chi tiết sự kiện (tab Lịch trình)
-    UI->>HT: 2. Yêu cầu danh sách lịch trình của sự kiện
-    HT->>DB: 3. Truy vấn tất cả lịch trình con thuộc sự kiện (sắp xếp theo thời gian tăng dần)
-    DB-->>HT: 4. Trả về danh sách lịch trình (Tên hoạt động, Thời gian bắt đầu, Kết thúc, Mô tả)
-    HT-->>UI: 5. Trả về dữ liệu
-    UI-->>Anyone: 6. Hiển thị timeline lịch trình sự kiện
-```
+# BIỂU ĐỒ TUẦN TỰ - PHẦN D: LỊCH TRÌNH & PHÂN CÔNG NHÂN VIÊN (UC21 – UC24)
 
 ---
 
 > **[LƯU Ý QUAN TRỌNG VỀ KIẾN TRÚC MỚI]**
-> Kể từ phiên bản V2, các biểu đồ tuần tự cho các chức năng Tạo, Sửa, Xóa lịch trình con độc lập (UC21, UC22, UC23, UC24) **đã bị loại bỏ**.
-> Các thao tác này đã được tích hợp đồng bộ thành một mảng `schedules` và được xử lý chung trong luồng Tạo/Cập nhật Sự kiện (Xem UC16, UC17 ở phần B).
-> Chỉ còn giữ lại biểu đồ UC20 làm API lấy lịch trình riêng lẻ phục vụ hiển thị.
+> Kể từ phiên bản V2, các chức năng Tạo, Sửa, Xóa, Xem lịch trình con độc lập **đã bị loại bỏ**.
+> Các thao tác này đã được tích hợp đồng bộ thành một mảng `schedules` và được xử lý chung trong luồng Tạo/Cập nhật/Xem Sự kiện (Xem phần B và C).
 
 ---
 
-## UC25 – Xem danh sách Nhân viên toàn hệ thống (Admin / Organizer)
+## UC21 – Xem danh sách Nhân viên toàn hệ thống (Admin / Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -54,7 +34,7 @@ sequenceDiagram
 
 ---
 
-## UC26 – Xem Nhân viên được phân công vào sự kiện
+## UC22 – Xem danh sách staff được phân công vào sự kiện
 
 ```mermaid
 sequenceDiagram
@@ -79,7 +59,7 @@ sequenceDiagram
 
 ---
 
-## UC27 – Đồng bộ phân công Nhân viên (Organizer)
+## UC23 – Đồng bộ phân công Nhân viên (Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -115,7 +95,7 @@ sequenceDiagram
 
 ---
 
-## UC28 – Xóa một Nhân viên khỏi sự kiện (Organizer)
+## UC24 – Xóa một Nhân viên khỏi sự kiện (Organizer)
 
 ```mermaid
 sequenceDiagram

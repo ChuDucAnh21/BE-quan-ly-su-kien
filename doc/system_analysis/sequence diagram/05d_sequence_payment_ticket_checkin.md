@@ -1,8 +1,8 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN D: THANH TOÁN, VÉ & CHECK-IN (UC29 – UC40)
+# BIỂU ĐỒ TUẦN TỰ - PHẦN E: THANH TOÁN, VÉ & CHECK-IN (UC25 – UC36)
 
 ---
 
-## UC29 – Cấu hình cổng thanh toán PayOS (Organizer)
+## UC25 – Cấu hình cổng thanh toán PayOS (Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -12,7 +12,7 @@ sequenceDiagram
     participant DB as Cơ sở dữ liệu
 
     Org->>UI: 1. Truy cập trang cài đặt thanh toán
-    Org->>UI: 2. Nhập thông tin PayOS (Client ID, API Key, Checksum Key) từ tài khoản PayOS
+    Org->>UI: 2. Nhập thông PayOS (Client ID, API Key, Checksum Key) từ tài khoản PayOS
     Org->>UI: 3. Nhấn "Lưu cấu hình"
     UI->>HT: 4. Gửi thông tin cấu hình PayOS (kèm Token Organizer)
     HT->>DB: 5. Lưu hoặc cập nhật cấu hình thanh toán (đánh dấu đang hoạt động)
@@ -23,7 +23,7 @@ sequenceDiagram
 
 ---
 
-## UC30 – Xem cấu hình thanh toán PayOS (Organizer)
+## UC26 – Xem cấu hình thanh toán PayOS (Organizer)
 
 ```mermaid
 sequenceDiagram
@@ -48,7 +48,7 @@ sequenceDiagram
 
 ---
 
-## UC31 – Đăng ký tham gia sự kiện (Mua vé)
+## UC27 – Đăng ký tham gia sự kiện (Mua vé)
 
 ```mermaid
 sequenceDiagram
@@ -104,7 +104,7 @@ sequenceDiagram
 
 ---
 
-## UC32 – Hủy vé miễn phí
+## UC28 – Hủy vé miễn phí
 
 ```mermaid
 sequenceDiagram
@@ -139,45 +139,29 @@ sequenceDiagram
 
 ---
 
-## UC33 – Xử lý kết quả thanh toán từ PayOS (Webhook)
+## UC29 – Thanh toán vé thông qua PayOS
 
 ```mermaid
 sequenceDiagram
-    participant PayOS as Cổng thanh toán PayOS
+    actor User as Người dùng
+    participant UI as Màn hình Thanh toán PayOS
     participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
+    participant PayOS as Cổng thanh toán PayOS
 
-    note over PayOS,HT: Sau khi người dùng hoàn tất hoặc hủy thanh toán,<br/>PayOS tự động gửi thông báo về hệ thống
-    PayOS->>HT: 1. Gửi thông báo kết quả thanh toán (kèm chữ ký bảo mật HMAC)
-    HT->>DB: 2. Lấy khóa bảo mật của Organizer để xác thực
-    HT->>HT: 3. Kiểm tra chữ ký bảo mật HMAC-SHA256
-    alt Chữ ký không hợp lệ (giả mạo)
-        HT-->>PayOS: 4a. Từ chối - chữ ký không đúng
-    else Chữ ký hợp lệ
-        HT->>DB: 4. Tìm đơn hàng theo mã đơn (khóa ghi độc quyền để tránh xử lý trùng lặp)
-        alt Đơn đã xử lý trước đó (không phải PENDING)
-            DB-->>HT: 5a. Đơn hàng đã xử lý
-            HT-->>PayOS: 5b. Bỏ qua, trả về thành công (chống xử lý trùng)
-        else Đơn còn PENDING
-            alt Thanh toán thành công
-                HT->>DB: 5. Cập nhật thanh toán → THÀNH CÔNG
-                HT->>DB: 6. Cập nhật đơn đăng ký → ĐÃ XÁC NHẬN
-                HT->>HT: 7. Tạo mã QR vé điện tử
-                HT->>DB: 8. Lưu vé (Trạng thái: ACTIVE)
-                HT-->>PayOS: 9. Xác nhận đã xử lý thành công
-            else Thanh toán thất bại hoặc bị hủy
-                HT->>DB: 5. Cập nhật thanh toán → THẤT BẠI
-                HT->>DB: 6. Cập nhật đơn đăng ký → ĐÃ HỦY
-                HT->>DB: 7. Giảm số vé đã bán (nhả lại chỗ)
-                HT-->>PayOS: 8. Xác nhận đã xử lý
-            end
-        end
-    end
+    User->>UI: 1. Truy cập đường dẫn thanh toán PayOS (checkoutUrl)
+    UI->>PayOS: 2. Yêu cầu tải giao diện thanh toán
+    PayOS-->>UI: 3. Hiển thị mã QR và thông tin chuyển khoản
+    User->>UI: 4. Quét mã QR bằng ứng dụng ngân hàng và hoàn tất chuyển khoản
+    UI->>PayOS: 5. Chuyển tiền thành công
+    PayOS-->>UI: 6. Xác nhận giao dịch thành công trên giao diện
+    UI-->>User: 7. Tự động chuyển hướng về trang Hệ thống
+    User->>HT: 8. Truy cập trang kết quả của Hệ thống
+    HT->>HT: 9. Kích hoạt Đồng bộ trạng thái đơn hàng (Xem UC30)
 ```
 
 ---
 
-## UC34 – Đồng bộ trạng thái đơn hàng thủ công
+## UC30 – Đồng bộ trạng thái đơn hàng thủ công
 
 ```mermaid
 sequenceDiagram
@@ -187,8 +171,7 @@ sequenceDiagram
     participant DB as Cơ sở dữ liệu
     participant PayOS as Cổng thanh toán PayOS
 
-    note over User,PayOS: Dùng khi Webhook bị mất do lỗi mạng
-    User->>UI: 1. Nhấn "Kiểm tra trạng thái thanh toán"
+    User->>UI: 1. Nhấn "Kiểm tra trạng thái thanh toán" hoặc được điều hướng về từ PayOS
     UI->>HT: 2. Yêu cầu đồng bộ trạng thái đơn hàng (kèm mã đơn)
     HT->>DB: 3. Tìm đơn hàng theo mã
     alt Đơn không tồn tại
@@ -203,7 +186,8 @@ sequenceDiagram
         alt PayOS báo đã thanh toán
             PayOS-->>HT: 6a. ĐÃ THANH TOÁN
             HT->>DB: 6b. Cập nhật Thanh toán → THÀNH CÔNG, Đăng ký → XÁC NHẬN
-            HT->>DB: 6c. Tạo và lưu vé (ACTIVE)
+            HT->>HT: 6c. Tạo mã QR vé điện tử
+            HT->>DB: 6d. Lưu vé (ACTIVE)
             HT-->>UI: 7a. Thanh toán thành công, vé đã được tạo
             UI-->>User: 7b. Hiển thị vé điện tử
         else PayOS báo đã hủy / hết hạn
@@ -221,7 +205,7 @@ sequenceDiagram
 
 ---
 
-## UC35 – Xem danh sách đơn hàng đang chờ thanh toán
+## UC31 – Xem danh sách đơn hàng đang chờ thanh toán
 
 ```mermaid
 sequenceDiagram
@@ -243,7 +227,7 @@ sequenceDiagram
 
 ---
 
-## UC36 – Xem vé cá nhân (My Tickets)
+## UC32 – Xem vé cá nhân (My Tickets)
 
 ```mermaid
 sequenceDiagram
@@ -263,7 +247,7 @@ sequenceDiagram
 
 ---
 
-## UC37 – Xem danh sách vé của sự kiện (Admin / Organizer / Staff)
+## UC33 – Xem danh sách ng tham gia của sự kiện (Admin / Organizer / Staff)
 
 ```mermaid
 sequenceDiagram
@@ -290,7 +274,7 @@ sequenceDiagram
 
 ---
 
-## UC38 – Quét mã QR Check-in
+## UC34 – Quét mã QR Check-in
 
 ```mermaid
 sequenceDiagram
@@ -325,14 +309,14 @@ sequenceDiagram
         HT->>DB: 6. Cập nhật vé → ĐÃ SỬ DỤNG, ghi thời gian check-in
         HT->>DB: 7. Ghi nhật ký check-in (nhân viên thực hiện, phương thức: Quét QR)
         DB-->>HT: 8. Lưu thành công
-        HT-->>App: 9. Trả về thông tin khách (Họ tên, Email, Trạng thái)
+        HT-->>App: 9. Trả về thông tự khách (Họ tên, Email, Trạng thái)
         App-->>Staff: 10. ✅ Cổng mở - Hiển thị tên khách
     end
 ```
 
 ---
 
-## UC39 – Đồng bộ Check-in hàng loạt khi Offline (Batch Sync)
+## UC35 – Đồng bộ Check-in hàng loạt khi Offline (Batch Sync)
 
 ```mermaid
 sequenceDiagram
@@ -372,7 +356,7 @@ sequenceDiagram
 
 ---
 
-## UC40 – Tự động hủy đơn hàng quá hạn (Scheduler)
+## UC36 – Tự động hủy đơn hàng quá hạn (Scheduler)
 
 ```mermaid
 sequenceDiagram

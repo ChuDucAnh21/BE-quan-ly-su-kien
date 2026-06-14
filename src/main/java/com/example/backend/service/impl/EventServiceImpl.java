@@ -146,11 +146,50 @@ public class EventServiceImpl implements EventService {
                 .build();
     }
 
+    // Helper: Tính toán trạng thái sự kiện thời gian thực dựa vào mốc thời gian
+    private String calculateOngoingStatus(LocalDateTime regStart, LocalDateTime regEnd, LocalDateTime eventStart,
+            LocalDateTime eventEnd) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. Đang diễn ra
+        if ((now.isEqual(eventStart) || now.isAfter(eventStart)) &&
+                (now.isEqual(eventEnd) || now.isBefore(eventEnd))) {
+            return "ONGOING";
+        }
+
+        // 2. Có mốc thời gian đăng ký (registration time)
+        if (regStart != null && regEnd != null) {
+            if (now.isBefore(regStart)) {
+                return "COMING_SOON_SALE";
+            }
+            if ((now.isEqual(regStart) || now.isAfter(regStart)) &&
+                    (now.isEqual(regEnd) || now.isBefore(regEnd))) {
+                return "ON_SALE";
+            }
+            if (now.isAfter(regEnd) && now.isBefore(eventStart)) {
+                return "UPCOMING";
+            }
+        }
+
+        // 3. Không có registration time -> chỉ check event time
+        if (now.isBefore(eventStart)) {
+            return "UPCOMING";
+        }
+
+        // 4. Mặc định
+        return "ENDED";
+    }
+
     // Helper: Chuyển đổi Entity sang DTO, nhận thêm Map đếm vé đã tính sẵn để tránh
     // N+1
     private EventResponse mapToEventResponse(Event event, Map<Long, Long> ticketsSoldMap) {
-        long ticketsSold = ticketsSoldMap.getOrDefault(event.getId(), 0L); // lấy số vé đã bán nếu có trong map, không
-                                                                           // có thì mặc định là 0
+        long ticketsSold = ticketsSoldMap.getOrDefault(event.getId(), 0L); // lấy số vé đã bán nếu có
+
+        String ongoingStatus = calculateOngoingStatus(
+                event.getRegistrationStartTime(),
+                event.getRegistrationEndTime(),
+                event.getStartTime(),
+                event.getEndTime());
 
         return EventResponse.builder()
                 .id(event.getId())
@@ -170,6 +209,7 @@ public class EventServiceImpl implements EventService {
                 .capacity(event.getCapacity())
                 .ticketPrice(event.getTicketPrice())
                 .status(event.getStatus())
+                .ongoingStatus(ongoingStatus)
                 .ticketsSold(ticketsSold)
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())

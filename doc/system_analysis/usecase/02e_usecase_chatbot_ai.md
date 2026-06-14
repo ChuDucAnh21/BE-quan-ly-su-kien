@@ -1,55 +1,75 @@
-# ĐẶC TẢ USE CASE - PHẦN E: TRỢ LÝ ẢO AI CHATBOT (UC41 – UC43)
+# ĐẶC TẢ USE CASE - PHẦN F: TRỢ LÝ ẢO AI CHATBOT & BÁO CÁO (UC38 – UC41)
 
 ---
 
-## UC41 – Trò chuyện và tư vấn chung (AI Chat)
+## UC38 – Trò chuyện và tư vấn chung (AI Chat)
 
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | Trò chuyện và giải đáp thắc mắc bằng AI |
-| **Tác nhân** | Guest, User, Staff, Organizer, Admin |
-| **Mục đích** | Cung cấp một trợ lý ảo thông minh để giải đáp nhanh các câu hỏi về cách sử dụng hệ thống hoặc thông tin sự kiện chung. |
-| **Mức độ ưu tiên** | Trung bình |
-| **Điều kiện kích hoạt** | Người dùng mở khung Chatbot và gõ nội dung câu hỏi (Ví dụ: "Hệ thống này dùng để làm gì?") |
-| **Điều kiện tiên quyết** | Hệ thống Backend đang kết nối ổn định với API của OpenRouter (mô hình Google Gemma). |
-| **Điều kiện thất bại** | API trả về lỗi do Rate Limit (hết lượt) hoặc Token Limit (tràn dữ liệu). |
-| **Điều kiện thành công** | Chatbot trả về nội dung text tự nhiên, đúng ngữ cảnh tiếng Việt. |
-| **Luồng sự kiện chính** | 1. Người dùng nhập tin nhắn và nhấn gửi. 2. Frontend gửi yêu cầu tới API `/api/chatbot/ask`. 3. Hệ thống Backend (Spring AI) tiếp nhận prompt và gọi tới OpenRouter API. 4. OpenRouter xử lý thông điệp dựa trên system prompt ("Bạn là tư vấn viên của hệ thống Eventify..."). 5. AI sinh câu trả lời và Backend trả kết quả dạng JSON về Frontend. 6. Giao diện hiển thị tin nhắn của Chatbot cho người dùng. |
-| **Luồng sự kiện thay thế** | Không có |
-| **Luồng sự kiện ngoại lệ** | 3a. OpenRouter bị sập hoặc quá tải (Rate Limit) -> Hệ thống báo lỗi "Chatbot đang quá tải, vui lòng thử lại sau". 4a. Request vượt quá giới hạn Token Limit -> Hệ thống tự động báo lỗi cắt bớt nội dung. |
-
----
-
-## UC42 – Tra cứu và gợi ý danh sách sự kiện tự động (Function Calling)
-
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | AI tự động truy vấn tìm kiếm sự kiện |
-| **Tác nhân** | Guest, User, Staff, Organizer, Admin |
-| **Mục đích** | Cho phép AI tự động chọc xuống Database để tìm các sự kiện phù hợp nhất với yêu cầu mập mờ của người dùng. |
-| **Mức độ ưu tiên** | Cao |
-| **Điều kiện kích hoạt** | Người dùng hỏi một câu liên quan tới tìm sự kiện (Ví dụ: "Sắp tới có sự kiện âm nhạc nào không?") |
-| **Điều kiện tiên quyết** | AI đã được cấu hình Tool Calling (`@Tool("searchEventsTool")`). |
-| **Điều kiện thất bại** | AI không nhận diện được ý đồ tìm kiếm hoặc DB không có sự kiện nào khớp. |
-| **Điều kiện thành công** | Chatbot trả về danh sách sự kiện (Tên, địa điểm, giá vé, thời gian) đọc từ Database thực tế. |
-| **Luồng sự kiện chính** | 1. Người dùng nhập câu hỏi tìm sự kiện. 2. Backend phân tích câu hỏi bằng LLM. 3. LLM nhận diện cần sử dụng công cụ `searchEventsTool` và tự động trích xuất từ khóa tìm kiếm (Ví dụ: keyword="âm nhạc"). 4. Spring AI kích hoạt hàm Java `searchEventsTool(keyword)`, gọi vào `EventRepository`. 5. Hàm Java truy xuất DB và trả lại danh sách tóm tắt (chỉ lấy id, title, startTime, ticketPrice) cho LLM. 6. LLM tổng hợp lại thành câu trả lời tự nhiên dạng văn bản. 7. Trả kết quả cho người dùng. |
-| **Luồng sự kiện thay thế** | 5a. Database không tìm thấy sự kiện nào khớp -> AI tự động trả lời "Hiện tại chưa có sự kiện âm nhạc nào, bạn có muốn xem sự kiện khác không?" |
-| **Luồng sự kiện ngoại lệ** | 4a. Lỗi truy vấn Database -> Báo lỗi "Không thể kết nối để lấy dữ liệu sự kiện lúc này." |
+| Trường                     | Nội dung                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tên Use Case**           | Trò chuyện và giải đáp thắc mắc bằng AI                                                                                                                                                                                                                                                                                                                                                                         |
+| **Tác nhân**               | Guest, User, Staff, Organizer, Admin                                                                                                                                                                                                                                                                                                                                                                            |
+| **Mục đích**               | Cung cấp một trợ lý ảo thông minh để giải đáp nhanh các câu hỏi về cách sử dụng hệ thống hoặc thông tin sự kiện chung.                                                                                                                                                                                                                                                                                          |
+| **Mức độ ưu tiên**         | Trung bình                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Điều kiện kích hoạt**    | Người dùng mở khung Chatbot và gõ nội dung câu hỏi (Ví dụ: "Hệ thống này dùng để làm gì?")                                                                                                                                                                                                                                                                                                                      |
+| **Điều kiện tiên quyết**   | Hệ thống Backend đang kết nối ổn định với API của OpenRouter (mô hình Google Gemma).                                                                                                                                                                                                                                                                                                                            |
+| **Điều kiện thất bại**     | API trả về lỗi do Rate Limit (hết lượt) hoặc Token Limit (tràn dữ liệu).                                                                                                                                                                                                                                                                                                                                        |
+| **Điều kiện thành công**   | Chatbot trả về nội dung text tự nhiên, đúng ngữ cảnh tiếng Việt.                                                                                                                                                                                                                                                                                                                                                |
+| **Luồng sự kiện chính**    | 1. Người dùng nhập tin nhắn và nhấn gửi. 2. Frontend gửi yêu cầu tới API `/api/chatbot/ask`. 3. Hệ thống Backend (Spring AI) tiếp nhận prompt và gọi tới OpenRouter API. 4. OpenRouter xử lý thông điệp dựa trên system prompt ("Bạn là tư vấn viên của hệ thống Eventify..."). 5. AI sinh câu trả lời và Backend trả kết quả dạng JSON về Frontend. 6. Giao diện hiển thị tin nhắn của Chatbot cho người dùng. |
+| **Luồng sự kiện thay thế** | Không có                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Luồng sự kiện ngoại lệ** | 3a. OpenRouter bị sập hoặc quá tải (Rate Limit) -> Hệ thống báo lỗi "Chatbot đang quá tải, vui lòng thử lại sau". 4a. Request vượt quá giới hạn Token Limit -> Hệ thống tự động báo lỗi cắt bớt nội dung.                                                                                                                                                                                                       |
 
 ---
 
-## UC43 – Tra cứu lịch trình chi tiết sự kiện (Function Calling)
+## UC39 – Xem danh sách sự kiện của 1 nhân viên được phân công
 
-| Trường | Nội dung |
-|--------|----------|
-| **Tên Use Case** | AI tự động tra cứu lịch trình chi tiết của một sự kiện |
-| **Tác nhân** | Guest, User, Staff, Organizer, Admin |
-| **Mục đích** | Giúp người dùng hỏi lịch trình cụ thể của một sự kiện mà không cần phải tự bấm vào xem chi tiết. |
-| **Mức độ ưu tiên** | Trung bình |
-| **Điều kiện kích hoạt** | Người dùng hỏi chi tiết về một sự kiện đã biết tên (Ví dụ: "Lịch trình của sự kiện T-Rex Concert thế nào?") |
-| **Điều kiện tiên quyết** | AI đã được cấu hình Tool Calling (`@Tool("getEventScheduleTool")`). Sự kiện phải tồn tại. |
-| **Điều kiện thất bại** | AI không nhận diện được tên sự kiện hoặc sự kiện không có lịch trình. |
-| **Điều kiện thành công** | Chatbot liệt kê mốc thời gian và hoạt động của sự kiện. |
-| **Luồng sự kiện chính** | 1. Người dùng nhập câu hỏi về lịch trình. 2. LLM nhận diện cần sử dụng `getEventScheduleTool` và trích xuất từ khóa tên sự kiện. 3. Spring AI kích hoạt hàm Java, tìm ID sự kiện gần đúng với từ khóa. 4. Truy vấn bảng `EventSchedule` theo ID sự kiện. 5. Hàm Java trả kết quả các mốc thời gian về cho LLM. 6. LLM đúc kết lại bằng ngôn ngữ tự nhiên: "Sự kiện T-Rex Concert có lịch trình như sau: 8h Đón khách, 9h Khai mạc...". 7. Trả về cho Frontend. |
-| **Luồng sự kiện thay thế** | 4a. Sự kiện chưa được Organizer thêm lịch trình -> AI trả lời "Sự kiện này hiện chưa có lịch trình cụ thể." |
-| **Luồng sự kiện ngoại lệ** | 3a. Không tìm thấy sự kiện nào khớp với tên người dùng gõ -> AI trả lời "Tôi không tìm thấy sự kiện nào có tên như vậy." |
+| Trường                     | Nội dung                                                                                                                                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tên Use Case**           | Xem các sự kiện đang được giao nhiệm vụ soát vé                                                                                                                                                                                                                                    |
+| **Tác nhân**               | Staff                                                                                                                                                                                                                                                                              |
+| **Mục đích**               | Cho phép Nhân viên xem danh sách các sự kiện mà mình được quản lý giao nhiệm vụ để chuẩn bị đi làm                                                                                                                                                                                 |
+| **Mức độ ưu tiên**         | Trung bình                                                                                                                                                                                                                                                                         |
+| **Điều kiện kích hoạt**    | Nhân viên đăng nhập và vào mục "Công việc của tôi" hoặc "Sự kiện được phân công"                                                                                                                                                                                                   |
+| **Điều kiện tiên quyết**   | Đã đăng nhập với Role = STAFF                                                                                                                                                                                                                                                      |
+| **Điều kiện thất bại**     | Hệ thống gặp lỗi truy vấn CSDL                                                                                                                                                                                                                                                     |
+| **Điều kiện thành công**   | Danh sách các sự kiện (chưa kết thúc) mà nhân viên này có tên trong bảng phân công được trả về                                                                                                                                                                                     |
+| **Luồng sự kiện chính**    | 1. Staff truy cập mục Sự kiện của tôi. 2. Frontend gọi GET /events/assigned-to-staff/{staffId}. 3. Hệ thống kiểm tra ID có khớp với ID đang đăng nhập không. 4. Hệ thống truy vấn các sự kiện thông qua bảng event_staff_assignments. 5. Hệ thống trả về danh sách sự kiện tóm tắt |
+| **Luồng sự kiện thay thế** | Không có                                                                                                                                                                                                                                                                           |
+| **Luồng sự kiện ngoại lệ** | 3a. Staff cố xem lịch của người khác → 403 Forbidden                                                                                                                                                                                                                               |
+
+---
+
+## UC40 – Xem lịch sử giao dịch thanh toán của sự kiện
+
+| Trường                     | Nội dung                                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tên Use Case**           | Xem danh sách các giao dịch thanh toán                                                                                                                                             |
+| **Tác nhân**               | Admin, Organizer (chủ sự kiện)                                                                                                                                                     |
+| **Mục đích**               | Cho phép Ban tổ chức theo dõi dòng tiền, các giao dịch mua vé (Thành công, Đang chờ, Thất bại) thuộc sự kiện của mình                                                              |
+| **Mức độ ưu tiên**         | Trung bình                                                                                                                                                                         |
+| **Điều kiện kích hoạt**    | Người dùng truy cập tab "Giao dịch thanh toán" của sự kiện                                                                                                                         |
+| **Điều kiện tiên quyết**   | Đã đăng nhập. Phải là Admin hoặc Organizer của sự kiện                                                                                                                             |
+| **Điều kiện thất bại**     | Không có quyền truy cập                                                                                                                                                            |
+| **Điều kiện thành công**   | Danh sách các giao dịch thanh toán kèm tổng doanh thu được trả về                                                                                                                  |
+| **Luồng sự kiện chính**    | 1. Frontend gọi GET /events/{eventId}/payments. 2. Hệ thống kiểm tra quyền. 3. Hệ thống truy vấn các bản ghi Payment liên quan tới eventId. 4. Hệ thống trả về danh sách giao dịch |
+| **Luồng sự kiện thay thế** | Không có                                                                                                                                                                           |
+| **Luồng sự kiện ngoại lệ** | 2a. Không có quyền → 403 Access Denied                                                                                                                                             |
+
+---
+
+## UC41 – Xem lịch sử điểm danh (Check-in) của sự kiện
+
+| Trường                     | Nội dung                                                                                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tên Use Case**           | Xem nhật ký soát vé                                                                                                                                                                                               |
+| **Tác nhân**               | Admin, Organizer (chủ sự kiện)                                                                                                                                                                                    |
+| **Mục đích**               | Cho phép Ban tổ chức kiểm tra xem khách hàng nào đã được quét mã QR bởi nhân viên nào, vào thời điểm nào                                                                                                          |
+| **Mức độ ưu tiên**         | Trung bình                                                                                                                                                                                                        |
+| **Điều kiện kích hoạt**    | Truy cập tab "Lịch sử Check-in" của sự kiện                                                                                                                                                                       |
+| **Điều kiện tiên quyết**   | Đã đăng nhập. Phải là Admin hoặc Organizer của sự kiện                                                                                                                                                            |
+| **Điều kiện thất bại**     | Không có quyền truy cập                                                                                                                                                                                           |
+| **Điều kiện thành công**   | Danh sách lịch sử soát vé được sắp xếp theo thời gian mới nhất trả về                                                                                                                                             |
+| **Luồng sự kiện chính**    | 1. Frontend gọi GET /events/{eventId}/checkin-history. 2. Hệ thống kiểm tra quyền. 3. Hệ thống truy vấn các bản ghi CheckInLog của eventId. 4. Hệ thống trả về dữ liệu (Tên khách, tên nhân viên soát, thời gian) |
+| **Luồng sự kiện thay thế** | Không có                                                                                                                                                                                                          |
+| **Luồng sự kiện ngoại lệ** | 2a. Không có quyền → 403 Access Denied                                                                                                                                                                            |
+
+---
