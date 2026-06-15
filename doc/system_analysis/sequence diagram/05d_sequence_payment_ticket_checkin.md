@@ -1,407 +1,176 @@
-# BIỂU ĐỒ TUẦN TỰ - PHẦN E: THANH TOÁN, VÉ & CHECK-IN (UC25 – UC36)
+# BIỂU ĐỒ TUẦN TỰ - PHẦN D: BÁN VÉ, THANH TOÁN & CHECK-IN (UC16 – UC22)
 
 ---
 
-## UC25 – Cấu hình cổng thanh toán PayOS (Organizer)
+## UC16 – Cấu hình cổng thanh toán (PayOS)
 
 ```mermaid
 sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Cài đặt Thanh toán
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
+    actor Organizer
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
 
-    Org->>UI: 1. Truy cập trang cài đặt thanh toán
-    Org->>UI: 2. Nhập thông PayOS (Client ID, API Key, Checksum Key) từ tài khoản PayOS
-    Org->>UI: 3. Nhấn "Lưu cấu hình"
-    UI->>HT: 4. Gửi thông tin cấu hình PayOS (kèm Token Organizer)
-    HT->>DB: 5. Lưu hoặc cập nhật cấu hình thanh toán (đánh dấu đang hoạt động)
-    DB-->>HT: 6. Lưu thành công
-    HT-->>UI: 7. Thông báo cấu hình PayOS thành công
-    UI-->>Org: 8. Cổng thanh toán đã được kết nối
+    Organizer->>Màn hình: Nhập API Key, Client ID của PayOS và nhấn Lưu
+    Màn hình->>Hệ thống: Gửi dữ liệu cấu hình thanh toán
+    Hệ thống->>Hệ thống: Kiểm tra tính toàn vẹn và mã hóa bảo mật
+    Hệ thống->>CSDL: Lưu chuỗi cấu hình đã mã hóa
+    CSDL-->>Hệ thống: Xác nhận
+    Hệ thống-->>Màn hình: Trả về thành công
+    Màn hình-->>Organizer: Báo cấu hình cổng thanh toán thành công
 ```
 
 ---
 
-## UC26 – Xem cấu hình thanh toán PayOS (Organizer)
+## UC17 – Đặt mua vé sự kiện
 
 ```mermaid
 sequenceDiagram
-    actor Org as Người tổ chức
-    participant UI as Màn hình Cài đặt Thanh toán
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
+    actor User
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
 
-    Org->>UI: 1. Truy cập trang cài đặt thanh toán
-    UI->>HT: 2. Yêu cầu thông tin cấu hình PayOS hiện tại (kèm Token)
-    HT->>DB: 3. Tìm cấu hình PayOS theo tài khoản Organizer
-    alt Chưa cấu hình
-        DB-->>HT: 4a. Không có cấu hình
-        HT-->>UI: 4b. Thông báo chưa thiết lập PayOS
-        UI-->>Org: 4c. Hiển thị form trống, mời cấu hình
-    else Đã có cấu hình
-        DB-->>HT: 4. Trả về thông tin cấu hình
-        HT-->>UI: 5. Trả về dữ liệu cấu hình
-        UI-->>Org: 6. Hiển thị thông tin PayOS đã lưu
-    end
-```
-
----
-
-## UC27 – Đăng ký tham gia sự kiện (Mua vé)
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Chi tiết Sự kiện
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-    participant PayOS as Cổng thanh toán PayOS
-
-    User->>UI: 1. Nhấn "Đăng ký" hoặc "Mua vé"
-    UI->>HT: 2. Gửi yêu cầu đăng ký (kèm Token)
-    HT->>DB: 3. Kiểm tra sự kiện: trạng thái PUBLISHED, chưa qua thời gian bắt đầu
-    alt Sự kiện chưa công bố hoặc đã bắt đầu
-        HT-->>UI: 4a. Thông báo không thể đăng ký
-        UI-->>User: 4b. Hiển thị lỗi
-    end
-    HT->>DB: 4. Kiểm tra còn chỗ (vé đã bán < sức chứa)
-    alt Hết chỗ
-        HT-->>UI: 5a. Thông báo hết vé
-        UI-->>User: 5b. Hiển thị trạng thái hết vé
-    end
-    HT->>DB: 5. Kiểm tra người dùng chưa đăng ký sự kiện này
-    alt Đã đăng ký rồi
-        HT-->>UI: 6a. Thông báo đã đăng ký trước đó
-        UI-->>User: 6b. Chuyển đến trang vé
-    end
-    HT->>DB: 6. Giữ chỗ (tăng số vé đã bán lên 1)
-    HT->>HT: 7. Tạo mã đăng ký ngẫu nhiên
-
-    alt Sự kiện miễn phí (giá vé = 0)
-        HT->>DB: 8a. Lưu Đơn đăng ký (Trạng thái: ĐÃ XÁC NHẬN)
-        HT->>DB: 8b. Ghi nhận thanh toán ảo (Hệ thống, số tiền = 0, Thành công)
-        HT->>HT: 8c. Tạo mã QR vé điện tử
-        HT->>DB: 8d. Lưu vé (Trạng thái: ACTIVE, kèm mã QR)
-        HT-->>UI: 9a. Đăng ký thành công, vé đã được tạo
-        UI-->>User: 9b. Hiển thị vé điện tử kèm mã QR
-    else Sự kiện có phí
-        HT->>DB: 8. Lấy cấu hình PayOS của người tổ chức
-        alt Organizer chưa cấu hình PayOS
-            DB-->>HT: 8a. Không tìm thấy cấu hình
-            HT->>DB: 8b. Hoàn lại chỗ (giảm số vé bán)
-            HT-->>UI: 8c. Thông báo lỗi hệ thống thanh toán
-        else Có cấu hình PayOS
-            HT->>PayOS: 9. Tạo liên kết thanh toán
-            PayOS-->>HT: 10. Trả về đường dẫn thanh toán (checkoutUrl)
-            HT->>DB: 11. Lưu Đơn đăng ký (Trạng thái: CHỜ THANH TOÁN)
-            HT->>DB: 12. Lưu thông tin thanh toán (Trạng thái: PENDING, kèm checkoutUrl)
-            HT-->>UI: 13. Trả về đường dẫn thanh toán
-            UI-->>User: 14. Chuyển hướng sang trang thanh toán PayOS
+    User->>Màn hình: Chọn số lượng vé và nhấn Mua vé
+    Màn hình->>Hệ thống: Gửi yêu cầu đặt giữ chỗ
+    Hệ thống->>CSDL: Kiểm tra sức chứa hiện tại (Transaction Lock)
+    alt Sức chứa đã đầy
+        CSDL-->>Hệ thống: Báo hết vé
+        Hệ thống-->>Màn hình: Lỗi "Sự kiện đã bán hết vé"
+        Màn hình-->>User: Hiển thị lỗi từ chối
+    else Còn đủ vé
+        Hệ thống->>CSDL: Tạm trừ sức chứa và tạo hóa đơn chờ
+        CSDL-->>Hệ thống: Trả về thông tin hóa đơn
+        alt Vé miễn phí
+            Hệ thống->>CSDL: Sinh mã QR vé và đổi trạng thái Đã Thanh Toán
+            Hệ thống-->>Màn hình: Chuyển hướng trang Thành công
+            Màn hình-->>User: Hiển thị vé điện tử
+        else Vé có phí
+            Hệ thống-->>Màn hình: Trả về link thanh toán PayOS
+            Màn hình-->>User: Chuyển hướng sang cổng thanh toán ngân hàng
         end
     end
 ```
 
 ---
 
-## UC28 – Hủy vé miễn phí
+## UC18 – Thanh toán vé sự kiện
 
 ```mermaid
 sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Vé của tôi
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
+    actor User
+    participant PayOS
+    participant Hệ thống
+    participant CSDL
 
-    User->>UI: 1. Nhấn "Hủy vé" trên vé muốn hủy
-    UI-->>User: 2. Hộp thoại xác nhận "Bạn có chắc muốn hủy?"
-    alt Nhấn "Không"
-        User->>UI: 3a. Nhấn "Không"
-        UI-->>User: 3b. Đóng hộp thoại
-    else Xác nhận hủy
-        User->>UI: 3. Xác nhận hủy
-        UI->>HT: 4. Gửi yêu cầu hủy vé (kèm Token)
-        HT->>DB: 5. Tìm đơn đăng ký và kiểm tra trạng thái
-        alt Vé có phí và đã thanh toán (CONFIRMED)
-            DB-->>HT: 6a. ticketType = PAID và status != PENDING_PAYMENT
-            HT-->>UI: 6b. Không được hủy vé đã thanh toán
-            UI-->>User: 6c. Thông báo lỗi (REGISTRATION_CANNOT_BE_CANCELLED)
-        else Vé miễn phí hoặc Vé có phí nhưng chưa thanh toán
-            HT->>DB: 6. Chuyển đơn đăng ký → CANCELLED
-            HT->>DB: 7. Chuyển vé (nếu có) → INVALID
-            HT->>DB: 8. Giảm số vé đã bán (nhả lại chỗ)
-            DB-->>HT: 9. Lưu thành công
-            HT-->>UI: 10. Hủy vé thành công
-            UI-->>User: 11. Thông báo đã hủy, chỗ được nhả lại cho người khác
+    User->>PayOS: Quét mã QR chuyển khoản ngân hàng
+    PayOS->>PayOS: Xử lý giao dịch
+    PayOS-->>Hệ thống: Gửi tín hiệu Webhook báo có tiền
+    Hệ thống->>Hệ thống: Xác minh chữ ký bảo mật của Webhook
+    alt Chữ ký sai (Giao dịch giả)
+        Hệ thống-->>PayOS: Báo lỗi và hủy bỏ
+    else Chữ ký đúng
+        Hệ thống->>CSDL: Cập nhật hóa đơn thành Đã Thanh Toán
+        Hệ thống->>CSDL: Sinh mã QR vé điện tử
+        CSDL-->>Hệ thống: Xác nhận
+        Hệ thống-->>PayOS: Phản hồi tiếp nhận thành công
+        Hệ thống-->>User: Socket/Giao diện tự chuyển sang trang "Đặt vé thành công"
+    end
+```
+
+---
+
+## UC19 – Xem danh sách vé cá nhân
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
+
+    User->>Màn hình: Truy cập trang "Vé của tôi"
+    Màn hình->>Hệ thống: Yêu cầu lấy danh sách vé
+    Hệ thống->>CSDL: Lấy các vé thuộc về User ID
+    CSDL-->>Hệ thống: Trả về dữ liệu vé
+    Hệ thống-->>Màn hình: Gửi dữ liệu hiển thị
+    Màn hình-->>User: Hiển thị danh sách vé kèm mã QR để soát vé
+```
+
+---
+
+## UC20 – Hủy vé đã đặt
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
+
+    User->>Màn hình: Nhấn Hủy vé
+    Màn hình->>Hệ thống: Gửi yêu cầu hủy
+    Hệ thống->>CSDL: Kiểm tra trạng thái thanh toán của vé
+    alt Vé đã được trả tiền
+        Hệ thống-->>Màn hình: Báo lỗi không cho tự động hủy
+        Màn hình-->>User: Hiển thị "Vui lòng liên hệ BTC để hoàn tiền"
+    else Vé miễn phí hoặc chưa thanh toán
+        Hệ thống->>CSDL: Đổi trạng thái vé sang Đã Hủy
+        Hệ thống->>CSDL: Nhả lại sức chứa (Cộng lại vé)
+        CSDL-->>Hệ thống: Xác nhận
+        Hệ thống-->>Màn hình: Báo thành công
+        Màn hình-->>User: Thông báo vé đã được hủy thành công
+    end
+```
+
+---
+
+## UC21 – Quét mã QR soát vé (Check-in)
+
+```mermaid
+sequenceDiagram
+    actor Staff
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
+
+    Staff->>Màn hình: Dùng thiết bị quét mã QR của khách
+    Màn hình->>Hệ thống: Gửi mã QR cần kiểm tra
+    Hệ thống->>CSDL: Truy vấn thông tin vé
+    alt Vé sai / Không có / Sai sự kiện
+        CSDL-->>Hệ thống: Không tìm thấy vé
+        Hệ thống-->>Màn hình: Báo lỗi vé không hợp lệ
+        Màn hình-->>Staff: Hiển thị màn hình đỏ (Từ chối)
+    else Vé hợp lệ
+        Hệ thống->>Hệ thống: Kiểm tra trạng thái vé
+        alt Vé đã Check-in trước đó
+            Hệ thống-->>Màn hình: Báo lỗi vé đã sử dụng
+            Màn hình-->>Staff: Hiển thị màn hình đỏ "Vé đã sử dụng"
+        else Vé hợp lệ và chưa dùng
+            Hệ thống->>CSDL: Đổi trạng thái vé sang "Đã sử dụng"
+            Hệ thống->>CSDL: Ghi log thời gian soát vé
+            CSDL-->>Hệ thống: Xác nhận
+            Hệ thống-->>Màn hình: Báo thành công
+            Màn hình-->>Staff: Hiển thị màn hình xanh (Cho qua)
         end
     end
 ```
 
 ---
 
-## UC29 – Thanh toán vé thông qua PayOS
+## UC22 – Xem lịch sử Check-in
 
 ```mermaid
 sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Thanh toán PayOS
-    participant HT as Hệ thống
-    participant PayOS as Cổng thanh toán PayOS
+    actor Organizer
+    participant Màn hình
+    participant Hệ thống
+    participant CSDL
 
-    User->>UI: 1. Truy cập đường dẫn thanh toán PayOS (checkoutUrl)
-    UI->>PayOS: 2. Yêu cầu tải giao diện thanh toán
-    PayOS-->>UI: 3. Hiển thị mã QR và thông tin chuyển khoản
-    User->>UI: 4. Quét mã QR bằng ứng dụng ngân hàng và hoàn tất chuyển khoản
-    UI->>PayOS: 5. Chuyển tiền thành công
-    PayOS-->>UI: 6. Xác nhận giao dịch thành công trên giao diện
-    UI-->>User: 7. Tự động chuyển hướng về trang Hệ thống
-    User->>HT: 8. Truy cập trang kết quả của Hệ thống
-    HT->>HT: 9. Kích hoạt Đồng bộ trạng thái đơn hàng (Xem UC30)
-```
-
----
-
-## UC30 – Đồng bộ trạng thái đơn hàng thủ công
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Kết quả thanh toán
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-    participant PayOS as Cổng thanh toán PayOS
-
-    User->>UI: 1. Nhấn "Kiểm tra trạng thái thanh toán" hoặc được điều hướng về từ PayOS
-    UI->>HT: 2. Yêu cầu đồng bộ trạng thái đơn hàng (kèm mã đơn)
-    HT->>DB: 3. Tìm đơn hàng theo mã
-    alt Đơn không tồn tại
-        DB-->>HT: 4a. Không tìm thấy
-        HT-->>UI: 4b. Thông báo không tìm thấy đơn hàng
-    else Đơn đã xử lý (THÀNH CÔNG / THẤT BẠI / ĐÃ HỦY)
-        DB-->>HT: 4. Trả về trạng thái hiện tại
-        HT-->>UI: 5. Trả về kết quả ngay (không cần gọi PayOS)
-        UI-->>User: 6. Hiển thị trạng thái đơn hàng
-    else Đơn vẫn PENDING
-        HT->>PayOS: 5. Hỏi trực tiếp PayOS về trạng thái đơn hàng
-        alt PayOS báo đã thanh toán
-            PayOS-->>HT: 6a. ĐÃ THANH TOÁN
-            HT->>DB: 6b. Cập nhật Thanh toán → THÀNH CÔNG, Đăng ký → XÁC NHẬN
-            HT->>HT: 6c. Tạo mã QR vé điện tử
-            HT->>DB: 6d. Lưu vé (ACTIVE)
-            HT-->>UI: 7a. Thanh toán thành công, vé đã được tạo
-            UI-->>User: 7b. Hiển thị vé điện tử
-        else PayOS báo đã hủy / hết hạn
-            PayOS-->>HT: 6. ĐÃ HỦY / HẾT HẠN
-            HT->>DB: 7. Cập nhật → THẤT BẠI, nhả lại chỗ
-            HT-->>UI: 8. Thanh toán thất bại
-            UI-->>User: 9. Thông báo đơn bị hủy
-        else PayOS vẫn báo PENDING
-            PayOS-->>HT: 6. VẪN ĐANG CHỜ
-            HT-->>UI: 7. Đơn hàng đang chờ thanh toán
-            UI-->>User: 8. Mời người dùng thử lại sau
-        end
-    end
-```
-
----
-
-## UC31 – Xem danh sách đơn hàng đang chờ thanh toán
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Đơn hàng của tôi
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    User->>UI: 1. Truy cập trang "Đơn hàng chờ thanh toán"
-    UI->>HT: 2. Yêu cầu danh sách đơn hàng PENDING (kèm Token)
-    HT->>HT: 3. Đọc danh tính người dùng từ Token
-    HT->>DB: 4. Truy vấn đơn hàng PENDING của tài khoản hiện tại (sắp xếp mới nhất trước)
-    DB-->>HT: 5. Trả về danh sách đơn hàng (kèm đường dẫn thanh toán)
-    HT-->>UI: 6. Trả về dữ liệu
-    UI-->>User: 7. Hiển thị danh sách đơn hàng chưa thanh toán
-    User->>UI: 8. Nhấn vào đường dẫn thanh toán để tiếp tục
-    UI-->>User: 9. Chuyển hướng sang trang PayOS
-```
-
----
-
-## UC32 – Xem vé cá nhân (My Tickets)
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Vé của tôi
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    User->>UI: 1. Truy cập trang "Vé của tôi"
-    UI->>HT: 2. Yêu cầu danh sách vé cá nhân (kèm Token)
-    HT->>HT: 3. Đọc danh tính từ Token
-    HT->>DB: 4. Truy vấn tất cả vé thuộc tài khoản hiện tại (có phân trang)
-    DB-->>HT: 5. Trả về danh sách vé (kèm mã QR thật, tên sự kiện, trạng thái, thời gian check-in)
-    HT-->>UI: 6. Trả về dữ liệu
-    UI-->>User: 7. Hiển thị danh sách vé kèm mã QR để đi check-in
-```
-
----
-
-## UC33 – Xem danh sách ng tham gia của sự kiện (Admin / Organizer / Staff)
-
-```mermaid
-sequenceDiagram
-    actor User as Admin / Người tổ chức / Nhân viên
-    participant UI as Màn hình Quản lý Khách tham dự
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    User->>UI: 1. Truy cập trang "Danh sách khách tham dự" của sự kiện
-    UI->>HT: 2. Yêu cầu danh sách vé của sự kiện (kèm Token)
-    HT->>DB: 3. Kiểm tra quyền truy cập
-    note over HT,DB: Admin: Có quyền với mọi sự kiện<br/>Organizer: Chỉ sự kiện do mình tạo<br/>Staff: Chỉ sự kiện được phân công
-    alt Không có quyền
-        DB-->>HT: 4a. Không có quyền
-        HT-->>UI: 4b. Từ chối truy cập (403)
-        UI-->>User: 4c. Thông báo không có quyền
-    else Có quyền
-        HT->>DB: 4. Truy vấn danh sách vé theo sự kiện (có phân trang)
-        DB-->>HT: 5. Trả về danh sách vé (Họ tên, Email, Trạng thái vé, Đã check-in chưa)
-        HT-->>UI: 6. Trả về danh sách
-        UI-->>User: 7. Hiển thị bảng danh sách khách tham dự
-    end
-```
-
----
-
-## UC34 – Quét mã QR Check-in
-
-```mermaid
-sequenceDiagram
-    actor Staff as Nhân viên soát vé
-    participant App as Ứng dụng Quét mã
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    Staff->>App: 1. Mở tính năng quét mã QR
-    App-->>Staff: 2. Bật camera, sẵn sàng quét
-    Staff->>App: 3. Hướng camera vào mã QR trên điện thoại khách
-    App->>HT: 4. Gửi mã QR lên hệ thống để xác thực (kèm Token nhân viên)
-    HT->>DB: 5. Tìm vé tương ứng với mã QR (khóa ghi để tránh check-in trùng)
-    alt Mã QR không tồn tại
-        DB-->>HT: 6a. Không tìm thấy vé
-        HT-->>App: 6b. Mã QR không hợp lệ
-        App-->>Staff: 6c. ❌ Hiển thị cảnh báo màu đỏ
-    else Vé đã được sử dụng (check-in rồi)
-        DB-->>HT: 6. Vé trạng thái USED
-        HT-->>App: 7a. Vé đã được check-in trước đó
-        App-->>Staff: 7b. ⚠️ Cảnh báo vé đã dùng
-    else Vé bị hủy (INVALID)
-        DB-->>HT: 6. Vé trạng thái INVALID
-        HT-->>App: 7a. Vé không còn hiệu lực
-        App-->>Staff: 7b. ❌ Hiển thị lỗi
-    else Nhân viên không có quyền với sự kiện này
-        HT->>DB: 6. Kiểm tra nhân viên được phân công vào sự kiện chưa
-        DB-->>HT: 6a. Chưa được phân công
-        HT-->>App: 7a. Không có quyền check-in sự kiện này
-        App-->>Staff: 7b. ❌ Từ chối
-    else Vé hợp lệ (ACTIVE)
-        HT->>DB: 6. Cập nhật vé → ĐÃ SỬ DỤNG, ghi thời gian check-in
-        HT->>DB: 7. Ghi nhật ký check-in (nhân viên thực hiện, phương thức: Quét QR)
-        DB-->>HT: 8. Lưu thành công
-        HT-->>App: 9. Trả về thông tự khách (Họ tên, Email, Trạng thái)
-        App-->>Staff: 10. ✅ Cổng mở - Hiển thị tên khách
-    end
-```
-
----
-
-## UC35 – Đồng bộ Check-in hàng loạt khi Offline (Batch Sync)
-
-```mermaid
-sequenceDiagram
-    actor Staff as Nhân viên soát vé
-    participant App as Ứng dụng Quét mã (Offline)
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    note over Staff,App: Trước khi mất mạng: Nhân viên đã tải danh sách vé về máy
-    Staff->>App: 1. Quét vé offline khi mất kết nối mạng
-    App->>App: 2. Lưu danh sách mã đã quét vào bộ nhớ máy
-
-    note over App,HT: Khi có mạng trở lại
-    App->>HT: 3. Gửi toàn bộ danh sách mã đã quét offline lên hệ thống
-    HT->>DB: 4. Kiểm tra quyền nhân viên với sự kiện
-    alt Không có quyền
-        HT-->>App: 5a. Từ chối
-    else Có quyền
-        loop Xử lý từng mã (mỗi mã là một giao dịch độc lập)
-            HT->>DB: 5. Tìm vé theo mã
-            alt Mã không tìm thấy
-                HT->>HT: 5a. Ghi nhận lỗi: mã không tồn tại
-            else Vé đã check-in
-                HT->>HT: 5b. Ghi nhận lỗi: vé đã được sử dụng
-            else Vé bị hủy
-                HT->>HT: 5c. Ghi nhận lỗi: vé không hợp lệ
-            else Vé hợp lệ
-                HT->>DB: 6. Cập nhật vé → ĐÃ SỬ DỤNG
-                HT->>DB: 7. Ghi nhật ký check-in (phương thức: Đồng bộ Offline)
-                HT->>HT: 8. Ghi nhận thành công
-            end
-        end
-        HT-->>App: 9. Trả về kết quả tổng hợp (Tổng: X, Thành công: Y, Thất bại: Z, Chi tiết lỗi)
-        App-->>Staff: 10. Hiển thị kết quả đồng bộ
-    end
-```
-
----
-
-## UC36 – Tự động hủy đơn hàng quá hạn (Scheduler)
-
-```mermaid
-sequenceDiagram
-    participant SCH as Bộ lên lịch tự động (Chạy mỗi 5 phút)
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    note over SCH: Tự kích hoạt mỗi 5 phút (300.000 ms)
-    SCH->>HT: 1. Kích hoạt tác vụ dọn dẹp đơn hàng quá hạn
-    HT->>DB: 2. Tìm tất cả đơn hàng PENDING đã tạo quá 30 phút
-    alt Không có đơn nào hết hạn
-        DB-->>HT: 3a. Danh sách rỗng
-        HT->>HT: 3b. Kết thúc sớm, không thực hiện gì
-    else Có đơn hàng hết hạn
-        DB-->>HT: 3. Trả về danh sách đơn hàng hết hạn
-        loop Mỗi đơn hàng hết hạn
-            HT->>DB: 4. Cập nhật đơn hàng → ĐÃ HỦY
-            HT->>DB: 5. Cập nhật đơn đăng ký tương ứng → ĐÃ HỦY
-            HT->>DB: 6. Giảm số vé đã bán (nhả lại chỗ cho người khác đặt)
-        end
-        DB-->>HT: 7. Lưu tất cả thay đổi
-        HT->>HT: 8. Ghi log số đơn đã xử lý
-    end
-    HT-->>SCH: 9. Hoàn thành chu kỳ, chờ đến lần tiếp theo
-```
-
-## UC37:Xem lịch sử giao dịch cá nhân
-
-```mermaid
-sequenceDiagram
-    actor User as Người dùng
-    participant UI as Màn hình Lịch sử giao dịch
-    participant HT as Hệ thống
-    participant DB as Cơ sở dữ liệu
-
-    User->>UI: 1. Mở trang "Lịch sử giao dịch"
-    UI->>HT: 2. Gửi yêu cầu (kèm Token xác thực)
-    HT->>DB: 3. Tìm tất cả đơn hàng của User này
-    alt Không có dữ liệu
-        DB-->>HT: 4a. Trả về danh sách rỗng
-        HT-->>UI: 4b. Trả về danh sách rỗng
-        UI-->>User: 4c. Hiển thị thông báo: "Bạn chưa có giao dịch"
-    else Có dữ liệu
-        DB-->>HT: 4. Trả về danh sách đơn hàng (Trạng thái, Thời gian, Tổng tiền)
-        HT-->>UI: 5. Trả về JSON dữ liệu
-        UI-->>User: 6. Hiển thị danh sách giao dịch
-    end
+    Organizer->>Màn hình: Mở trang Nhật ký Check-in
+    Màn hình->>Hệ thống: Yêu cầu danh sách khách đã vào cổng
+    Hệ thống->>CSDL: Truy xuất log soát vé của sự kiện
+    CSDL-->>Hệ thống: Trả về danh sách (Tên khách, Thời gian, Người quét)
+    Hệ thống-->>Màn hình: Gửi dữ liệu hiển thị
+    Màn hình-->>Organizer: Hiển thị danh sách khách
 ```
