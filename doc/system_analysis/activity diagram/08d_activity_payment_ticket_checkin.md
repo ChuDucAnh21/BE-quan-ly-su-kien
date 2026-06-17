@@ -235,7 +235,7 @@ flowchart TD
 
 ---
 
-## UC21 – Quét mã QR soát vé (Check-in)
+## UC21 – Quét mã QR soát vé (Check-in Online / Offline)
 
 ```mermaid
 %%{init: {"flowchart": {"curve": "linear"}}}%%
@@ -252,16 +252,26 @@ flowchart TD
         T_end(" "):::hidden
     end
 
-    subgraph System [Hệ thống]
+    subgraph System [Hệ thống / Ứng dụng]
         direction TB
         H_start(" "):::hidden
         Start((Bắt đầu)):::startNode
-        B{Mã vé tồn tại?}
+        Net{Có mạng Internet?}
+        
+        %% Nhánh Online
+        B{Mã vé tồn tại trên máy chủ?}
         C{Đúng sự kiện?}
         D{Đã sử dụng chưa?}
         E(Báo màn hình đỏ từ chối)
-        F(Đổi trạng thái vé Đã Sử Dụng)
-        G(Lưu nhật ký và Báo xanh thành công)
+        F(Cập nhật vé Đã sử dụng)
+        G(Lưu lịch sử và hiện màn hình xanh kèm thông tin vé)
+        
+        %% Nhánh Offline
+        O1(Mã hóa QR và so sánh với danh sách lưu trên máy)
+        O2{Mã vé hợp lệ và chưa check-in?}
+        O3(Lưu thông tin mã vé vào máy)
+        O4(Hiện màn hình xanh - Sẽ đồng bộ khi có mạng)
+        
         End(((Kết thúc))):::endNode
         H_end(" "):::hidden
     end
@@ -269,7 +279,10 @@ flowchart TD
     T_start ~~~ H_start
     T_end ~~~ H_end
     Start --> A
-    A --> B
+    A --> Net
+    
+    %% Luồng Online
+    Net -- Có --> B
     B -- Không --> E
     B -- Có --> C
     C -- Không --> E
@@ -278,6 +291,15 @@ flowchart TD
     D -- Chưa --> F
     F --> G
     G --> End
+    
+    %% Luồng Offline
+    Net -- Không --> O1
+    O1 --> O2
+    O2 -- Không --> E
+    O2 -- Có --> O3
+    O3 --> O4
+    O4 --> End
+    
     E --> End
 
     style Staff fill:#fff,stroke:#333,stroke-width:2px

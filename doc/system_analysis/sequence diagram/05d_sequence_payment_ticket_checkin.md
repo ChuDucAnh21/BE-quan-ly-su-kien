@@ -130,28 +130,39 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Staff
-    participant Màn hình
+    participant App (Điện thoại)
     participant Hệ thống
     participant CSDL
 
-    Staff->>Màn hình: Dùng thiết bị quét mã QR của khách
-    Màn hình->>Hệ thống: Gửi mã QR cần kiểm tra
-    Hệ thống->>CSDL: Truy vấn thông tin vé
-    alt Vé sai / Không có / Sai sự kiện
-        CSDL-->>Hệ thống: Không tìm thấy vé
-        Hệ thống-->>Màn hình: Báo lỗi vé không hợp lệ
-        Màn hình-->>Staff: Hiển thị màn hình đỏ (Từ chối)
-    else Vé hợp lệ
-        Hệ thống->>Hệ thống: Kiểm tra trạng thái vé
-        alt Vé đã Check-in trước đó
-            Hệ thống-->>Màn hình: Báo lỗi vé đã sử dụng
-            Màn hình-->>Staff: Hiển thị màn hình đỏ "Vé đã sử dụng"
-        else Vé hợp lệ và chưa dùng
-            Hệ thống->>CSDL: Đổi trạng thái vé sang "Đã sử dụng"
-            Hệ thống->>CSDL: Ghi log thời gian soát vé
-            CSDL-->>Hệ thống: Xác nhận
-            Hệ thống-->>Màn hình: Báo thành công
-            Màn hình-->>Staff: Hiển thị màn hình xanh (Cho qua)
+    Staff->>App (Điện thoại): Quét mã QR của khách
+    App (Điện thoại)->>App (Điện thoại): Kiểm tra kết nối Internet
+    alt Có mạng (Online)
+        App (Điện thoại)->>Hệ thống: Gửi mã QR để kiểm tra
+        Hệ thống->>CSDL: Truy vấn thông tin vé
+        alt Vé sai / Không tìm thấy / Sai sự kiện
+            CSDL-->>Hệ thống: Không tìm thấy vé
+            Hệ thống-->>App (Điện thoại): Báo lỗi vé không hợp lệ
+            App (Điện thoại)-->>Staff: Hiển thị màn hình đỏ (Từ chối)
+        else Vé hợp lệ
+            Hệ thống->>Hệ thống: Kiểm tra trạng thái vé
+            alt Vé đã được sử dụng
+                Hệ thống-->>App (Điện thoại): Báo lỗi vé đã sử dụng
+                App (Điện thoại)-->>Staff: Hiển thị màn hình đỏ "Vé đã sử dụng"
+            else Vé hợp lệ và chưa dùng
+                Hệ thống->>CSDL: Đổi trạng thái vé sang "Đã sử dụng"
+                Hệ thống->>CSDL: Ghi log thời gian soát vé
+                CSDL-->>Hệ thống: Xác nhận
+                Hệ thống-->>App (Điện thoại): Báo thành công
+                App (Điện thoại)-->>Staff: Hiển thị màn hình xanh kèm thông tin vé
+            end
+        end
+    else Không có mạng (Offline)
+        App (Điện thoại)->>App (Điện thoại): Mã hóa QR để so sánh với danh sách vé lưu trên máy
+        alt Không hợp lệ / Đã check-in
+            App (Điện thoại)-->>Staff: Hiển thị màn hình đỏ (Lỗi)
+        else Hợp lệ
+            App (Điện thoại)->>App (Điện thoại): Lưu thông tin mã vé vào máy
+            App (Điện thoại)-->>Staff: Hiển thị màn hình xanh (Sẽ đồng bộ khi có mạng)
         end
     end
 ```

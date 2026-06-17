@@ -1,0 +1,50 @@
+spring:
+  datasource: # kết nối database
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Cấu hình Gửi Email (Placeholder) để gửi mã khi quên mật khẩu
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD} #mk được lấy từ cài đặt bảo mật của gmail
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # OpenAI API
+  ai:
+    openai:
+      api-key: ${OPENROUTER_API_KEY}
+      base-url: https://openrouter.ai/api
+      chat:
+        options:
+          model: openrouter/free
+          temperature: 0.4
+
+#port
+server:
+  port: ${PORT:8080}
+
+# Cấu hình JWT an toàn (HS256)
+app:
+  jwt:
+    # Key này phải cực kỳ bảo mật (Base64 JWT Secret có độ dài tối thiểu 256bit)
+    secret: ${JWT_SECRET}
+    expiration: 86400000 # 24 giờ (Access Token)
+    refresh-expiration: 2592000000 # 30 ngày (Refresh Token)
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+
+# Cấu hình Cloudinary (Thực tế sẽ nhét giá trị lấy từ nền tảng Cloudinary)
+# để lưu trữ ảnh sự kiện
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}

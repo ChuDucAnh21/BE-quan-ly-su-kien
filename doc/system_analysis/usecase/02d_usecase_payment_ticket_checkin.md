@@ -80,9 +80,9 @@
 | **Tác nhân** | Staff |
 | **Mức độ ưu tiên** | Rất cao |
 | **Điều kiện bắt buộc** | Staff được Organizer phân công soát vé sự kiện. |
-| **Luồng sự kiện chính** | 1. Staff dùng thiết bị quét mã QR trên vé của khách.<br>2. Hệ thống xác minh sự tồn tại của vé.<br>3. Hệ thống kiểm tra quyền soát vé của Staff đối với sự kiện này.<br>4. Hệ thống kiểm tra vé chưa qua sử dụng.<br>5. Hệ thống đổi vé sang trạng thái "Đã sử dụng".<br>6. Hệ thống ghi nhận lịch sử vào cổng và báo hiệu màn hình xanh thành công. |
-| **Luồng ngoại lệ** | - Mã vé sai, trái tuyến, hoặc đã quét trước đó: Hệ thống báo lỗi màn hình đỏ. |
-| **Yêu cầu phi chức năng** | - Tốc độ soát vé phải dưới 1 giây. |
+| **Luồng sự kiện chính** | 1. Staff quét mã QR trên vé.<br>2. Ứng dụng kiểm tra trạng thái kết nối mạng.<br>3. **[Trường hợp Online]**: Hệ thống xác minh vé tồn tại, kiểm tra quyền soát vé của Staff và tình trạng vé.<br>4. Nếu vé hợp lệ, hệ thống cập nhật thành "Đã sử dụng", ghi nhận lịch sử và báo màn hình xanh hiển thị thông tin vé.<br>5. **[Trường hợp Offline]**: Ứng dụng tự động mã hóa mã QR quét được để so sánh với mã vé trong danh sách người tham gia được lưu trên máy.<br>6. Nếu hợp lệ, thông tin mã vé sẽ được lưu lại trên máy, tới khi có mạng trở lại toàn bộ danh sách vé sẽ được đẩy lên hệ thống. |
+| **Luồng ngoại lệ** | - Mã vé sai, trái tuyến, hoặc đã quét trước đó: Hệ thống (hoặc ứng dụng Offline) báo lỗi màn hình đỏ.<br>- Dữ liệu Offline sẽ được tự động đồng bộ lên máy chủ khi thiết bị có mạng trở lại. |
+| **Yêu cầu phi chức năng** | - Tốc độ soát vé phải dưới 1 giây ngay cả khi Offline. |
 
 ---
 
