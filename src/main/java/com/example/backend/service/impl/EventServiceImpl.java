@@ -474,6 +474,21 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
+        String ongoingStatus = calculateOngoingStatus(event.getRegistrationStartTime(), event.getRegistrationEndTime(),
+                event.getStartTime(), event.getEndTime());
+        // nếu sự kiện đang diễn ra hoặc đã kết thúc hoặc đã có vé được bán thì không
+        // cho phép thay đổi trạng thái draff
+        if(newStatus == EventStatus.DRAFT){
+            log.info(ongoingStatus);
+        if (ongoingStatus.equals("ONGOING") || ongoingStatus.equals("ENDED")) {
+            throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
+        }
+        if (event.getSoldTickets() > 0) {
+            throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
+        }
+
+        }
+
         // Quyền lực Admin: Được quyền can thiệp nếu là trường hợp xấu
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOwner = event.getOrganizer().getId().equals(currentUser.getId());
@@ -481,7 +496,6 @@ public class EventServiceImpl implements EventService {
         if (!isAdmin && !isOwner) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         // Logic check nếu bật cấu hình PUBLISHED cho sự kiện Bán Vé
         if (newStatus == EventStatus.PUBLISHED && event.getTicketPrice().compareTo(BigDecimal.ZERO) > 0) {
             boolean hasPayOS = paymentConfigRepository.existsByUserAndIsActiveTrue(event.getOrganizer());

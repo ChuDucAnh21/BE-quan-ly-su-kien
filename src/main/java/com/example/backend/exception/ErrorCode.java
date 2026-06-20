@@ -34,6 +34,7 @@ public enum ErrorCode {
         SCHEDULE_NOT_FOUND(404, "Không tìm thấy lịch trình sự kiện", HttpStatus.NOT_FOUND),
         TIME_OUT_OF_EVENT_BOUNDS(400, "Thời gian lịch trình con vượt ra khỏi khuôn khổ sự kiện cha",
                         HttpStatus.BAD_REQUEST),
+        EVENT_CANNOT_CHANGE_DRAFT(400, "Không thể thay đổi trạng thái sự kiện về bản nháp", HttpStatus.BAD_REQUEST),
 
         // Lỗi liên quan đến Quên mật khẩu
         INVALID_RESET_TOKEN(400, "Mã khôi phục không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),
@@ -62,9 +63,9 @@ public enum ErrorCode {
 
         // Lỗi liên quan đến Check-in & Ticketing (Phase 9)
         TICKET_NOT_FOUND(404, "Mã vé không tồn tại", HttpStatus.NOT_FOUND),
-        TICKET_ALREADY_USED(400, "Vé ĐÃ ĐƯỢC CHECK-IN (Cảnh báo quét lặp)", HttpStatus.BAD_REQUEST),
+        TICKET_ALREADY_USED(400, "Vé đã được checkin trước đó", HttpStatus.BAD_REQUEST),
         TICKET_INVALID(400, "Vé KHÔNG HỢP LỆ hoặc đã bị hệ thống hủy", HttpStatus.BAD_REQUEST),
-        WRONG_EVENT_TICKET(400, "CẢNH BÁO: Vé hợp lệ nhưng KHÔNG THUỘC SỰ KIỆN NÀY!", HttpStatus.BAD_REQUEST);
+        WRONG_EVENT_TICKET(400, "CẢNH BÁO: Vé không thuộc sự kiện này", HttpStatus.BAD_REQUEST);
 
         private final int code; // Mã lỗi nội bộ để Frontend dễ xử lý logic
         private final String message; // Thông báo hiển thị cho người dùng

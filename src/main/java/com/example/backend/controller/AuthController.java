@@ -8,6 +8,9 @@ import com.example.backend.dto.request.ResetPasswordRequest;
 import com.example.backend.dto.response.ApiResponse;
 import com.example.backend.dto.response.LoginResponse;
 import com.example.backend.dto.response.UserProfileResponse;
+// import com.example.backend.entity.User;
+// import com.example.backend.enums.Role;
+// import com.example.backend.enums.UserStatus;
 import com.example.backend.security.JwtTokenProvider;
 import com.example.backend.service.AuthService;
 import com.example.backend.service.PasswordResetService;
@@ -220,4 +223,22 @@ public class AuthController {
                                                 .build())
                                 .build();
         }
+
+        // @PostMapping("/generate-test-users")
+        // public String generateUsers() {
+
+        // for (int i = 92; i <= 100; i++) {
+
+        // RegisterRequest rq = new RegisterRequest();
+
+        // rq.setFullName("nguoidung" + i);
+        // rq.setEmail("nguoidung" + i + "@gmail.com");
+        // rq.setPassword("123456");
+        // rq.setPhone("090000" + String.format("%04d", i));
+
+        // authService.register(rq);
+        // }
+
+        // return "OK";
+        // }
 }

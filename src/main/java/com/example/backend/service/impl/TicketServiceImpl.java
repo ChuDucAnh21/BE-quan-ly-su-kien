@@ -114,6 +114,13 @@ public class TicketServiceImpl implements TicketService {
                 Ticket ticket = ticketRepository.findByQrCodeWithLock(request.getQrCode())
                                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
 
+                // Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
+                if (!ticket.getRegistration().getEvent().getId().equals(request.getEventId())) {
+                        log.warn("CẢNH BÁO QUÉT SAI SỰ KIỆN: Nhân viên quét mã {} nhưng vé này thuộc về Sự kiện ID: {}",
+                                request.getQrCode(), ticket.getRegistration().getEvent().getId());
+                        throw new AppException(ErrorCode.WRONG_EVENT_TICKET);
+                }
+
                 // 2. Ràng buộc Tình Trạng Vé
                 if (ticket.getStatus() == TicketStatus.USED) {
                         log.warn("Vé này ĐÃ ĐƯỢC CHECK-IN TỪ TRƯỚC! Cảnh báo Lừa Đảo Quét Nhiều Thiết Bị (Duplicate Code): {}",
@@ -126,12 +133,7 @@ public class TicketServiceImpl implements TicketService {
                         throw new AppException(ErrorCode.TICKET_INVALID);
                 }
 
-                // Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
-                if (!ticket.getRegistration().getEvent().getId().equals(request.getEventId())) {
-                        log.warn("CẢNH BÁO QUÉT SAI SỰ KIỆN: Nhân viên quét mã {} nhưng vé này thuộc về Sự kiện ID: {}",
-                                        request.getQrCode(), ticket.getRegistration().getEvent().getId());
-                        throw new AppException(ErrorCode.WRONG_EVENT_TICKET);
-                }
+
 
                 // 3. Kỹ thuật kiểm tra quyền của người soát vé.
                 // Người checkin phải là Admin, Organizer hoặc nằm trong danh sách Staff của
@@ -270,7 +272,7 @@ public class TicketServiceImpl implements TicketService {
                                 .ticket(ticket)
                                 .checkedInBy(staffUser)
                                 .checkInAt(LocalDateTime.now())
-                                .method(CheckInMethod.MANUAL) // Đánh dấu là Check-in bằng tay / Offline Sync
+                                .method(CheckInMethod.QR) // Đánh dấu là Check-in bằng tay / Offline Sync
                                 .build();
                 checkInLogRepository.save(checkInLog);
 
