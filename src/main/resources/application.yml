@@ -12,9 +12,6 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
     defer-datasource-initialization: true # Đợi Hibernate tạo xong cấu trúc rồi mới chạy SQL script
-  sql:
-    init:
-      mode: always # Luôn chạy các file data.sql và schema.sql lúc khởi động
   jackson:
     serialization:
       write-dates-as-timestamps: false # Trả về dạng chuỗi ISO thay vì mảng số

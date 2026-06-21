@@ -5,6 +5,14 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  jpa:
+    hibernate:
+      ddl-auto: update # Hoặc đổi thành 'validate' nếu bạn muốn an toàn tuyệt đối
+    show-sql: false # Tắt show-sql ở môi trường prod để log không bị quá tải và bảo mật hơn
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
   # Cấu hình Gửi Email (Placeholder) để gửi mã khi quên mật khẩu
   mail:
     host: smtp.gmail.com
