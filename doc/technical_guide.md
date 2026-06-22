@@ -5,7 +5,6 @@
 <!-- Khi nào chạy render thì thêm -->
 
 ```properties
-SPRING_PROFILES_ACTIVE=prod
 
 DB_HOST=...
 DB_NAME=...
@@ -21,6 +20,26 @@ PAYOS_CLIENT_ID=...
 PAYOS_API_KEY=...
 PAYOS_CHECKSUM_KEY=...
 ```
+
+## CÁCH DEPLOY LẠI PROJECT trên AWS
+
+1. Build lại file .jar (Trên máy tính của bạn)
+   Mở terminal (trong vscode/anti) tại thư mục dự án và chạy: **`./mvnw clean install -DskipTests`**
+   -> sinh ra file đuổi .jar nằm ở **`/target`**
+
+2. Dừng tiến trình cũ trên Server (Trên Termius)
+   Gõ lệnh (trên giao diên ubuntu Termius) : **`ps -ef | grep java`**
+
+Bạn sẽ thấy một dòng có chứa java -jar .... Hãy lấy con số ở cột thứ 2 (ví dụ 12345) và dùng lệnh: **`kill -9 12345`**
+
+3. Upload file .jar mới (Trên Termius/SFTP)
+   b1: Mở tab SFTP của Termius.
+   b2: Kéo file .jar mới từ máy tính của bạn thả vào /home/ubuntu/ trên server (chọn Overwrite - Ghi đè).
+
+4. Khởi chạy lại ứng dụng
+   b1: quay lại giao diện dòng lệnh ubuntu
+   b2 : dùng chuỗi lệnh đã lưu trong Snippet (các biến môi trường trong BE)
+   b3: chạy: **`tail -f app.log`** để kiểm tra
 
 ## PHẦN 1: GIAI ĐOẠN 1 (CORE ARCHITECTURE)
 

@@ -57,10 +57,10 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     // URL callback của FE sau khi thanh toán PayOS, cấu hình trong
     // application.properties
-    @Value("${app.payment.return-url:http://localhost:3000/notifincation/register/registerSuccess}")
+    @Value("${app.payment.return-url:https://hub-events-iota.vercel.app/notifincation/register/registerSuccess}")
     private String paymentReturnUrl;
 
-    @Value("${app.payment.cancel-url:http://localhost:3000/notifincation/register/registerFaild}")
+    @Value("${app.payment.cancel-url:https://hub-events-iota.vercel.app/notifincation/register/registerFaild}")
     private String paymentCancelUrl;
 
     private User getCurrentUser() {
