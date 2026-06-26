@@ -11,80 +11,134 @@ import com.example.backend.enums.EventStatus;
 import com.example.backend.repository.EventRepository;
 import com.example.backend.repository.EventScheduleRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 // --- DTO RECORDS CHO CÁC CÔNG CỤ (TOOLS) ---
 
 // 1. Tìm kiếm sự kiện
-record EventSearchRequest(String keyword) {}
-record EventSummary(Long id, String name, String time, String price, String location, String category) {}
-record EventSearchResponse(List<EventSummary> events, String message) {}
+record EventSearchRequest(@JsonPropertyDescription("Từ khóa tìm kiếm (tên sự kiện)") String keyword) {
+}
+
+record EventSummary(Long id, String name, String time, String price, String location, String category) {
+}
+
+record EventSearchResponse(List<EventSummary> events, String message) {
+}
 
 // 2. Chi tiết sự kiện
-record EventDetailsRequest(Long eventId) {}
+record EventDetailsRequest(@JsonPropertyDescription("ID của sự kiện cần xem chi tiết") Long eventId) {
+}
+
 record EventDetailsResponse(
-    Long id,
-    String title,
-    String category,
-    String shortDescription,
-    String description,
-    String startTime,
-    String endTime,
-    String location,
-    int capacity,
-    int soldTickets,
-    int remainingTickets,
-    String ticketPrice,
-    String organizerName,
-    String status
-) {}
+        Long id,
+        String title,
+        String category,
+        String shortDescription,
+        String description,
+        String startTime,
+        String endTime,
+        String location,
+        int capacity,
+        int soldTickets,
+        int remainingTickets,
+        String ticketPrice,
+        String organizerName,
+        String status) {
+}
 
 // 3. Lịch trình sự kiện
-record EventScheduleRequest(Long eventId) {}
-record ScheduleSummary(Long id, String title, String startTime, String endTime, String description) {}
-record EventScheduleResponse(List<ScheduleSummary> schedules, String message) {}
+record EventScheduleRequest(@JsonPropertyDescription("ID của sự kiện cần lấy lịch trình") Long eventId) {
+}
+
+record ScheduleSummary(Long id, String title, String startTime, String endTime, String description) {
+}
+
+record EventScheduleResponse(List<ScheduleSummary> schedules, String message) {
+}
 
 // 4. Sự kiện sắp diễn ra
-record UpcomingEventsRequest() {}
+record UpcomingEventsRequest(@JsonPropertyDescription("Bỏ trống hoặc truyền 'all'") String filter) {
+}
 
 // 5. Thông tin nhà tổ chức
-record OrganizerInfoRequest(Long eventId) {}
-record OrganizerInfoResponse(String organizerName, String email, String phone, String address, String message) {}
+record OrganizerInfoRequest(@JsonPropertyDescription("ID của sự kiện cần xem thông tin nhà tổ chức") Long eventId) {
+}
+
+record OrganizerInfoResponse(String organizerName, String email, String phone, String address, String message) {
+}
+
 // 6. Sự kiện theo thể loại
-record CategoryEventsRequest(String category) {}
+record CategoryEventsRequest(
+        @JsonPropertyDescription("Tên thể loại sự kiện (ví dụ: Âm nhạc, Thể thao, Hội thảo...)") String category) {
+}
 
 // 7. Sự kiện theo địa điểm
-record LocationEventsRequest(String location) {}
+record LocationEventsRequest(
+        @JsonPropertyDescription("Địa điểm hoặc thành phố tổ chức (ví dụ: Hà Nội, TP HCM, Đà Nẵng...)") String location) {
+}
 
 // 8. Sự kiện miễn phí
-record FreeEventsRequest() {}
+record FreeEventsRequest(@JsonPropertyDescription("Bỏ trống hoặc truyền 'free'") String filter) {
+}
 
 // 9. Danh sách thể loại
-record AllCategoriesRequest() {}
-record CategoriesResponse(List<String> categories, String message) {}
+record AllCategoriesRequest(@JsonPropertyDescription("Bỏ trống hoặc truyền 'all'") String filter) {
+}
+
+record CategoriesResponse(List<String> categories, String message) {
+}
 
 // 10. Sự kiện trong khoảng thời gian tới (vd 7 ngày, 30 ngày)
-record EventsInDaysRequest(int days) {}
+record EventsInDaysRequest(@JsonPropertyDescription("Số ngày tới cần tìm sự kiện (ví dụ: 7, 14, 30...)") int days) {
+}
 
 // 11. Kiểm tra tình trạng vé
-record CheckTicketRequest(Long eventId) {}
-record TicketStatusResponse(String eventName, String eventStatus, int capacity, int soldTickets, int remainingTickets, String ticketPrice, String message) {}
+record CheckTicketRequest(@JsonPropertyDescription("ID của sự kiện cần kiểm tra vé") Long eventId) {
+}
 
+record TicketStatusResponse(String eventName, String eventStatus, int capacity, int soldTickets, int remainingTickets,
+        String ticketPrice, String message) {
+}
 
-// 12. Tìm sự kiện theo trạng thái (PUBLISHED, CLOSED, COMPLETED, v.v.)
-record EventsByStatusRequest(String status) {}
+// 12. Tìm sự kiện theo trạng thái thời gian thực (ONGOING, COMING_SOON_SALE,
+// ON_SALE, UPCOMING, ENDED)
+record EventsByStatusRequest(
+        @JsonPropertyDescription("Trạng thái thời gian thực cần tìm: ONGOING (đang diễn ra), COMING_SOON_SALE (sắp mở bán vé), ON_SALE (đang mở bán vé), UPCOMING (sắp diễn ra), ENDED (đã kết thúc)") String status) {
+}
 
 // 13. Tìm sự kiện bằng từ khóa nằm trong Nội dung / Mô tả
-record DescriptionKeywordSearchRequest(String keyword) {}
+record DescriptionKeywordSearchRequest(
+        @JsonPropertyDescription("Từ khóa cần tìm trong nội dung chi tiết hoặc mô tả sự kiện") String keyword) {
+}
 
 // 14. Sự kiện bán chạy nhất (Top Selling)
-record TopSellingEventsRequest() {}
+record TopSellingEventsRequest(@JsonPropertyDescription("Bỏ trống hoặc truyền 'top'") String filter) {
+}
 
 // 15. Đếm số lượng sự kiện theo trạng thái
-record CountEventsByStatusRequest(String status) {}
-record CountEventsResponse(long count, String message) {}
+record CountEventsByStatusRequest(
+        @JsonPropertyDescription("Trạng thái sự kiện cần đếm: PUBLISHED, CLOSED, COMPLETED, CANCELLED") String status) {
+}
+
+// 16. Tìm sự kiện theo tháng và năm
+record EventsByMonthRequest(
+        @JsonPropertyDescription("Tháng cần tìm sự kiện (từ 1 đến 12)") int month,
+        @JsonPropertyDescription("Năm cần tìm sự kiện (ví dụ: 2026). Nếu khách không nói năm, truyền năm hiện tại") int year) {
+}
+
+// 17. Tìm sự kiện theo ngày cụ thể (ngày, tháng, năm)
+record EventsBySpecificDateRequest(
+        @JsonPropertyDescription("Ngày cần tìm sự kiện (từ 1 đến 31)") int day,
+        @JsonPropertyDescription("Tháng cần tìm sự kiện (từ 1 đến 12)") int month,
+        @JsonPropertyDescription("Năm cần tìm sự kiện (ví dụ: 2026). Nếu khách không nói năm, truyền năm hiện tại") int year) {
+}
+
+record CountEventsResponse(long count, String message) {
+}
 
 @Configuration
 public class ChatbotConfig {
@@ -104,24 +158,23 @@ public class ChatbotConfig {
         return request -> {
             System.out.println("🤖 AI gọi: searchEventFunction với từ khóa: " + request.keyword());
             List<Event> events = eventRepository.findTop3ByTitleContainingIgnoreCaseAndStatus(
-                request.keyword(), 
-                EventStatus.PUBLISHED
-            );
-            
+                    request.keyword(),
+                    EventStatus.PUBLISHED);
+
             if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không tìm thấy sự kiện nào khớp với từ khóa: " + request.keyword());
+                return new EventSearchResponse(List.of(),
+                        "Không tìm thấy sự kiện nào khớp với từ khóa: " + request.keyword());
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(
-                    e.getId(),
-                    e.getTitle(),
-                    e.getStartTime().toString(),
-                    e.getTicketPrice().toString() + " VND",
-                    e.getLocation(),
-                    e.getCategory()
-                ))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(
+                            e.getId(),
+                            e.getTitle(),
+                            e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND",
+                            e.getLocation(),
+                            e.getCategory()))
+                    .collect(Collectors.toList());
 
             return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện.");
         };
@@ -135,25 +188,25 @@ public class ChatbotConfig {
             System.out.println("🤖 AI gọi: getEventDetailsFunction với ID: " + request.eventId());
             Event e = eventRepository.findById(request.eventId()).orElse(null);
             if (e == null) {
-                return new EventDetailsResponse(null, "Không tìm thấy sự kiện với ID này", "", "", "", "", "", "", 0, 0, 0, "0", "", "NOT_FOUND");
+                return new EventDetailsResponse(null, "Không tìm thấy sự kiện với ID này", "", "", "", "", "", "", 0, 0,
+                        0, "0", "", "NOT_FOUND");
             }
             int remaining = Math.max(0, e.getCapacity() - e.getSoldTickets());
             return new EventDetailsResponse(
-                e.getId(),
-                e.getTitle(),
-                e.getCategory(),
-                e.getShortDescription(),
-                e.getDescription(),
-                e.getStartTime().toString(),
-                e.getEndTime().toString(),
-                e.getLocation(),
-                e.getCapacity(),
-                e.getSoldTickets(),
-                remaining,
-                e.getTicketPrice().toString() + " VND",
-                e.getOrganizer() != null ? e.getOrganizer().getFullName() : "N/A",
-                e.getStatus().name()
-            );
+                    e.getId(),
+                    e.getTitle(),
+                    e.getCategory(),
+                    e.getShortDescription(),
+                    e.getDescription(),
+                    e.getStartTime().toString(),
+                    e.getEndTime().toString(),
+                    e.getLocation(),
+                    e.getCapacity(),
+                    e.getSoldTickets(),
+                    remaining,
+                    e.getTicketPrice().toString() + " VND",
+                    e.getOrganizer() != null ? e.getOrganizer().getFullName() : "N/A",
+                    e.getStatus().name());
         };
     }
 
@@ -168,14 +221,13 @@ public class ChatbotConfig {
                 return new EventScheduleResponse(List.of(), "Sự kiện này hiện chưa cập nhật lịch trình chi tiết.");
             }
             List<ScheduleSummary> summaries = schedules.stream()
-                .map(s -> new ScheduleSummary(
-                    s.getId(),
-                    s.getTitle(),
-                    s.getStartTime().toString(),
-                    s.getEndTime().toString(),
-                    s.getDescription()
-                ))
-                .collect(Collectors.toList());
+                    .map(s -> new ScheduleSummary(
+                            s.getId(),
+                            s.getTitle(),
+                            s.getStartTime().toString(),
+                            s.getEndTime().toString(),
+                            s.getDescription()))
+                    .collect(Collectors.toList());
             return new EventScheduleResponse(summaries, "Lấy lịch trình thành công.");
         };
     }
@@ -190,24 +242,22 @@ public class ChatbotConfig {
             // Ở đây tạm dùng findUpcomingEventsStr hoặc viết Query mới tùy bạn.
             // Để thống nhất ta lấy top 5 sự kiện PUBLISHED sắp tới:
             List<Event> events = eventRepository.findTop5ByStatusAndStartTimeAfterOrderByStartTimeAsc(
-                EventStatus.PUBLISHED, 
-                java.time.LocalDateTime.now()
-            );
+                    EventStatus.PUBLISHED,
+                    java.time.LocalDateTime.now());
 
             if (events.isEmpty()) {
                 return new EventSearchResponse(List.of(), "Hiện tại không có sự kiện sắp diễn ra nào.");
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(
-                    e.getId(),
-                    e.getTitle(),
-                    e.getStartTime().toString(),
-                    e.getTicketPrice().toString() + " VND",
-                    e.getLocation(),
-                    e.getCategory()
-                ))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(
+                            e.getId(),
+                            e.getTitle(),
+                            e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND",
+                            e.getLocation(),
+                            e.getCategory()))
+                    .collect(Collectors.toList());
 
             return new EventSearchResponse(summaries, "Lấy danh sách sự kiện sắp tới thành công.");
         };
@@ -225,14 +275,14 @@ public class ChatbotConfig {
             }
             User org = e.getOrganizer();
             return new OrganizerInfoResponse(
-                org.getFullName(),
-                org.getEmail(),
-                org.getPhone(),
-                org.getAddress(),
-                "Lấy thông tin thành công."
-            );
+                    org.getFullName(),
+                    org.getEmail(),
+                    org.getPhone(),
+                    org.getAddress(),
+                    "Lấy thông tin thành công.");
         };
     }
+
     // --- TOOL 6: TÌM KIẾM SỰ KIỆN THEO THỂ LOẠI ---
     @Bean
     @Description("Tìm kiếm các sự kiện theo một thể loại cụ thể (Ví dụ: Âm nhạc, Thể thao, Hội thảo, ...). Trả về danh sách sự kiện.")
@@ -240,19 +290,21 @@ public class ChatbotConfig {
         return request -> {
             System.out.println("🤖 AI gọi: getEventsByCategoryFunction với thể loại: " + request.category());
             List<Event> events = eventRepository.findTop5ByCategoryContainingIgnoreCaseAndStatus(
-                request.category(), 
-                EventStatus.PUBLISHED
-            );
-            
+                    request.category(),
+                    EventStatus.PUBLISHED);
+
             if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không tìm thấy sự kiện nào thuộc thể loại: " + request.category());
+                return new EventSearchResponse(List.of(),
+                        "Không tìm thấy sự kiện nào thuộc thể loại: " + request.category());
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
 
-            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện thuộc thể loại " + request.category());
+            return new EventSearchResponse(summaries,
+                    "Tìm thấy " + summaries.size() + " sự kiện thuộc thể loại " + request.category());
         };
     }
 
@@ -263,19 +315,21 @@ public class ChatbotConfig {
         return request -> {
             System.out.println("🤖 AI gọi: getEventsByLocationFunction với địa điểm: " + request.location());
             List<Event> events = eventRepository.findTop5ByLocationContainingIgnoreCaseAndStatus(
-                request.location(), 
-                EventStatus.PUBLISHED
-            );
-            
+                    request.location(),
+                    EventStatus.PUBLISHED);
+
             if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không tìm thấy sự kiện nào tại địa điểm: " + request.location());
+                return new EventSearchResponse(List.of(),
+                        "Không tìm thấy sự kiện nào tại địa điểm: " + request.location());
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
 
-            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện tại " + request.location());
+            return new EventSearchResponse(summaries,
+                    "Tìm thấy " + summaries.size() + " sự kiện tại " + request.location());
         };
     }
 
@@ -286,17 +340,17 @@ public class ChatbotConfig {
         return request -> {
             System.out.println("🤖 AI gọi: getFreeEventsFunction");
             List<Event> events = eventRepository.findTop5ByTicketPriceAndStatus(
-                java.math.BigDecimal.ZERO, 
-                EventStatus.PUBLISHED
-            );
-            
+                    java.math.BigDecimal.ZERO,
+                    EventStatus.PUBLISHED);
+
             if (events.isEmpty()) {
                 return new EventSearchResponse(List.of(), "Hiện tại không có sự kiện miễn phí nào sắp diễn ra.");
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), "Miễn phí", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), "Miễn phí",
+                            e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
 
             return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện miễn phí.");
         };
@@ -324,20 +378,22 @@ public class ChatbotConfig {
             System.out.println("🤖 AI gọi: getEventsInDaysFunction với số ngày: " + request.days());
             java.time.LocalDateTime now = java.time.LocalDateTime.now();
             java.time.LocalDateTime endDate = now.plusDays(request.days());
-            
+
             List<Event> events = eventRepository.findTop5ByStatusAndStartTimeBetweenOrderByStartTimeAsc(
-                EventStatus.PUBLISHED, now, endDate
-            );
-            
+                    EventStatus.PUBLISHED, now, endDate);
+
             if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không có sự kiện nào sẽ diễn ra trong vòng " + request.days() + " ngày tới.");
+                return new EventSearchResponse(List.of(),
+                        "Không có sự kiện nào sẽ diễn ra trong vòng " + request.days() + " ngày tới.");
             }
 
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
 
-            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện diễn ra trong " + request.days() + " ngày tới.");
+            return new EventSearchResponse(summaries,
+                    "Tìm thấy " + summaries.size() + " sự kiện diễn ra trong " + request.days() + " ngày tới.");
         };
     }
 
@@ -353,41 +409,85 @@ public class ChatbotConfig {
             }
             int remaining = Math.max(0, e.getCapacity() - e.getSoldTickets());
             String status = remaining > 0 ? "Còn vé" : "Hết vé";
-            if(e.getStatus() != EventStatus.PUBLISHED) {
+            if (e.getStatus() != EventStatus.PUBLISHED) {
                 status = "Ngừng bán vé";
             }
             return new TicketStatusResponse(
-                e.getTitle(),
-                status,
-                e.getCapacity(),
-                e.getSoldTickets(),
-                remaining,
-                e.getTicketPrice().toString() + " VND",
-                "Đã kiểm tra tình trạng vé thành công."
-            );
+                    e.getTitle(),
+                    status,
+                    e.getCapacity(),
+                    e.getSoldTickets(),
+                    remaining,
+                    e.getTicketPrice().toString() + " VND",
+                    "Đã kiểm tra tình trạng vé thành công.");
         };
     }
 
-    // --- TOOL 12: TÌM SỰ KIỆN THEO TRẠNG THÁI ---
+    private String calculateOngoingStatus(LocalDateTime regStart, LocalDateTime regEnd, LocalDateTime eventStart,
+            LocalDateTime eventEnd) {
+        LocalDateTime now = LocalDateTime.now();
+        if (eventStart == null || eventEnd == null)
+            return "ENDED";
+
+        // 1. Đang diễn ra
+        if ((now.isEqual(eventStart) || now.isAfter(eventStart)) && (now.isEqual(eventEnd) || now.isBefore(eventEnd))) {
+            return "ONGOING";
+        }
+
+        // 2. Có mốc thời gian đăng ký (registration time)
+        if (regStart != null && regEnd != null) {
+            if (now.isBefore(regStart)) {
+                return "COMING_SOON_SALE";
+            }
+            if ((now.isEqual(regStart) || now.isAfter(regStart)) && (now.isEqual(regEnd) || now.isBefore(regEnd))) {
+                return "ON_SALE";
+            }
+            if (now.isAfter(regEnd) && now.isBefore(eventStart)) {
+                return "UPCOMING";
+            }
+        }
+
+        // 3. Không có registration time -> chỉ check event time
+        if (now.isBefore(eventStart)) {
+            return "UPCOMING";
+        }
+
+        // 4. Mặc định
+        return "ENDED";
+    }
+
+    // --- TOOL 12: TÌM SỰ KIỆN THEO TRẠNG THÁI THỜI GIAN THỰC ĐỘNG ---
     @Bean
-    @Description("Tìm kiếm danh sách sự kiện theo trạng thái (PUBLISHED: đang mở bán/đăng ký, COMPLETED: đã kết thúc, CLOSED: đã đóng đăng ký/đang diễn ra, CANCELLED: đã hủy).")
+    @Description("Tìm kiếm danh sách sự kiện theo trạng thái tính toán thực tế dựa trên thời gian hiện tại: ONGOING (đang diễn ra), COMING_SOON_SALE (sắp mở bán vé), ON_SALE (đang mở bán vé), UPCOMING (sắp diễn ra), ENDED (đã kết thúc).")
     public Function<EventsByStatusRequest, EventSearchResponse> getEventsByStatusFunction() {
         return request -> {
-            System.out.println("🤖 AI gọi: getEventsByStatusFunction với trạng thái: " + request.status());
-            EventStatus status;
-            try {
-                status = EventStatus.valueOf(request.status().toUpperCase());
-            } catch (Exception e) {
-                return new EventSearchResponse(List.of(), "Trạng thái không hợp lệ. Các trạng thái hỗ trợ: PUBLISHED, CLOSED, COMPLETED, CANCELLED.");
+            System.out.println("🤖 AI gọi: getEventsByStatusFunction với trạng thái động: " + request.status());
+            String targetStatus = request.status() != null ? request.status().trim().toUpperCase() : "";
+
+            List<Event> allEvents = eventRepository.findAll();
+            List<Event> matchedEvents = allEvents.stream()
+                    .filter(e -> e.getStatus() != EventStatus.CANCELLED)
+                    .filter(e -> targetStatus.equals(calculateOngoingStatus(
+                            e.getRegistrationStartTime(),
+                            e.getRegistrationEndTime(),
+                            e.getStartTime(),
+                            e.getEndTime())))
+                    .limit(5)
+                    .collect(Collectors.toList());
+
+            if (matchedEvents.isEmpty()) {
+                return new EventSearchResponse(List.of(),
+                        "Hiện tại không có sự kiện nào đang ở trạng thái: " + targetStatus);
             }
-            List<Event> events = eventRepository.findTop5ByStatus(status);
-            if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không có sự kiện nào đang ở trạng thái: " + status.name());
-            }
-            List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
-            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện ở trạng thái " + status.name());
+
+            List<EventSummary> summaries = matchedEvents.stream()
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(),
+                            e.getTicketPrice() != null ? e.getTicketPrice().toString() + " VND" : "Miễn phí",
+                            e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
+
+            return new EventSearchResponse(summaries,
+                    "Tìm thấy " + summaries.size() + " sự kiện ở trạng thái " + targetStatus);
         };
     }
 
@@ -400,12 +500,14 @@ public class ChatbotConfig {
             // Tìm kiếm trong Description nhưng ưu tiên các sự kiện đang mở bán
             List<Event> events = eventRepository.findTop5ByDescriptionContainingIgnoreCase(request.keyword());
             if (events.isEmpty()) {
-                return new EventSearchResponse(List.of(), "Không tìm thấy sự kiện nào có nội dung chứa từ khóa: " + request.keyword());
+                return new EventSearchResponse(List.of(),
+                        "Không tìm thấy sự kiện nào có nội dung chứa từ khóa: " + request.keyword());
             }
             List<EventSummary> summaries = events.stream()
-                .filter(e -> e.getStatus() == EventStatus.PUBLISHED || e.getStatus() == EventStatus.CLOSED)
-                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .filter(e -> e.getStatus() == EventStatus.PUBLISHED || e.getStatus() == EventStatus.CLOSED)
+                    .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(),
+                            e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
+                    .collect(Collectors.toList());
             return new EventSearchResponse(summaries, "Tìm thấy các sự kiện có nhắc đến từ khóa này.");
         };
     }
@@ -421,8 +523,10 @@ public class ChatbotConfig {
                 return new EventSearchResponse(List.of(), "Hệ thống hiện chưa có sự kiện mở bán nào.");
             }
             List<EventSummary> summaries = events.stream()
-                .map(e -> new EventSummary(e.getId(), e.getTitle() + " (Đã bán: " + e.getSoldTickets() + " vé)", e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(), e.getCategory()))
-                .collect(Collectors.toList());
+                    .map(e -> new EventSummary(e.getId(), e.getTitle() + " (Đã bán: " + e.getSoldTickets() + " vé)",
+                            e.getStartTime().toString(), e.getTicketPrice().toString() + " VND", e.getLocation(),
+                            e.getCategory()))
+                    .collect(Collectors.toList());
             return new EventSearchResponse(summaries, "Top sự kiện bán chạy nhất hệ thống.");
         };
     }
@@ -437,10 +541,83 @@ public class ChatbotConfig {
             try {
                 status = EventStatus.valueOf(request.status().toUpperCase());
             } catch (Exception e) {
-                return new CountEventsResponse(0, "Trạng thái không hợp lệ. Các trạng thái: PUBLISHED, CLOSED, COMPLETED, CANCELLED.");
+                return new CountEventsResponse(0,
+                        "Trạng thái không hợp lệ. Các trạng thái: PUBLISHED, CLOSED, COMPLETED, CANCELLED.");
             }
             long count = eventRepository.countByStatus(status);
-            return new CountEventsResponse(count, "Hệ thống có tổng cộng " + count + " sự kiện ở trạng thái " + status.name());
+            return new CountEventsResponse(count,
+                    "Hệ thống có tổng cộng " + count + " sự kiện ở trạng thái " + status.name());
+        };
+    }
+
+    // --- TOOL 16: TÌM SỰ KIỆN THEO THÁNG VÀ NĂM ---
+    @Bean
+    @Description("Tìm kiếm danh sách sự kiện diễn ra trong một tháng và năm cụ thể (Ví dụ: sự kiện tháng 6 năm 2026, sự kiện trong tháng tới...).")
+    public Function<EventsByMonthRequest, EventSearchResponse> getEventsByMonthFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: getEventsByMonthFunction với tháng: " + request.month() + ", năm: " + request.year());
+            int year = request.year() > 2000 ? request.year() : java.time.LocalDateTime.now().getYear();
+            int month = (request.month() >= 1 && request.month() <= 12) ? request.month() : java.time.LocalDateTime.now().getMonthValue();
+
+            java.time.YearMonth yearMonth = java.time.YearMonth.of(year, month);
+            java.time.LocalDateTime startOfMonth = yearMonth.atDay(1).atStartOfDay();
+            java.time.LocalDateTime endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+
+            List<Event> allEvents = eventRepository.findAll();
+            List<Event> matchedEvents = allEvents.stream()
+                .filter(e -> e.getStatus() != EventStatus.CANCELLED)
+                .filter(e -> e.getStartTime() != null && !e.getStartTime().isBefore(startOfMonth) && !e.getStartTime().isAfter(endOfMonth))
+                .limit(10)
+                .collect(Collectors.toList());
+
+            if (matchedEvents.isEmpty()) {
+                return new EventSearchResponse(List.of(), "Không có sự kiện nào diễn ra trong tháng " + month + "/" + year);
+            }
+
+            List<EventSummary> summaries = matchedEvents.stream()
+                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice() != null ? e.getTicketPrice().toString() + " VND" : "Miễn phí", e.getLocation(), e.getCategory()))
+                .collect(Collectors.toList());
+
+            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện diễn ra trong tháng " + month + "/" + year);
+        };
+    }
+
+    // --- TOOL 17: TÌM SỰ KIỆN THEO NGÀY CỤ THỂ ---
+    @Bean
+    @Description("Tìm kiếm danh sách sự kiện diễn ra vào một ngày cụ thể chính xác (Ví dụ: sự kiện ngày 18 tháng 6, sự kiện hôm nay, sự kiện ngày mai...).")
+    public Function<EventsBySpecificDateRequest, EventSearchResponse> getEventsBySpecificDateFunction() {
+        return request -> {
+            System.out.println("🤖 AI gọi: getEventsBySpecificDateFunction với ngày: " + request.day() + "/" + request.month() + "/" + request.year());
+            int year = request.year() > 2000 ? request.year() : java.time.LocalDateTime.now().getYear();
+            int month = (request.month() >= 1 && request.month() <= 12) ? request.month() : java.time.LocalDateTime.now().getMonthValue();
+            int day = (request.day() >= 1 && request.day() <= 31) ? request.day() : java.time.LocalDateTime.now().getDayOfMonth();
+
+            java.time.LocalDate targetDate;
+            try {
+                targetDate = java.time.LocalDate.of(year, month, day);
+            } catch (Exception e) {
+                return new EventSearchResponse(List.of(), "Ngày " + day + "/" + month + "/" + year + " không hợp lệ.");
+            }
+
+            java.time.LocalDateTime startOfDay = targetDate.atStartOfDay();
+            java.time.LocalDateTime endOfDay = targetDate.atTime(23, 59, 59);
+
+            List<Event> allEvents = eventRepository.findAll();
+            List<Event> matchedEvents = allEvents.stream()
+                .filter(e -> e.getStatus() != EventStatus.CANCELLED)
+                .filter(e -> e.getStartTime() != null && !e.getStartTime().isBefore(startOfDay) && !e.getStartTime().isAfter(endOfDay))
+                .limit(10)
+                .collect(Collectors.toList());
+
+            if (matchedEvents.isEmpty()) {
+                return new EventSearchResponse(List.of(), "Không có sự kiện nào diễn ra vào ngày " + day + "/" + month + "/" + year);
+            }
+
+            List<EventSummary> summaries = matchedEvents.stream()
+                .map(e -> new EventSummary(e.getId(), e.getTitle(), e.getStartTime().toString(), e.getTicketPrice() != null ? e.getTicketPrice().toString() + " VND" : "Miễn phí", e.getLocation(), e.getCategory()))
+                .collect(Collectors.toList());
+
+            return new EventSearchResponse(summaries, "Tìm thấy " + summaries.size() + " sự kiện diễn ra vào ngày " + day + "/" + month + "/" + year);
         };
     }
 }

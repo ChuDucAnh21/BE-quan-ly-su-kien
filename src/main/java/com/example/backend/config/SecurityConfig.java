@@ -80,9 +80,10 @@ public class SecurityConfig {
                                                                         // login, register, forgot-password
                         .requestMatchers("/api/v1/public/**").permitAll() // Cho phép truy cập dữ liệu công khai (danh
                                                                           // sách sự kiện...)
+                        .requestMatchers("/v1/chat/completions/**").permitAll() // Cho phép truy cập chatbot AI không
+                                                                                // cần đăng nhập
                         .requestMatchers("/api/v1/users/info-user/**").permitAll() // Truy cập public profile của user
                         .requestMatchers("/api/v1/payments/webhook").permitAll() // Webhook PayOS gọi ngầm không cần
-                                                                                 // Token
                                                                                  // Token
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Giao
                                                                                                               // diện

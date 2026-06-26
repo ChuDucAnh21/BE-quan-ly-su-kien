@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/api/v1/public/customer/chat")
+@RequestMapping("/v1/chat/completions")
 public class CustomerChatbotController {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerChatbotController.class);
@@ -18,7 +18,7 @@ public class CustomerChatbotController {
         this.chatClient = chatClientBuilder.build();
     }
 
-    @GetMapping(value = "/stream") // Bạn có thể cân nhắc đổi tên endpoint thành "/ask" cho chuẩn REST
+    @GetMapping(value = "/ask") // Bạn có thể cân nhắc đổi tên endpoint thành "/ask" cho chuẩn REST
     public String streamChat(@RequestParam String message) {
 
         String systemPrompt = """
@@ -27,10 +27,12 @@ public class CustomerChatbotController {
 
                 HÃY TUÂN THỦ NGHIÊM NGẶT CÁC QUY TẮC SAU:
                 1. Khi khách hỏi về sự kiện, BẮT BUỘC phải gọi các công cụ (functions) được cung cấp để lấy dữ liệu.
-                2. KHÔNG BAO GIỜ được tự bịa ra tên sự kiện, giá vé hoặc thời gian nếu công cụ không trả về dữ liệu đó.
-                3. Nếu công cụ trả về kết quả rỗng, hãy nói: "Dạ, hiện tại HubEvent chưa có sự kiện nào như vậy ạ."
-                4. Nếu khách hỏi những câu ngoài lề (ví dụ: thời tiết, chính trị, toán học, code...), hãy từ chối lịch sự: "Xin lỗi, mình là trợ lý của HubEvent nên chỉ có thể giải đáp các thông tin về sự kiện thôi ạ."
-                5. Trả lời bằng tiếng Việt, giọng điệu vui vẻ, thân thiện và có sử dụng emoji.
+                2. Khi khách hỏi sự kiện theo tháng (ví dụ: tháng 6, tháng 12...), BẮT BUỘC phải gọi công cụ getEventsByMonthFunction.
+                3. Khi khách hỏi sự kiện theo một ngày cụ thể (ví dụ: ngày 18 tháng 6, hôm nay, ngày mai...), BẮT BUỘC phải gọi công cụ getEventsBySpecificDateFunction.
+                4. KHÔNG BAO GIỜ được tự bịa ra tên sự kiện, giá vé hoặc thời gian nếu công cụ không trả về dữ liệu đó.
+                5. Nếu công cụ trả về kết quả rỗng, hãy nói: "Dạ, hiện tại HubEvent chưa có sự kiện nào như vậy ạ."
+                6. Nếu khách hỏi những câu ngoài lề (ví dụ: thời tiết, chính trị, toán học, code...), hãy từ chối lịch sự: "Xin lỗi, mình là trợ lý của HubEvent nên chỉ có thể giải đáp các thông tin về sự kiện thôi ạ."
+                7. Trả lời bằng tiếng Việt, giọng điệu vui vẻ, thân thiện và có sử dụng emoji.
                 """;
 
         try {
@@ -49,17 +51,21 @@ public class CustomerChatbotController {
                             "getFreeEventsFunction",
                             "getAllCategoriesFunction",
                             "getEventsInDaysFunction",
-                            "checkTicketStatusFunction")
+                            "checkTicketStatusFunction",
+                            "getEventsByStatusFunction",
+                            "searchEventsByDescriptionKeywordFunction",
+                            "getTopSellingEventsFunction",
+                            "countEventsByStatusFunction",
+                            "getEventsByMonthFunction",
+                            "getEventsBySpecificDateFunction")
                     .call() // Dùng CALL thay vì STREAM
                     .content();
 
         } catch (Exception e) {
-            // Bắt mọi lỗi văng ra (bao gồm cả lỗi 429 Too Many Requests từ OpenRouter)
-            // log.error("Lỗi xảy ra trong quá trình gọi chatbot: ", e); // Mở comment nếu
-            // bạn có khai báo @Slf4j
+            log.error("Lỗi xảy ra trong quá trình gọi chatbot AI: ", e);
             System.err.println("Lỗi gọi AI: " + e.getMessage());
 
-            return "Xin lỗi, hiện tại trợ lý AI đang quá tải. Vui lòng thử lại sau ít phút!";
+            return "Xin lỗi, hiện tại trợ lý AI đang gặp sự cố kết nối hoặc quá tải. Vui lòng thử lại sau ít phút!";
         }
     }
 }
