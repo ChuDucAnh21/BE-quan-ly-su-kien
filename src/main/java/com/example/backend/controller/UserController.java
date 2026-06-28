@@ -29,6 +29,7 @@ public class UserController {
         public ApiResponse<UserProfileResponse> getMyProfile(Authentication authentication) {
                 // Authentication: Đối tượng chứa thông tin người dùng đang đăng nhập (lấy từ
                 // Token)
+                // người đang bơi = người dùng hiện tại đang đăng nhập
                 String email = authentication.getName(); // Lấy email của người đang bơi trong hệ thống
                 return ApiResponse.<UserProfileResponse>builder()
                                 .data(userService.getMyProfile(email))

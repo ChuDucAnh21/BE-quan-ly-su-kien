@@ -120,7 +120,8 @@ public class UserService {
     }
 
     // 6. Lấy thông tin công khai của một người dùng bất kỳ
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true) // set như này để tối ưu hiệu năng , chỉ cần đọc DB thui mà không ghi gì vào DB
+                                    // cả
     public UserProfileResponse getPublicProfileById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));

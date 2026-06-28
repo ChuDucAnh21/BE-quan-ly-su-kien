@@ -51,7 +51,9 @@ public class GlobalExceptionHandler {
                                                 errorCode.name())) // là tên của enum ErrorCode : VD:
                                                                    // UNCATEGORIZED_EXCEPTION
                                 .build();
-                return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
+                return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse); // trả về mã lỗi và đồng thời
+                                                                                           // return trang thái HTTP cho
+                                                                                           // client
         }
 
         // 2. Xử lý các lỗi nghiệp vụ do chúng ta chủ động ném ra (AppException)
@@ -138,7 +140,7 @@ public class GlobalExceptionHandler {
                                                 message,
                                                 "VALIDATION_ERROR"))
                                 .build();
-                return ResponseEntity.badRequest().body(apiResponse);
+                return ResponseEntity.badRequest().body(apiResponse); // badRequest() là lỗi 400 Bad Request
         }
 
         // 5. Xử lý lỗi sai kiểu dữ liệu trên URL (ví dụ: /events/abc thay vì /events/1)
@@ -168,16 +170,19 @@ public class GlobalExceptionHandler {
                                 .build();
                 return ResponseEntity.badRequest().body(apiResponse);
         }
+
+        // xử lý lỗi upload ảnh vượt quá kích thước cho phép
+        // (MaxUploadSizeExceededException)
         @ExceptionHandler(MaxUploadSizeExceededException.class)
         public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceeded(
-                MaxUploadSizeExceededException ex) {
+                        MaxUploadSizeExceededException ex) {
                 String message = "Kích thước ảnh vượt quá tối đa cho phép";
                 ApiResponse<?> apiResponse = ApiResponse.builder()
-                        .status(buildStatus(
-                                ErrorCode.INVALID_KEY.getCode(),
-                                message,
-                                "UPLOAD_IMG_ERROR"))
-                        .build();
+                                .status(buildStatus(
+                                                ErrorCode.INVALID_KEY.getCode(),
+                                                message,
+                                                "UPLOAD_IMG_ERROR"))
+                                .build();
                 return ResponseEntity.badRequest().body(apiResponse);
         }
 }

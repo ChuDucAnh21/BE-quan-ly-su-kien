@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+//các annotation bên dưới dùng đểAudit (theo dõi) thời gian tạo và cập nhật của đối tượng
 @Data // Tự động sinh Getter/Setter cho ngày tạo, ngày cập nhật
 @MappedSuperclass // Đánh dấu lớp này là lớp cha trong JPA (Hibernate), các thuộc tính bên dưới sẽ
                   // có mặt trong các bảng thực thể con

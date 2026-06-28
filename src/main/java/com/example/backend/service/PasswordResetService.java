@@ -34,8 +34,12 @@ public class PasswordResetService {
     @Transactional
     public int processForgotPassword(ForgotPasswordRequest request) {
         // 1. Kiểm tra Email người dùng cung cấp có tồn tại trong hệ thống không
+        // nêu email k tồn tại không trả lỗi, chỉ dừng lại
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElse(null);
+        if (user == null) {
+            return EXPIRY_MINUTES;
+        }
 
         // 2. Xóa tất cả các mã khôi phục cũ hòng tránh lỗi hoặc rác dữ liệu cho User
         // này
@@ -73,7 +77,7 @@ public class PasswordResetService {
 
         // 2. Kiểm tra mã đã hết hạn chưa (Quá 15 phút chưa)
         if (resetToken.isExpired()) {
-            tokenRepository.delete(resetToken); // Hiệu lực mã đã hết, xóa trong DB
+            tokenRepository.delete(resetToken); // Hiệu lực mã đã hết, xóa luôn bản ghi này trong DB
             throw new AppException(ErrorCode.RESET_TOKEN_EXPIRED);
         }
 

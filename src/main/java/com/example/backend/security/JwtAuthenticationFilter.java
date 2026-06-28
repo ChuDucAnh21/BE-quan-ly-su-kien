@@ -19,14 +19,14 @@ import java.util.Arrays;
 
 @Component // Biến lớp này thành một Bean để Spring Security có thể sử dụng tiêm vào
            // các nơi khác
-@RequiredArgsConstructor // tự động sinh Constructor chứa field final và @NonNull
+@RequiredArgsConstructor // tự động tạo constructor cho các thuộc tính bắt buộc (final,@NonNull)
 @Slf4j // Để tự động tạo đối tượng logger.
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // OncePerRequestFilter: Đảm bảo bộ lọc này chỉ chạy đúng 1 lần cho mỗi Request
     // gửi lên từ client
 
     private final JwtTokenProvider tokenProvider; // Công cụ giải mã và kiểm tra Token
-    private final CustomUserDetailsService customUserDetailsService; // Công cụ lấy thông tin User từ DB
+    private final CustomUserDetailsService customUserDetailsService; // Công cụ tạo ra customUserDetails thông qua email
 
     @Override
     // dùng để kiểm tra token mỗi khi request được gửi lên (hàm này chạy trước khi
@@ -48,6 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // 4. Tìm kiếm thông tin User dạng CustomUserDetails mà Spring Security cần
                 // trong DB dựa trên Email đó
+                // Ở đây có thể dung CustomUserDetails để tạo ra đối tượng nhưng không cần thiết
+                // vì ta không gọi tới getUser()
+                // các hàm cần dùng thì UserDetails đã có hết rùi
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
                 // 5. Kiểm tra xem tài khoản có đang bị khóa hay không

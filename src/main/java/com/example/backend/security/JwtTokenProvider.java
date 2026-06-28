@@ -22,11 +22,13 @@ public class JwtTokenProvider {
     @Value("${app.jwt.secret:defaultSecretKeyWithAtLeast256BitsLengthForHS256Algorithm}")
     private String jwtSecret;
 
-    // Thời gian hết hạn của Access Token (mặc định 24h)
+    // Thời gian hết hạn của Access Token (mặc định 24h) 24*60*60*1000 = 86400000
+    // (ms)
     @Value("${app.jwt.expiration:86400000}")
     private long jwtExpirationMs;
 
-    // Thời gian hết hạn của Refresh Token (mặc định 30 ngày)
+    // Thời gian hết hạn của Refresh Token (mặc định 30 ngày) 30*24*60*60*1000 =
+    // 2592000000 (ms)
     @Value("${app.jwt.refresh-expiration:2592000000}")
     private long jwtRefreshExpirationMs;
 
@@ -48,8 +50,7 @@ public class JwtTokenProvider {
     }
 
     // Hàm chung để tạo Token (JWT)
-    private String generateToken(User user, long expirationMs) { // user này chính cái "vỏ bọc" mà Security đã xác thực
-                                                                 // xong xuôi. chứ không phải user thô
+    private String generateToken(User user, long expirationMs) { // user này đã được xác thực
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs); // Tính thời điểm hết hạn
 
