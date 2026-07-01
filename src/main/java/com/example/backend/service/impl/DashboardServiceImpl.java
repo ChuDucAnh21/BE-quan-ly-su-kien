@@ -161,7 +161,6 @@ public class DashboardServiceImpl implements DashboardService {
 
         /**
          * Biểu đồ Tròn: Cơ cấu tài khoản theo Role.
-         * Không cần lọc thời gian vì đây là số liệu tổng (All-time).
          */
         @Override
         public List<ChartPointDTO> getRoleDistribution(LocalDate from, LocalDate to) {

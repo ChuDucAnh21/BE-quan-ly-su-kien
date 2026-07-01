@@ -54,7 +54,7 @@ public class EventStaffServiceImpl implements EventStaffService {
                                 .build();
         }
 
-        // Xác nhận chủ sự kiện
+        // tìm Event và xác nhận quyền sở hữu
         private Event getEventAndVerifyOwner(Long eventId) {
                 User organizer = getCurrentUser();
                 // Kiểm tra Event tồn tại và người đang thao tác phải là người tạo sự kiện

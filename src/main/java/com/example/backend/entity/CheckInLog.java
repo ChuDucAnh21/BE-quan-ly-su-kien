@@ -19,8 +19,9 @@ public class CheckInLog extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) // nghĩa là nhiều bản ghi CheckInLog có thể thuộc về 1 Vé || fetch =
-                                       // FetchType.LAZY: Tải dữ liệu ticket khi cần
+    @ManyToOne(fetch = FetchType.LAZY) // nghĩa là nhiều bản ghi CheckInLog có thể thuộc về 1 Vé vì vé có thể checkin
+                                       // nhiều lần
+    // || fetch = FetchType.LAZY: Tải dữ liệu ticket khi cần
     @JoinColumn(name = "ticket_id", nullable = false)
     private Ticket ticket;
 

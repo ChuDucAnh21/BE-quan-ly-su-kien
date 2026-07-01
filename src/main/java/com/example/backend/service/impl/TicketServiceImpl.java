@@ -117,7 +117,7 @@ public class TicketServiceImpl implements TicketService {
                 // Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
                 if (!ticket.getRegistration().getEvent().getId().equals(request.getEventId())) {
                         log.warn("CẢNH BÁO QUÉT SAI SỰ KIỆN: Nhân viên quét mã {} nhưng vé này thuộc về Sự kiện ID: {}",
-                                request.getQrCode(), ticket.getRegistration().getEvent().getId());
+                                        request.getQrCode(), ticket.getRegistration().getEvent().getId());
                         throw new AppException(ErrorCode.WRONG_EVENT_TICKET);
                 }
 
@@ -132,8 +132,6 @@ public class TicketServiceImpl implements TicketService {
                                         request.getQrCode());
                         throw new AppException(ErrorCode.TICKET_INVALID);
                 }
-
-
 
                 // 3. Kỹ thuật kiểm tra quyền của người soát vé.
                 // Người checkin phải là Admin, Organizer hoặc nằm trong danh sách Staff của
@@ -230,7 +228,7 @@ public class TicketServiceImpl implements TicketService {
 
         // hàm này dùng để check in từng vé một khi không có mạng
         @Override
-        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        @Transactional(propagation = Propagation.REQUIRES_NEW) // propagation là để đảm bảo Transaction độc lập
         public TicketResponse processSingleBatchCheckIn(String hashedQrCode, Long eventId, String staffEmail) {
                 // 1. Tìm vé theo mã băm với Khóa bi quan
                 Ticket ticket = ticketRepository.findByHashedQrCodeWithLock(hashedQrCode)

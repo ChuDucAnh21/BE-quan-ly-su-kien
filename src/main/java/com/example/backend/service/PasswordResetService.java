@@ -75,7 +75,7 @@ public class PasswordResetService {
         PasswordResetToken resetToken = tokenRepository.findByToken(request.getToken())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_RESET_TOKEN));
 
-        // 2. Kiểm tra mã đã hết hạn chưa (Quá 15 phút chưa)
+        // 2. Kiểm tra mã đã hết hạn chưa (Quá 5 phút chưa)
         if (resetToken.isExpired()) {
             tokenRepository.delete(resetToken); // Hiệu lực mã đã hết, xóa luôn bản ghi này trong DB
             throw new AppException(ErrorCode.RESET_TOKEN_EXPIRED);

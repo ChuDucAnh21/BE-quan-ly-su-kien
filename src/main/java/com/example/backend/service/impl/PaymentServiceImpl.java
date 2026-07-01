@@ -70,6 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         @Override
         @Transactional(readOnly = true)
+        // xem danh sách giao dịch của sự kiện, dùng cho admin và organizer
         public PageResponse<PaymentTransactionResponse> getEventPayments(Long eventId, String keyword,
                         PaymentStatus status, LocalDate from, LocalDate to, int page, int size) {
 
@@ -144,6 +145,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         @Override
         @Transactional
+        // đồng bộ trạng thái thanh toán, dùng khi user reload lại trang
         public String syncPaymentStatus(String orderCode) {
                 Payment payment = paymentRepository.findByOrderCode(orderCode).orElse(null);
                 if (payment == null) {
@@ -172,7 +174,8 @@ public class PaymentServiceImpl implements PaymentService {
                                 paymentLinkData = payOS.paymentRequests().get(orderCode);
                         } catch (Exception ex) {
                                 log.error("Không kết nối được tới PayOS hoặc đơn không tồn tại", ex);
-                                throw new RuntimeException("Không tìm thấy đơn hàng trên cổng PayOS: " + ex.getMessage());
+                                throw new RuntimeException(
+                                                "Không tìm thấy đơn hàng trên cổng PayOS: " + ex.getMessage());
                         }
 
                         if (paymentLinkData != null && "PAID".equals(paymentLinkData.getStatus().name())) {
@@ -225,7 +228,8 @@ public class PaymentServiceImpl implements PaymentService {
                 Direction direction = "asc".equalsIgnoreCase(sort) ? Direction.ASC : Direction.DESC;
                 Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
 
-                Page<Payment> pendingPaymentsPage = paymentRepository.findPendingPaymentsWithSearch(email, PaymentStatus.PENDING, search, pageable);
+                Page<Payment> pendingPaymentsPage = paymentRepository.findPendingPaymentsWithSearch(email,
+                                PaymentStatus.PENDING, search, pageable);
 
                 Page<RegistrationResponse> dataPage = pendingPaymentsPage.map(payment -> {
                         Registration registration = payment.getRegistration();
@@ -256,7 +260,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         @Override
-        public PageResponse<MyPaymentTransactionResponse> getMyPaymentHistory(int page, int size, String sort, String search, PaymentStatus status, LocalDate startDate, LocalDate endDate) {
+        public PageResponse<MyPaymentTransactionResponse> getMyPaymentHistory(int page, int size, String sort,
+                        String search, PaymentStatus status, LocalDate startDate, LocalDate endDate) {
                 String email = SecurityContextHolder.getContext().getAuthentication().getName();
                 Direction direction = "asc".equalsIgnoreCase(sort) ? Direction.ASC : Direction.DESC;
                 Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
@@ -264,7 +269,8 @@ public class PaymentServiceImpl implements PaymentService {
                 LocalDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay() : null;
                 LocalDateTime endDateTime = (endDate != null) ? endDate.atTime(23, 59, 59) : null;
 
-                Page<Payment> paymentHistoryPage = paymentRepository.findMyPaymentHistory(email, search, status, startDateTime, endDateTime, pageable);
+                Page<Payment> paymentHistoryPage = paymentRepository.findMyPaymentHistory(email, search, status,
+                                startDateTime, endDateTime, pageable);
 
                 Page<MyPaymentTransactionResponse> dataPage = paymentHistoryPage.map(payment -> {
                         Registration registration = payment.getRegistration();

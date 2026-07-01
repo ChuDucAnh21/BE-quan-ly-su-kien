@@ -74,7 +74,7 @@ public class SecurityConfig {
                 // Quy định hệ thống KHÔNG sử dụng Session (Mỗi Request phải gửi kèm Token)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // PHÂN QUYỀN TRUY CẬP:
+                // PHÂN QUYỀN TRUY CẬP: không cần đi qua filterJwtAuthenticationFilter
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Cho phép tất cả mọi người truy cập các API
                                                                         // login, register, forgot-password
@@ -91,7 +91,9 @@ public class SecurityConfig {
                                                                                                               // UI
                         .requestMatchers("/error").permitAll() // Cho phép truy cập trang báo lỗi hệ thống
                         .anyRequest().authenticated() // Mọi API khác còn lại bắt buộc phải đăng nhập (có Token hợp lệ)
-                                                      // mới dùng được
+                                                      // mới dùng được, tức là phải đi qua filter
+                                                      // JwtAuthenticationFilter và
+                                                      // trả về user được xác thực
                 );
 
         // Đưa bộ xác thực vào hệ thống
@@ -104,6 +106,9 @@ public class SecurityConfig {
     }
 
     // Cấu hình CORS chuẩn cho Spring Security
+    // cho phép các url trong allowedOrigins truy cập vào api, nếu không có
+    // allowedOrigins
+    // thì sẽ bị lỗi 405 CORS Error
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

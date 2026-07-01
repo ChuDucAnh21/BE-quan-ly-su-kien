@@ -18,10 +18,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Configuration
-@EnableScheduling
-@Component
-@RequiredArgsConstructor
-@Slf4j
+@EnableScheduling // Cho phép Spring sử dụng tính năng lên lịch công việc
+@Component // Đăng ký Bean vào Spring Context
+@RequiredArgsConstructor // Spring sẽ tự động tạo Constructor và Inject các dependency vào
+@Slf4j // Spring sẽ tự động tạo Logger
 public class PaymentTimeoutScheduler {
 
     private final PaymentRepository paymentRepository;

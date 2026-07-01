@@ -68,7 +68,8 @@ public class AdminServiceImpl implements AdminService {
             UserStatus status, String sort) {
 
         /**
-         * Chuyển đổi tham số sort ("asc" hoặc "desc") thành chiều sắp xếp.
+         * Chuyển đổi tham số sort ("asc" hoặc "desc") thành chiều sắp xếp. desc là
+         * giảm dần, asc là tăng dần
          * Mặc định sắp xếp theo trường "createdAt".
          */
         Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;

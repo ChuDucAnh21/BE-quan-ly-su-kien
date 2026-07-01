@@ -478,14 +478,14 @@ public class EventServiceImpl implements EventService {
                 event.getStartTime(), event.getEndTime());
         // nếu sự kiện đang diễn ra hoặc đã kết thúc hoặc đã có vé được bán thì không
         // cho phép thay đổi trạng thái draff
-        if(newStatus == EventStatus.DRAFT){
+        if (newStatus == EventStatus.DRAFT) {
             log.info(ongoingStatus);
-        if (ongoingStatus.equals("ONGOING") || ongoingStatus.equals("ENDED")) {
-            throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
-        }
-        if (event.getSoldTickets() > 0) {
-            throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
-        }
+            if (ongoingStatus.equals("ONGOING") || ongoingStatus.equals("ENDED")) {
+                throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
+            }
+            if (event.getSoldTickets() > 0) {
+                throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
+            }
 
         }
 
