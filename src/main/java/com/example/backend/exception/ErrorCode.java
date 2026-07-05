@@ -35,6 +35,11 @@ public enum ErrorCode {
         TIME_OUT_OF_EVENT_BOUNDS(400, "Thời gian lịch trình con vượt ra khỏi khuôn khổ sự kiện cha",
                         HttpStatus.BAD_REQUEST),
         EVENT_CANNOT_CHANGE_DRAFT(400, "Không thể thay đổi trạng thái sự kiện về bản nháp", HttpStatus.BAD_REQUEST),
+        CHECKIN_TIME_INVALID(400, "Thời gian quét vé không hợp lệ", HttpStatus.BAD_REQUEST),
+        EVENT_CANNOT_BE_UPDATED_MOST_FIELDS(400, "Không thể cập nhật một số trường của sự kiện",
+                        HttpStatus.BAD_REQUEST),
+        EVENT_CANNOT_BE_UPDATED_AFTER_END(400, "Không thể cập nhật sự kiện đã kết thúc",
+                        HttpStatus.BAD_REQUEST),
 
         // Lỗi liên quan đến Quên mật khẩu
         INVALID_RESET_TOKEN(400, "Mã khôi phục không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),

@@ -1,140 +1,152 @@
-# BIỂU ĐỒ PHÂN RÃ THỰC THỂ (ENTITY DECOMPOSITION DIAGRAM)
+# BIỂU ĐỒ PHÂN RÃ THỰC THỂ HỆ THỐNG (ENTITY DECOMPOSITION DIAGRAM - EDD)
 
-**Hệ thống Quản lý Sự kiện & Check-in QR**
+**Hệ thống Quản lý Sự kiện & Check-in QR (HubEvent)**
 
 ---
 
-## I. BIỂU ĐỒ PHÂN RÃ THEO CẤP ĐỘ (LEVELS)
+## I. NGUYÊN TẮC PHÂN RÃ THỰC THỂ TRONG BÁO CÁO PTTKHT
+
+Để phù hợp với văn phong báo cáo đồ án tốt nghiệp trong Phân tích và Thiết kế Hệ thống (PTTKHT), Biểu đồ Phân rã Thực thể (EDD) được xây dựng theo mô hình **Nhóm thực thể nghiệp vụ (Entity Clusters / Groups)**. 
+
+Nguyên tắc quan trọng nhất là **100% các nút trong sơ đồ đều là Danh từ chỉ đối tượng dữ liệu**, tuyệt đối không dùng động từ hay các từ chỉ chức năng xử lý (như "Quản lý...", "Tạo...", "Quét..."):
+
+1. **Level 0 (Toàn bộ CSDL):** Cơ sở dữ liệu Hệ thống Quản lý Sự kiện & Check-in QR.
+2. **Level 1 (Các Nhóm thực thể nghiệp vụ):** 4 nhóm thực thể lớn được gom cụm dựa trên mối quan hệ nghiệp vụ và liên kết khóa ngoại (PK-FK) trong CSDL:
+   - *Nhóm thực thể Tài khoản & Bảo mật*
+   - *Nhóm thực thể Sự kiện & Lịch trình*
+   - *Nhóm thực thể Đăng ký & Thanh toán*
+   - *Nhóm thực thể Vé & Kiểm soát ra vào*
+3. **Level 2 (Các Thực thể dữ liệu chi tiết):** 10 bảng dữ liệu chính thức trong CSDL MySQL (`users`, `events`, `registrations`, `tickets`...).
+
+---
+
+## II. BIỂU ĐỒ PHÂN RÃ THỰC THỂ HỆ THỐNG (MERMAID DIAGRAM)
+
+Dưới đây là Biểu đồ Phân rã Thực thể với tên gọi Level 1 tự nhiên, chuẩn văn phong học thuật Việt Nam và cực kỳ dễ hiểu:
 
 ```mermaid
 graph TD
-    %% ============================
-    %% LEVEL 0: Hệ thống
-    %% ============================
-    System["HỆ THỐNG QUẢN LÝ SỰ KIỆN & CHECK-IN QR"]
+    %% ==========================================
+    %% LEVEL 0: TOÀN BỘ CSDL HỆ THỐNG
+    %% ==========================================
+    DB["CSDL HỆ THỐNG QUẢN LÝ SỰ KIỆN VÀ CHECK-IN QR"]
 
-    %% ============================
-    %% LEVEL 1: Nhóm chức năng (hình chữ nhật)
-    %% ============================
-    Auth["QUẢN LÝ TÀI KHOẢN & BẢO MẬT"]
-    EvMng["QUẢN LÝ NỘI DUNG SỰ KIỆN"]
-    RegPay["QUẢN LÝ ĐĂNG KÝ & TÀI CHÍNH"]
-    Ops["QUẢN LÝ VẬN HÀNH & SOÁT VÉ"]
+    %% ==========================================
+    %% LEVEL 1: 4 NHÓM THỰC THỂ NGHIỆP VỤ (ENTITY GROUPS)
+    %% ==========================================
+    G1["NHÓM THỰC THỂ TÀI KHOẢN VÀ BẢO MẬT"]
+    G2["NHÓM THỰC THỂ SỰ KIỆN VÀ LỊCH TRÌNH"]
+    G3["NHÓM THỰC THỂ ĐĂNG KÝ VÀ THANH TOÁN"]
+    G4["NHÓM THỰC THỂ VÉ VÀ KIỂM SOÁT RA VÀO"]
 
-    %% ============================
-    %% LEVEL 2: Thực thể dữ liệu (hình oval)
-    %% ============================
-    NGUOI_DUNG([NGUOI_DUNG])
-    MA_KHOI_PHUC([MA_KHOI_PHUC])
+    %% ==========================================
+    %% LEVEL 2: 10 THỰC THỂ DỮ LIỆU (ENTITIES / TABLES)
+    %% ==========================================
+    %% G1: Tài khoản và Bảo mật
+    E_User([NGUOI_DUNG<br/>users])
+    E_Reset([MA_KHOI_PHUC<br/>password_reset_tokens])
 
-    SU_KIEN([SU_KIEN])
-    LICH_TRINH([LICH_TRINH])
-    PHAN_CONG_NHAN_VIEN([PHAN_CONG_NHAN_VIEN])
+    %% G2: Sự kiện và Lịch trình
+    E_Event([SU_KIEN<br/>events])
+    E_Schedule([LICH_TRINH<br/>event_schedules])
+    E_Assign([PHAN_CONG_NHAN_VIEN<br/>event_staff_assignments])
 
-    DON_DANG_KY([DON_DANG_KY])
-    THANH_TOAN([THANH_TOAN])
-    CAU_HINH_THANH_TOAN([CAU_HINH_THANH_TOAN])
+    %% G3: Đăng ký và Thanh toán
+    E_Reg([DON_DANG_KY<br/>registrations])
+    E_Pay([THANH_TOAN<br/>payments])
+    E_PayConfig([CAU_HINH_THANH_TOAN<br/>payment_configs])
 
-    VE_DIEN_TU([VE_DIEN_TU])
-    NHAT_KY_SOAT_VE([NHAT_KY_SOAT_VE])
+    %% G4: Vé và Kiểm soát ra vào
+    E_Ticket([VE_DIEN_TU<br/>tickets])
+    E_Checkin([NHAT_KY_SOAT_VE<br/>checkin_logs])
 
-    %% ============================
-    %% KẾT NỐI Level 0 → Level 1
-    %% ============================
-    System --> Auth
-    System --> EvMng
-    System --> RegPay
-    System --> Ops
+    %% ==========================================
+    %% KẾT NỐI LEVEL 0 -> LEVEL 1
+    %% ==========================================
+    DB ==> G1 & G2 & G3 & G4
 
-    %% ============================
-    %% KẾT NỐI Level 1 → Level 2
-    %% ============================
-    Auth    --> NGUOI_DUNG
-    Auth    --> MA_KHOI_PHUC
+    %% ==========================================
+    %% KẾT NỐI LEVEL 1 -> LEVEL 2
+    %% ==========================================
+    G1 ---> E_User & E_Reset
+    G2 ---> E_Event & E_Schedule & E_Assign
+    G3 ---> E_Reg & E_Pay & E_PayConfig
+    G4 ---> E_Ticket & E_Checkin
 
-    EvMng   --> SU_KIEN
-    EvMng   --> LICH_TRINH
-    EvMng   --> PHAN_CONG_NHAN_VIEN
+    %% ==========================================
+    %% STYLING (MÀU SẮC CHUẨN HỌC THUẬT)
+    %% ==========================================
+    style DB fill:#1a237e,color:#fff,stroke:#0d47a1,stroke-width:3px
 
-    RegPay  --> DON_DANG_KY
-    RegPay  --> THANH_TOAN
-    RegPay  --> CAU_HINH_THANH_TOAN
+    style G1 fill:#e3f2fd,color:#0d47a1,stroke:#1565c0,stroke-width:2px
+    style G2 fill:#e3f2fd,color:#0d47a1,stroke:#1565c0,stroke-width:2px
+    style G3 fill:#e3f2fd,color:#0d47a1,stroke:#1565c0,stroke-width:2px
+    style G4 fill:#e3f2fd,color:#0d47a1,stroke:#1565c0,stroke-width:2px
 
-    Ops     --> VE_DIEN_TU
-    Ops     --> NHAT_KY_SOAT_VE
+    style E_User      fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_Reset     fill:#fff,stroke:#1565c0,stroke-width:1.5px
 
-    %% ============================
-    %% STYLING
-    %% ============================
-    style System fill:#1a237e,color:#fff,stroke:#1a237e,stroke-width:3px
+    style E_Event     fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_Schedule  fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_Assign    fill:#fff,stroke:#1565c0,stroke-width:1.5px
 
-    style Auth    fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
-    style EvMng   fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
-    style RegPay  fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
-    style Ops     fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+    style E_Reg       fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_Pay       fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_PayConfig fill:#fff,stroke:#1565c0,stroke-width:1.5px
 
-    style NGUOI_DUNG          fill:#fff,stroke:#333,stroke-width:1px
-    style MA_KHOI_PHUC        fill:#fff,stroke:#333,stroke-width:1px
-    style SU_KIEN             fill:#fff,stroke:#333,stroke-width:1px
-    style LICH_TRINH          fill:#fff,stroke:#333,stroke-width:1px
-    style PHAN_CONG_NHAN_VIEN fill:#fff,stroke:#333,stroke-width:1px
-    style DON_DANG_KY         fill:#fff,stroke:#333,stroke-width:1px
-    style THANH_TOAN          fill:#fff,stroke:#333,stroke-width:1px
-    style CAU_HINH_THANH_TOAN fill:#fff,stroke:#333,stroke-width:1px
-    style VE_DIEN_TU          fill:#fff,stroke:#333,stroke-width:1px
-    style NHAT_KY_SOAT_VE     fill:#fff,stroke:#333,stroke-width:1px
+    style E_Ticket    fill:#fff,stroke:#1565c0,stroke-width:1.5px
+    style E_Checkin   fill:#fff,stroke:#1565c0,stroke-width:1.5px
 ```
 
-**Chú thích ký hiệu:**
-| Ký hiệu | Ý nghĩa |
-|---|---|
-| ▭ Hình chữ nhật | Hệ thống (Level 0) hoặc Nhóm chức năng nghiệp vụ (Level 1) |
-| ⬭ Hình oval | Thực thể dữ liệu (Level 2) — tương ứng với các bảng trong CSDL |
+---
 
-> **Các thực thể dữ liệu ở Level 2 sẽ được sử dụng để xây dựng biểu đồ ERD, thể hiện chi tiết các mối quan hệ (1-1, 1-N) giữa các thực thể trong hệ thống. Xem chi tiết tại: [03_database_design.md](./03_database_design.md)**
+## III. CẤU TRÚC PHÂN RÃ DẠNG CÂY (TEXT TREE)
+
+Cấu trúc cây dưới đây sử dụng từ ngữ thuần Việt, cực kỳ rõ ràng, tối ưu để copy-paste vào file báo cáo Word (.docx) hoặc slide thuyết trình PowerPoint:
+
+```text
+CSDL HỆ THỐNG QUẢN LÝ SỰ KIỆN và CHECK-IN QR (HUBEVENTH)
+│
+├── 1. NHÓM THỰC THỂ TÀI KHOẢN & BẢO MẬT
+│   ├── 1.1. NGUOI_DUNG (users)
+│   └── 1.2. MA_KHOI_PHUC (password_reset_tokens)
+│
+├── 2. NHÓM THỰC THỂ SỰ KIỆN & LỊCH TRÌNH
+│   ├── 2.1. SU_KIEN (events)
+│   ├── 2.2. LICH_TRINH (event_schedules)
+│   └── 2.3. PHAN_CONG_NHAN_VIEN (event_staff_assignments)
+│
+├── 3. NHÓM THỰC THỂ ĐĂNG KÝ & THANH TOÁN
+│   ├── 3.1. DON_DANG_KY (registrations)
+│   ├── 3.2. THANH_TOAN (payments)
+│   └── 3.3. CAU_HINH_THANH_TOAN (payment_configs)
+│
+└── 4. NHÓM THỰC THỂ VÉ & KIỂM SOÁT RA VÀO
+    ├── 4.1. VE_DIEN_TU (tickets)
+    └── 4.2. NHAT_KY_SOAT_VE (checkin_logs)
+```
 
 ---
 
-## II. MÔ TẢ CHI TIẾT TỪNG CẤP ĐỘ PHÂN RÃ
+## IV. BẢNG MÔ TẢ CHI TIẾT CÁC NHÓM THỰC THỂ VÀ BẢNG DỮ LIỆU
 
-### LEVEL 0 — Hệ thống tổng quát
-
-Toàn bộ nghiệp vụ của đề tài nằm trong một hệ thống duy nhất: **Quản lý Sự kiện & Check-in QR**.
-
----
-
-### LEVEL 1 — Nhóm chức năng nghiệp vụ (Subject Areas)
-
-| STT | Nhóm chức năng                  | Mô tả                                                                  |
-| --- | ------------------------------- | ---------------------------------------------------------------------- |
-| 1   | **QUẢN LÝ TÀI KHOẢN & BẢO MẬT** | Xử lý định danh người dùng, xác thực, phân quyền và khôi phục mật khẩu |
-| 2   | **QUẢN LÝ NỘI DUNG SỰ KIỆN**    | Tạo, cập nhật sự kiện, lịch trình hoạt động và phân công nhân sự       |
-| 3   | **QUẢN LÝ ĐĂNG KÝ & TÀI CHÍNH** | Xử lý đơn đăng ký tham gia và luồng thanh toán qua PayOS               |
-| 4   | **QUẢN LÝ VẬN HÀNH & SOÁT VÉ**  | Phát hành vé QR và ghi nhận lịch sử soát vé tại cổng sự kiện           |
+| Nhóm thực thể nghiệp vụ (Level 1) | Thực thể dữ liệu (Level 2) | Tên bảng MySQL | Khóa chính (PK) | Mối quan hệ liên kết trong ERD & Đặc điểm nghiệp vụ |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. NHÓM THỰC THỂ TÀI KHOẢN & BẢO MẬT** | **`NGUOI_DUNG`** | `users` | `id` (BIGINT) | Thực thể trung tâm của hệ thống. Lưu thông tin tài khoản, vai trò RBAC (`ADMIN`, `ORGANIZER`, `STAFF`, `USER`), trạng thái khóa (`status = ACTIVE/LOCKED`) và định dạng nguồn đăng nhập (`LOCAL / GOOGLE OAuth2`). |
+| | **`MA_KHOI_PHUC`** | `password_reset_tokens` | `id` (BIGINT) | Liên kết 1-N với `users` (`user_id`). Lưu chuỗi UUID ngẫu nhiên phục vụ luồng tự khôi phục mật khẩu, có ràng buộc thời gian hết hạn sau 15 phút. |
+| **2. NHÓM THỰC THỂ SỰ KIỆN & LỊCH TRÌNH** | **`SU_KIEN`** | `events` | `id` (BIGINT) | Liên kết N-1 với `users` (`organizer_id`). Lưu thông tin chi tiết về sự kiện, sức chứa tối đa (`capacity`), giá vé và số lượng vé đã bán (`sold_tickets`). |
+| | **`LICH_TRINH`** | `event_schedules` | `id` (BIGINT) | Liên kết N-1 với `events` (`event_id`). Lưu chi tiết các mốc thời gian, hoạt động trong timeline diễn ra sự kiện. |
+| | **`PHAN_CONG_NHAN_VIEN`** | `event_staff_assignments` | `id` (BIGINT) | Bảng trung gian giải quyết quan hệ N-N giữa Sự kiện (`event_id`) và Nhân viên soát vé (`staff_id`), kèm người phân công (`assigner_id`). |
+| **3. NHÓM THỰC THỂ ĐĂNG KÝ & THANH TOÁN** | **`DON_DANG_KY`** | `registrations` | `id` (BIGINT) | Liên kết N-1 với `events` và `users`. Có ràng buộc duy nhất kép **`UniqueConstraint(event_id, user_id)`** đảm bảo 1 user chỉ có tối đa 1 đơn đăng ký cho 1 sự kiện. |
+| | **`THANH_TOAN`** | `payments` | `id` (BIGINT) | Liên kết N-1 với `registrations` (`registration_id`). Lưu mã đơn hàng PayOS (`order_code`), số tiền, trạng thái giao dịch (`PENDING / PAID / FAILED / CANCELLED`) và dữ liệu Webhook. |
+| | **`CAU_HINH_THANH_TOAN`** | `payment_configs` | `id` (BIGINT) | Liên kết 1-1 với `users` (`organizer_id`). Lưu cấu hình `Client ID`, `API Key` và `Checksum Key` của cổng PayOS cho từng Ban tổ chức. |
+| **4. NHÓM THỰC THỂ VÉ & KIỂM SOÁT RA VÀO** | **`VE_DIEN_TU`** | `tickets` | `id` (BIGINT) | Liên kết 1-1 với `registrations` (`registration_id`). Lưu chuỗi định danh mã QR (`qr_code` - UUID 36 ký tự) và trạng thái soát vé (`ACTIVE / USED / CANCELLED`). |
+| | **`NHAT_KY_SOAT_VE`** | `checkin_logs` | `id` (BIGINT) | Liên kết N-1 với `tickets` (`ticket_id`) và `users` (`checked_in_by`). Lưu vết lịch sử kiểm toán từng lần soát vé tại cổng ra vào, phương thức check-in (`QR / MANUAL`). |
 
 ---
 
-### LEVEL 2 — Thực thể dữ liệu (Entities)
+## V. TẠI SAO CÁCH PHÂN RÃ THEO NHÓM THỰC THỂ LẠI CHUẨN XÁC VÀ DỄ HIỂU?
 
-| Nhóm (Level 1)      | Thực thể (Level 2)      | Tên bảng trong ERD    | Vai trò                                                                                 |
-| ------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------- |
-| Tài khoản           | **NGUOI_DUNG**          | `NGUOI_DUNG`          | Lưu thông tin định danh, vai trò, trạng thái và nguồn đăng nhập (LOCAL / GOOGLE OAuth2) |
-|                     | **MA_KHOI_PHUC**        | `MA_KHOI_PHUC`        | Lưu token UUID có thời hạn 15 phút dùng một lần để đặt lại mật khẩu                     |
-| Sự kiện             | **SU_KIEN**             | `SU_KIEN`             | Thực thể trung tâm — chứa toàn bộ thông tin mô tả một sự kiện                           |
-|                     | **LICH_TRINH**          | `LICH_TRINH`          | Danh sách các mốc thời gian hoạt động (Timeline) của sự kiện                            |
-|                     | **PHAN_CONG_NHAN_VIEN** | `PHAN_CONG_NHAN_VIEN` | Bảng cầu nối giữa `SU_KIEN` và `NGUOI_DUNG` (Staff)                                     |
-| Đăng ký & Tài chính | **DON_DANG_KY**         | `DON_DANG_KY`         | Ghi nhận yêu cầu tham gia của người dùng (ràng buộc 1 user/1 sự kiện)                   |
-|                     | **THANH_TOAN**          | `THANH_TOAN`          | Lịch sử giao dịch qua cổng PayOS gắn với từng đơn đăng ký                               |
-|                     | **CAU_HINH_THANH_TOAN** | `CAU_HINH_THANH_TOAN` | API Key/Checksum của Organizer để kết nối với cổng PayOS                                |
-| Vận hành            | **VE_DIEN_TU**          | `VE_DIEN_TU`          | Vé QR được phát hành sau thanh toán thành công, dùng để soát vé                         |
-|                     | **NHAT_KY_SOATVE**      | `NHAT_KY_SOATVE`      | Lịch sử ghi nhận mỗi lần quét mã tại cổng (ai soát, khi nào, bằng gì)                   |
-
----
-
-## III. KẾT LUẬN
-
-Quá trình phân rã từ **1 hệ thống → 4 nhóm chức năng → 10 thực thể dữ liệu** đảm bảo:
-
-- **Tính đầy đủ:** Bao phủ toàn bộ tính năng từ xác thực, check-in, thanh toán đến phân tích báo cáo.
-- **Tính nhất quán:** Tên thực thể đồng nhất 100% với biểu đồ ERD.
-- **Tính sẵn sàng:** Các thực thể Level 2 là nền tảng trực tiếp để thiết kế các bảng vật lý trong Cơ sở dữ liệu. Đồng thời là nguồn dữ liệu đầu vào cho Trợ lý ảo AI (Chatbot) và Báo cáo tổng quan (Dashboard) truy vấn.
+1. **Văn phong báo cáo đồ án chuẩn mực:** Cách gọi tên như *Nhóm thực thể Tài khoản & Bảo mật*, *Nhóm thực thể Đăng ký & Thanh toán* cực kỳ gần gũi, tự nhiên trong tiếng Việt, giúp hội đồng và người đọc báo cáo hiểu ngay lập tức cấu trúc dữ liệu của dự án mà không cảm thấy bị gượng ép hay nặng tính lý thuyết trừu tượng.
+2. **Khắc phục triệt để lỗi lẫn lộn Chức năng - Thực thể:** 100% tên gọi ở Level 1 và Level 2 đều là **Danh từ**, khẳng định đây là mô hình phân rã lưu trữ dữ liệu tĩnh, không bị lẫn với biểu đồ phân rã chức năng (BFD).
+3. **Độ tụ dữ liệu cao (High Cohesion):** 4 nhóm thực thể phản ánh đúng 4 cụm quan hệ Khóa chính - Khóa ngoại (PK-FK) trong cơ sở dữ liệu quan hệ của hệ thống HubEvent, tạo sự đồng bộ hoàn hảo với Biểu đồ Thực thể Liên kết (ERD) và thiết kế bảng CSDL MySQL.

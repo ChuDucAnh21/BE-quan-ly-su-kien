@@ -1,6 +1,6 @@
 package com.example.backend.dto.response;
 
-import com.example.backend.enums.UserStatus;
+// import com.example.backend.enums.UserStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

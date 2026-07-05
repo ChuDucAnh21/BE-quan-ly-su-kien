@@ -10,7 +10,7 @@ import com.example.backend.repository.PaymentConfigRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.PaymentConfigService;
 
-import groovy.util.logging.Slf4j;
+// import groovy.util.logging.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

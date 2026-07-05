@@ -45,7 +45,7 @@ public class SecurityConfig {
     // 2. Cấu hình bộ xác thực (AuthenticationProvider)
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(); // Sử dụng DaoAuthenticationProvider để xác thực người dùng dựa trên dữ liệu từ Database
         authProvider.setUserDetailsService(userDetailsService); // Cung cấp cách lấy User
         authProvider.setPasswordEncoder(passwordEncoder()); // Cung cấp cách so sánh mật khẩu
         return authProvider;

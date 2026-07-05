@@ -114,7 +114,7 @@ public class TicketServiceImpl implements TicketService {
                 Ticket ticket = ticketRepository.findByQrCodeWithLock(request.getQrCode())
                                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
 
-                // Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
+                // 2. Kiểm tra sự kiện hiện tại mà nhân viên đang gác cổng có khớp với vé không
                 if (!ticket.getRegistration().getEvent().getId().equals(request.getEventId())) {
                         log.warn("CẢNH BÁO QUÉT SAI SỰ KIỆN: Nhân viên quét mã {} nhưng vé này thuộc về Sự kiện ID: {}",
                                         request.getQrCode(), ticket.getRegistration().getEvent().getId());
@@ -149,6 +149,14 @@ public class TicketServiceImpl implements TicketService {
                                         email,
                                         eventId);
                         throw new AppException(ErrorCode.ACCESS_DENIED);
+                }
+                // Chỉ cho quét nếu thời điểm quét vào sự kiện trước 1h tới khi kết thúc sự kiện
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime allowedStartTime = ticket.getRegistration().getEvent().getStartTime().minusHours(1);
+                LocalDateTime eventEndTime = ticket.getRegistration().getEvent().getEndTime();
+
+                if (now.isBefore(allowedStartTime) || now.isAfter(eventEndTime)) {
+                        throw new AppException(ErrorCode.CHECKIN_TIME_INVALID);
                 }
 
                 // 4. Đánh Dấu Vé Đã Sử Dụng

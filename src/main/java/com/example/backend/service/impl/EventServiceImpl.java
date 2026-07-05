@@ -41,6 +41,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -398,6 +399,31 @@ public class EventServiceImpl implements EventService {
         User organizer = getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizer(eventId, organizer)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
+
+        // nếu sự kiện public và đã có người check-in thì không cho update các thông tin
+        // sau:
+        // thời gian bắt đầu, thời gian kết thúc, số lượng vé, giá vé,
+        if (event.getStatus() == EventStatus.PUBLISHED
+                && registrationRepository.countByEventIdAndStatusIn(
+                        eventId,
+                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
+                                RegistrationStatus.PENDING_PAYMENT)) > 0) {
+            // 1. So sánh BigDecimal bằng compareTo
+            boolean isPriceChanged = request.getTicketPrice().compareTo(event.getTicketPrice()) != 0;
+            // 2. So sánh thời gian (dùng Objects.equals để an toàn với null)
+            boolean isStartTimeChanged = !Objects.equals(request.getStartTime(), event.getStartTime());
+            boolean isEndTimeChanged = !Objects.equals(request.getEndTime(), event.getEndTime());
+            boolean isRegStartChanged = !Objects.equals(request.getRegistrationStartTime(),
+                    event.getRegistrationStartTime());
+            boolean isRegEndChanged = !Objects.equals(request.getRegistrationEndTime(), event.getRegistrationEndTime());
+            if (isStartTimeChanged || isEndTimeChanged || isPriceChanged || isRegStartChanged || isRegEndChanged) {
+                throw new AppException(ErrorCode.EVENT_CANNOT_BE_UPDATED_MOST_FIELDS);
+            }
+        }
+        // không cho sửa khi đã kết thúc sự kiện
+        if (event.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.EVENT_CANNOT_BE_UPDATED_AFTER_END);
+        }
 
         // Validation Thời gian
         if (request.getStartTime().isAfter(request.getEndTime())

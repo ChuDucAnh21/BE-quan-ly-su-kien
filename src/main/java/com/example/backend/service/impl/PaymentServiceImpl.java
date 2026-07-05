@@ -41,20 +41,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
-import com.example.backend.service.PaymentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Service
 @RequiredArgsConstructor
@@ -97,8 +83,8 @@ public class PaymentServiceImpl implements PaymentService {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
                 // 4. Xử lý thời gian
-                LocalDateTime startDate = from != null ? from.atStartOfDay() : null;
-                LocalDateTime endDate = to != null ? to.atTime(LocalTime.MAX) : null;
+                LocalDateTime startDate = from != null ? from.atStartOfDay() : null;  // lấy mốc bắt đầu của ngày
+                LocalDateTime endDate = to != null ? to.atTime(LocalTime.MAX) : null; // lấy mốc kết thúc của ngày
 
                 // 5. Lấy dữ liệu
                 Page<Payment> paymentPage = paymentRepository.findPaymentsByEventIdWithFilters(eventId, keyword, status,
@@ -145,7 +131,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         @Override
         @Transactional
-        // đồng bộ trạng thái thanh toán, dùng khi user reload lại trang
+        // đồng bộ trạng thái vé chờ thanh toán
         public String syncPaymentStatus(String orderCode) {
                 Payment payment = paymentRepository.findByOrderCode(orderCode).orElse(null);
                 if (payment == null) {
