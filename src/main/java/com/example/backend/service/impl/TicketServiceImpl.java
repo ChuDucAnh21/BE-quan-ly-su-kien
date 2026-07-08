@@ -316,6 +316,7 @@ public class TicketServiceImpl implements TicketService {
                                 .hashedQrCode(null) // Không cần trả mã băm
                                 .eventId(t.getRegistration().getEvent().getId())
                                 .eventTitle(t.getRegistration().getEvent().getTitle())
+                                .eventStatus(t.getRegistration().getEvent().getStatus())
                                 .eventImageUrl(t.getRegistration().getEvent().getBannerUrl())
                                 .startTimeEvent(t.getRegistration().getEvent().getStartTime())
                                 .endTimeEvent(t.getRegistration().getEvent().getEndTime())

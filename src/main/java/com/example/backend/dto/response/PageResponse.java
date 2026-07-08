@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @Builder
 public class PageResponse<T> {
-    private int currentPage; // Trang hiện tại (0-indexed)
+    private int currentPage; // Trang hiện tại (0-indexed) 
     private int totalPages; // Tổng số trang
     private int pageSize; // Số lượng phần tử mỗi trang
     private long totalElements; // Tổng số phần tử trong toàn DB

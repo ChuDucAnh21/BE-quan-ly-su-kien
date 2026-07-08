@@ -83,7 +83,7 @@ public class PaymentServiceImpl implements PaymentService {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
                 // 4. Xử lý thời gian
-                LocalDateTime startDate = from != null ? from.atStartOfDay() : null;  // lấy mốc bắt đầu của ngày
+                LocalDateTime startDate = from != null ? from.atStartOfDay() : null; // lấy mốc bắt đầu của ngày
                 LocalDateTime endDate = to != null ? to.atTime(LocalTime.MAX) : null; // lấy mốc kết thúc của ngày
 
                 // 5. Lấy dữ liệu
@@ -111,6 +111,11 @@ public class PaymentServiceImpl implements PaymentService {
                                                                 && payment.getRegistration().getUser() != null
                                                                                 ? payment.getRegistration().getUser()
                                                                                                 .getEmail()
+                                                                                : null)
+                                                .userPhoneNumber(payment.getRegistration() != null
+                                                                && payment.getRegistration().getUser() != null
+                                                                                ? payment.getRegistration().getUser()
+                                                                                                .getPhone()
                                                                                 : null)
                                                 .userFullName(payment.getRegistration() != null
                                                                 && payment.getRegistration().getUser() != null
@@ -217,20 +222,34 @@ public class PaymentServiceImpl implements PaymentService {
                 Page<Payment> pendingPaymentsPage = paymentRepository.findPendingPaymentsWithSearch(email,
                                 PaymentStatus.PENDING, search, pageable);
 
+                LocalDateTime now = LocalDateTime.now();
+
                 Page<RegistrationResponse> dataPage = pendingPaymentsPage.map(payment -> {
                         Registration registration = payment.getRegistration();
+                        // Lấy thông tin event
+                        Event event = payment.getRegistration().getEvent();
+
+                        // Kiểm tra xem sự kiện có còn mở đăng ký không (So sánh với Registration End
+                        // Time)
+                        boolean isEventRegistrationExpired = event.getRegistrationEndTime() != null
+                                        ? now.isAfter(event.getRegistrationEndTime())
+                                        : now.isAfter(event.getStartTime());
+                        String checkoutURL = isEventRegistrationExpired ? null : payment.getCheckoutUrl();
                         return RegistrationResponse.builder()
                                         .registrationId(registration.getId())
                                         .eventId(registration.getEvent().getId())
                                         .eventName(registration.getEvent().getTitle())
                                         .eventPrice(registration.getEvent().getTicketPrice())
                                         .eventImage(registration.getEvent().getBannerUrl())
+                                        .eventStatus(registration.getEvent().getStatus())
                                         .eventStartTime(registration.getEvent().getStartTime())
+                                        .eventEndTime(registration.getEvent().getEndTime())
+                                        .isExpiredRegistration(isEventRegistrationExpired)
                                         .userId(registration.getUser().getId())
                                         .registrationCode(registration.getRegistrationCode())
                                         .status(registration.getStatus().name())
                                         .createdAt(registration.getCreatedAt())
-                                        .checkoutUrl(payment.getCheckoutUrl())
+                                        .checkoutUrl(checkoutURL)
                                         .orderCode(payment.getOrderCode())
                                         .amount(payment.getAmount())
                                         .build();

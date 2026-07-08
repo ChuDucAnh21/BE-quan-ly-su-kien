@@ -5,6 +5,8 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.backend.enums.EventStatus;
+
 @Data
 @Builder
 public class RegistrationResponse {
@@ -13,7 +15,10 @@ public class RegistrationResponse {
     private String eventName;
     private BigDecimal eventPrice;
     private String eventImage;
+    private EventStatus eventStatus;
     private LocalDateTime eventStartTime;
+    private LocalDateTime eventEndTime;
+    private Boolean isExpiredRegistration;
     private Long userId;
     private String registrationCode;
     private String status;

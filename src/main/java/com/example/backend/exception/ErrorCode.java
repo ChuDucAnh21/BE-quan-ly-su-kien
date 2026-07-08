@@ -40,6 +40,8 @@ public enum ErrorCode {
                         HttpStatus.BAD_REQUEST),
         EVENT_CANNOT_BE_UPDATED_AFTER_END(400, "Không thể cập nhật sự kiện đã kết thúc",
                         HttpStatus.BAD_REQUEST),
+        EVENT_CANNOT_CHANGE_STATUS_AFTER_END(400, "Không thể thay đổi trạng thái sự kiện đã kết thúc",
+                        HttpStatus.BAD_REQUEST),
 
         // Lỗi liên quan đến Quên mật khẩu
         INVALID_RESET_TOKEN(400, "Mã khôi phục không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),

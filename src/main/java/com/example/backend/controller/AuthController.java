@@ -45,7 +45,8 @@ public class AuthController {
         // 1. API Đăng ký tài khoản (Public)
         @PostMapping("/register") // Phương thức POST: Dùng để tạo mới dữ liệu
         public ApiResponse<Void> register(@RequestBody @Valid RegisterRequest request) {
-                // @RequestBody: Chuyển dữ liệu từ JSON gửi lên thành đối tượng Java
+                // @RequestBody: Chuyển dữ liệu từ JSON gửi lên thành đối tượng Request DTO để
+                // xử lý logic 
                 // @Valid: Kích hoạt việc kiểm tra định dạng dữ liệu (Email, SĐT...) dựa trên
                 // các Annotation trong DTO
                 authService.register(request);

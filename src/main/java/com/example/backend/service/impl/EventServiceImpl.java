@@ -62,7 +62,7 @@ public class EventServiceImpl implements EventService {
     private final TicketRepository ticketRepository;
     private final PaymentRepository paymentRepository;
 
-    // Helper: Lấy User đang đăng nhập dựa trên email trong Token
+    // Helper: Lấy User đang đăng nhập hiện tại
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
@@ -239,11 +239,11 @@ public class EventServiceImpl implements EventService {
         // Chuyển rỗng thành null để Query JPQL lờ đi
         String finalKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
         List<String> finalCategories = (categories != null && !categories.isEmpty()) ? categories : null;
+        EventStatus finalStatus = status;
 
         // BẢO MẬT HIỂN THỊ (VISIBILITY SECURITY)
         // Nếu không phải ADMIN, và cũng không phải ORGANIZER đang truy cập danh sách
         // của chính mình -> ÉP BUỘC CHỈ HIỂN THỊ "PUBLISHED"
-        EventStatus finalStatus = status;
         boolean isAdmin = false;
         boolean isOwner = false;
 
@@ -400,14 +400,12 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndOrganizer(eventId, organizer)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
-        // nếu sự kiện public và đã có người check-in thì không cho update các thông tin
-        // sau:
+        // đã có người đã mua vé hoặc đã đăng ký thì không cho update các thông tin sau:
         // thời gian bắt đầu, thời gian kết thúc, số lượng vé, giá vé,
-        if (event.getStatus() == EventStatus.PUBLISHED
-                && registrationRepository.countByEventIdAndStatusIn(
-                        eventId,
-                        List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
-                                RegistrationStatus.PENDING_PAYMENT)) > 0) {
+        if (registrationRepository.countByEventIdAndStatusIn(
+                eventId,
+                List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN,
+                        RegistrationStatus.PENDING_PAYMENT)) > 0) {
             // 1. So sánh BigDecimal bằng compareTo
             boolean isPriceChanged = request.getTicketPrice().compareTo(event.getTicketPrice()) != 0;
             // 2. So sánh thời gian (dùng Objects.equals để an toàn với null)
@@ -502,17 +500,16 @@ public class EventServiceImpl implements EventService {
 
         String ongoingStatus = calculateOngoingStatus(event.getRegistrationStartTime(), event.getRegistrationEndTime(),
                 event.getStartTime(), event.getEndTime());
+
+        if (ongoingStatus.equals("ENDED")) {
+            throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_STATUS_AFTER_END);
+        }
         // nếu sự kiện đang diễn ra hoặc đã kết thúc hoặc đã có vé được bán thì không
         // cho phép thay đổi trạng thái draff
         if (newStatus == EventStatus.DRAFT) {
-            log.info(ongoingStatus);
-            if (ongoingStatus.equals("ONGOING") || ongoingStatus.equals("ENDED")) {
+            if (ongoingStatus.equals("ONGOING") || event.getSoldTickets() > 0) {
                 throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
             }
-            if (event.getSoldTickets() > 0) {
-                throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_DRAFT);
-            }
-
         }
 
         // Quyền lực Admin: Được quyền can thiệp nếu là trường hợp xấu

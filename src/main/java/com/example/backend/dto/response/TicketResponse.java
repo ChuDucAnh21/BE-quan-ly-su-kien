@@ -1,5 +1,6 @@
 package com.example.backend.dto.response;
 
+import com.example.backend.enums.EventStatus;
 import com.example.backend.enums.Gender;
 import com.example.backend.enums.TicketStatus;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ public class TicketResponse {
     private String hashedQrCode; // Mã băm (Chỉ trả về cho Staff Offline Sync)
     private Long eventId;
     private String eventTitle;
+    private EventStatus eventStatus;
     private String eventImageUrl;
     private LocalDateTime startTimeEvent;
     private LocalDateTime endTimeEvent;

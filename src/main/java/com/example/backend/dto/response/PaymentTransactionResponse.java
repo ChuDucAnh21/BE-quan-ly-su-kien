@@ -45,6 +45,8 @@ public class PaymentTransactionResponse {
     // Email của người dùng thực hiện giao dịch
     private String userEmail;
 
+    private String userPhoneNumber;
+
     // Họ tên của người dùng thực hiện giao dịch
     private String userFullName;
 }

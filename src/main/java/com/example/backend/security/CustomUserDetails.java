@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Data
-@AllArgsConstructor
+@AllArgsConstructor // lombok tự động sinh constructor với tham số là các thuộc tính của class
 
 public class CustomUserDetails implements UserDetails {
     // UserDetails: Interface của Spring Security dùng để cung cấp thông tin người

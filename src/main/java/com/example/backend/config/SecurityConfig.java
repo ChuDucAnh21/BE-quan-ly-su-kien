@@ -28,7 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity // Kích hoạt tính năng bảo mật Web của Spring Security
 @EnableMethodSecurity // Cho phép sử dụng các Annotation như @PreAuthorize trên các hàm trong
                       // Service/Controller
-@RequiredArgsConstructor
+@RequiredArgsConstructor // lombok tự động sinh constructor với tham số là các thuộc tính của class
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService; // Lớp dùng để lấy thông tin User từ Database
@@ -71,7 +71,8 @@ public class SecurityConfig {
                 // Cấu hình xử lý lỗi khi chưa xác thực
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-                // Quy định hệ thống KHÔNG sử dụng Session (Mỗi Request phải gửi kèm Token)
+                // dùng jwt thì không cần session nên ở đây ta sẽ set nó về STATELESS (không lưu
+                // session)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // PHÂN QUYỀN TRUY CẬP: không cần đi qua filterJwtAuthenticationFilter
