@@ -43,7 +43,7 @@ public class WebhookServiceImpl implements WebhookService {
     @Override
     @Transactional // Khởi động Giao dịch Database - Nếu có bất cứ Exception nào, toàn bộ Data sẽ
                    // rollback
-    public ObjectNode processWebhook(ObjectNode payload) { // payload là dữ liệu từ PayOS dội về
+    public ObjectNode processWebhook(ObjectNode payload) { // hàm nhận dữ liệu từ PayOS dội về
         ObjectNode response = objectMapper.createObjectNode();
         try {
             // 1. Phân tách payload JSON từ PayOS dội về
@@ -99,10 +99,8 @@ public class WebhookServiceImpl implements WebhookService {
             PayOS payOS = new PayOS(config.getClientId(), config.getApiKey(), config.getChecksumKey());
             try {
                 // Verify PayOS Webhook - SDK v2.x sử dụng cơ chế mới thông qua
-                // webhooks().verify()
-                // Hàm này tự động kiểm tra chữ ký và trả về dữ liệu đã được xác thực
-                // WebhookData verifiedData = payOS.webhooks().verify(webhookType);
-                payOS.webhooks().verify(webhookType);
+
+                payOS.webhooks().verify(webhookType); // xác minh chữ ký
 
                 // Nếu vượt rào thành công qua bước Verify, thông tin giao dịch đã an toàn 100%
                 if ("00".equals(webhookType.getCode()) && webhookType.getSuccess()) {

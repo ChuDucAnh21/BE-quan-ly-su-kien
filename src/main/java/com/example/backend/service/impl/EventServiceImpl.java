@@ -418,6 +418,7 @@ public class EventServiceImpl implements EventService {
                 throw new AppException(ErrorCode.EVENT_CANNOT_BE_UPDATED_MOST_FIELDS);
             }
         }
+
         // không cho sửa khi đã kết thúc sự kiện
         if (event.getEndTime().isBefore(LocalDateTime.now())) {
             throw new AppException(ErrorCode.EVENT_CANNOT_BE_UPDATED_AFTER_END);
@@ -526,7 +527,6 @@ public class EventServiceImpl implements EventService {
                 throw new AppException(ErrorCode.MUST_SETUP_PAYMENT_FIRST);
             }
         }
-
         event.setStatus(newStatus);
         eventRepository.save(event);
     }
@@ -552,9 +552,15 @@ public class EventServiceImpl implements EventService {
                 List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.CHECKED_IN));
 
         if (ticketsSold > 0) {
-            // KHÔNG xóa vật lý kể cả là Admin để bảo toàn dữ liệu (Tickets, Payments,
-            // Registrations...)
-            // Ép sang trạng thái CANCELLED
+            // Ép sang trạng thái CANCELLED nếu sự kiện chưa kết thúc
+
+            String ongoingStatus = calculateOngoingStatus(event.getRegistrationStartTime(),
+                    event.getRegistrationEndTime(),
+                    event.getStartTime(), event.getEndTime());
+
+            if (ongoingStatus.equals("ENDED")) {
+                throw new AppException(ErrorCode.EVENT_CANNOT_CHANGE_STATUS_AFTER_END);
+            }
             event.setStatus(EventStatus.CANCELLED);
             eventRepository.save(event);
             log.warn("Chuyển trạng thái EVENT_ID {} sang CANCELLED vì đã có khách mua vé (Người thực hiện: {})",
